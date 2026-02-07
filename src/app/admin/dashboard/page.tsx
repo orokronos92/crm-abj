@@ -340,21 +340,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Actions rapides (flottant) */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3">
-        <button className="w-14 h-14 bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all flex items-center justify-center group animate-pulse-gold">
-          <MessageSquare className="w-6 h-6 text-[rgb(var(--primary))]" />
-          <span className="absolute right-full mr-3 px-3 py-1 bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.2)] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">
-            <span className="text-sm text-[rgb(var(--foreground))]">Chat Marjorie</span>
-          </span>
-        </button>
-        <button className="w-14 h-14 bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.2)] rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all flex items-center justify-center group">
-          <Plus className="w-6 h-6 text-[rgb(var(--accent))]" />
-          <span className="absolute right-full mr-3 px-3 py-1 bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.2)] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">
-            <span className="text-sm text-[rgb(var(--foreground))]">Nouveau prospect</span>
-          </span>
-        </button>
-      </div>
     </DashboardLayout>
   )
 }

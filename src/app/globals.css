@@ -182,6 +182,17 @@ body::before {
   }
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ===== UTILITY CLASSES ===== */
 
 .animate-fadeIn {
@@ -218,6 +229,10 @@ body::before {
 .animate-diamond {
   animation: diamond-rotate 10s linear infinite;
   transform-style: preserve-3d;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
 }
 
 /* Glass effect */
