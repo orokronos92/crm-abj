@@ -357,94 +357,106 @@ export default function CandidatsPage() {
             </div>
 
             {/* Contenu de l'onglet actif */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-6">
-                  {/* Photo candidat */}
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-3xl flex-shrink-0">
-                    {selectedCandidat.prenom.charAt(0)}{selectedCandidat.nom.charAt(0)}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-[rgb(var(--foreground))]">
-                      {selectedCandidat.prenom} {selectedCandidat.nom}
-                    </h2>
-                    <div className="flex items-center gap-6 mt-3">
-                      <span className="flex items-center gap-2 text-base text-[rgb(var(--foreground))]">
-                        <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
-                        {selectedCandidat.email}
-                      </span>
-                      <span className="flex items-center gap-2 text-base text-[rgb(var(--foreground))]">
-                        <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
-                        {selectedCandidat.telephone}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-3">
-                      <FileText className="w-5 h-5 text-[rgb(var(--accent))]" />
-                      <p className="text-base text-[rgb(var(--muted-foreground))]">N° Dossier:</p>
-                      <p className="text-xl font-bold text-[rgb(var(--accent))]">{selectedCandidat.numero_dossier}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-3 py-1 text-sm rounded-full ${STATUT_DOSSIER_COLORS[selectedCandidat.statut_dossier as keyof typeof STATUT_DOSSIER_COLORS]}`}>
-                        Dossier: {selectedCandidat.statut_dossier}
-                      </span>
-                      <span className={`px-3 py-1 text-sm rounded-full ${STATUT_FINANCEMENT_COLORS[selectedCandidat.statut_financement as keyof typeof STATUT_FINANCEMENT_COLORS]}`}>
-                        Finance: {selectedCandidat.statut_financement}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="text-center">
-                        <p className={`text-3xl font-bold ${getScoreColor(selectedCandidat.score)}`}>
-                          {selectedCandidat.score}
-                        </p>
-                        <p className="text-xs text-[rgb(var(--muted-foreground))]">Score</p>
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Tab Général */}
+              {activeTab === 'general' && (
+                <div className="space-y-6">
+                  {/* Header avec photo et infos principales */}
+                  <div className="flex items-start justify-between">
+                    {/* Photo + Infos contact */}
+                    <div className="flex gap-6">
+                      {/* Avatar */}
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-light))] flex items-center justify-center text-3xl font-bold text-[rgb(var(--primary))] shadow-lg">
+                          {selectedCandidat.prenom[0]}{selectedCandidat.nom[0]}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[rgb(var(--success))] rounded-full border-2 border-[rgb(var(--card))]" />
                       </div>
-                      <div className="text-center px-4 border-l border-[rgba(var(--border),0.3)]">
-                        <p className="text-2xl font-bold text-[rgb(var(--accent))]">
+
+                      {/* Infos principales */}
+                      <div className="flex-1">
+                        <h2 className="text-2xl font-bold text-[rgb(var(--foreground))]">
+                          {selectedCandidat.prenom} {selectedCandidat.nom}
+                        </h2>
+                        <div className="flex items-center gap-6 mt-3">
+                          <span className="flex items-center gap-2 text-base text-[rgb(var(--foreground))]">
+                            <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
+                            {selectedCandidat.email}
+                          </span>
+                          <span className="flex items-center gap-2 text-base text-[rgb(var(--foreground))]">
+                            <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
+                            {selectedCandidat.telephone}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-3">
+                          <FileText className="w-5 h-5 text-[rgb(var(--accent))]" />
+                          <p className="text-base text-[rgb(var(--muted-foreground))]">N° Dossier:</p>
+                          <p className="text-xl font-bold text-[rgb(var(--accent))]">{selectedCandidat.numero_dossier}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Badges statuts */}
+                    <div className="flex flex-col gap-2">
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${STATUT_DOSSIER_COLORS[selectedCandidat.statut_dossier as keyof typeof STATUT_DOSSIER_COLORS]}`}>
+                        {selectedCandidat.statut_dossier}
+                      </span>
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${STATUT_FINANCEMENT_COLORS[selectedCandidat.statut_financement as keyof typeof STATUT_FINANCEMENT_COLORS]}`}>
+                        {selectedCandidat.statut_financement}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stats rapides */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg">
+                        <TrendingUp className="w-5 h-5 text-[rgb(var(--accent))]" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-[rgb(var(--muted-foreground))]">Score</p>
+                        <p className={`text-lg font-bold ${getScoreColor(selectedCandidat.score)}`}>
+                          {selectedCandidat.score}/100
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg">
+                        <MessageSquare className="w-5 h-5 text-[rgb(var(--accent))]" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-[rgb(var(--muted-foreground))]">Échanges</p>
+                        <p className="text-lg font-bold text-[rgb(var(--foreground))]">
                           {selectedCandidat.nb_echanges}
                         </p>
-                        <p className="text-xs text-[rgb(var(--muted-foreground))]">Échanges</p>
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedCandidat(null)}
-                    className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-                  </button>
-                </div>
-              </div>
 
-              {/* Infos principales */}
-              <div className="grid grid-cols-3 gap-4 mt-4 p-4 bg-[rgb(var(--secondary))] rounded-lg">
-                <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Formation</p>
-                  <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                    {selectedCandidat.formation}
-                  </p>
+                  {/* Infos principales grid */}
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-[rgb(var(--secondary))] rounded-lg">
+                    <div>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Formation</p>
+                      <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                        {selectedCandidat.formation}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Session</p>
+                      <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                        {selectedCandidat.session}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Date candidature</p>
+                      <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                        {selectedCandidat.date_candidature}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Session</p>
-                  <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                    {selectedCandidat.session}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Candidature</p>
-                  <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                    {selectedCandidat.date_candidature}
-                  </p>
-                </div>
-              </div>
-            </div>
+              )}
 
-            {/* Contenu des tabs */}
-            <div className="flex-1 overflow-y-auto p-6">
               {/* Tab Parcours */}
               {activeTab === 'parcours' && (
                 <div className="space-y-6">
@@ -809,6 +821,26 @@ export default function CandidatsPage() {
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* Footer sticky avec actions */}
+            <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
+              <div className="flex items-center justify-between">
+                <button className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border border-[rgba(var(--border),0.5)] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Contacter le candidat
+                </button>
+                <div className="flex gap-2">
+                  <button className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border border-[rgba(var(--border),0.5)] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    Télécharger dossier complet
+                  </button>
+                  <button className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Demander analyse Marjorie
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
