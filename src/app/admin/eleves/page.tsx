@@ -38,6 +38,8 @@ import {
   Trash2,
   Send,
   Plus,
+  FolderOpen,
+  History,
 } from 'lucide-react'
 
 // Données mockées élèves
@@ -352,7 +354,7 @@ const PRESENCE_COLORS = {
 
 export default function ElevesPage() {
   const [selectedEleve, setSelectedEleve] = useState<typeof MOCK_ELEVES[0] | null>(null)
-  const [activeTab, setActiveTab] = useState('synthese')
+  const [activeTab, setActiveTab] = useState('general')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterFormation, setFilterFormation] = useState('TOUS')
 
@@ -545,153 +547,164 @@ export default function ElevesPage() {
       {selectedEleve && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl overflow-hidden flex flex-col max-w-6xl w-full max-h-[90vh]">
-            {/* Header élève */}
-            <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-6">
-                  {/* Photo élève */}
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-3xl flex-shrink-0">
-                    {selectedEleve.prenom.charAt(0)}{selectedEleve.nom.charAt(0)}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-[rgb(var(--foreground))]">
-                      {selectedEleve.prenom} {selectedEleve.nom}
-                    </h2>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="flex items-center gap-1 text-sm text-[rgb(var(--muted-foreground))]">
-                        <Mail className="w-4 h-4" />
-                        {selectedEleve.email}
-                      </span>
-                      <span className="flex items-center gap-1 text-sm text-[rgb(var(--muted-foreground))]">
-                        <Phone className="w-4 h-4" />
-                        {selectedEleve.telephone}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <FileText className="w-4 h-4 text-[rgb(var(--accent))]" />
-                      <p className="text-sm text-[rgb(var(--muted-foreground))]">N° Dossier:</p>
-                      <p className="text-sm font-bold text-[rgb(var(--accent))]">{selectedEleve.numero_dossier}</p>
-                    </div>
-                  </div>
-                </div>
+            {/* Header avec titre et bouton fermer */}
+            <div className="p-4 border-b border-[rgba(var(--border),0.3)] flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">Fiche élève</h2>
+              <button
+                onClick={() => setSelectedEleve(null)}
+                className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+              </button>
+            </div>
 
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold text-[rgb(var(--foreground))] mb-1">
-                      {selectedEleve.formation}
-                    </h2>
-                    <p className="text-sm text-[rgb(var(--muted-foreground))]">
-                      {selectedEleve.session}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="relative w-20 h-20">
-                      <svg className="w-20 h-20 transform -rotate-90">
+            {/* Onglets en forme de dossier (folder tabs) */}
+            <div className="pt-4 px-4 flex gap-1 bg-[rgb(var(--secondary))]">
+              {[
+                { id: 'general', label: 'Général', icon: User },
+                { id: 'synthese', label: 'Synthèse', icon: BarChart3 },
+                { id: 'evaluations', label: 'Évaluations', icon: Award },
+                { id: 'presences', label: 'Présences', icon: Calendar },
+                { id: 'documents', label: 'Documents', icon: FolderOpen },
+                { id: 'historique', label: 'Historique', icon: History },
+              ].map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative px-4 py-3 rounded-t-lg transition-all flex items-center gap-2 ${
+                      activeTab === tab.id
+                        ? 'bg-[rgb(var(--card))] text-[rgb(var(--accent))] border-t-2 border-[rgb(var(--accent))] -mb-[1px] shadow-sm'
+                        : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))] hover:bg-[rgba(var(--accent),0.05)]'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[rgb(var(--accent))]' : ''}`} />
+                    <span className="text-sm font-medium">{tab.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Contenu des onglets */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Tab Général */}
+              {activeTab === 'general' && (
+                <div className="space-y-6">
+                  {/* Photo + Identité */}
+                  <div className="flex items-start gap-6 p-6 bg-[rgb(var(--secondary))] rounded-xl">
+                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-3xl flex-shrink-0">
+                      {selectedEleve.prenom.charAt(0)}{selectedEleve.nom.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-[rgb(var(--foreground))] mb-2">
+                        {selectedEleve.prenom} {selectedEleve.nom}
+                      </h3>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
+                          <span className="text-base text-[rgb(var(--foreground))]">{selectedEleve.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
+                          <span className="text-base text-[rgb(var(--foreground))]">{selectedEleve.telephone}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-[rgb(var(--accent))]" />
+                          <span className="text-sm text-[rgb(var(--muted-foreground))]">N° Dossier:</span>
+                          <span className="text-xl font-bold text-[rgb(var(--accent))]">{selectedEleve.numero_dossier}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative w-24 h-24">
+                      <svg className="w-24 h-24 transform -rotate-90">
                         <circle
-                          cx="40"
-                          cy="40"
-                          r="34"
+                          cx="48"
+                          cy="48"
+                          r="42"
                           stroke="rgb(var(--secondary))"
-                          strokeWidth="6"
+                          strokeWidth="8"
                           fill="none"
                         />
                         <circle
-                          cx="40"
-                          cy="40"
-                          r="34"
+                          cx="48"
+                          cy="48"
+                          r="42"
                           stroke="rgb(var(--accent))"
-                          strokeWidth="6"
+                          strokeWidth="8"
                           fill="none"
-                          strokeDasharray={`${2 * Math.PI * 34}`}
-                          strokeDashoffset={`${2 * Math.PI * 34 * (1 - selectedEleve.progression / 100)}`}
+                          strokeDasharray={`${2 * Math.PI * 42}`}
+                          strokeDashoffset={`${2 * Math.PI * 42 * (1 - selectedEleve.progression / 100)}`}
                           strokeLinecap="round"
                           className="transition-all duration-1000"
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <p className={`text-xl font-bold ${getProgressionColor(selectedEleve.progression)}`}>
+                        <p className={`text-2xl font-bold ${getProgressionColor(selectedEleve.progression)}`}>
                           {selectedEleve.progression}%
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setSelectedEleve(null)}
-                      className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-                    </button>
+                  </div>
+
+                  {/* Stats principales - 5 cartes */}
+                  <div className="grid grid-cols-5 gap-4">
+                    <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
+                      <p className={`text-3xl font-bold ${getMoyenneColor(selectedEleve.notes_moyennes)}`}>
+                        {selectedEleve.notes_moyennes.toFixed(1)}
+                      </p>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Moyenne générale</p>
+                    </div>
+                    <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
+                      <p className="text-3xl font-bold text-[rgb(var(--accent))]">
+                        {selectedEleve.heures_effectuees}
+                      </p>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Heures / {selectedEleve.heures_totales}h</p>
+                    </div>
+                    <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
+                      <p className={`text-3xl font-bold ${selectedEleve.absences >= 3 ? 'text-[rgb(var(--error))]' : 'text-[rgb(var(--foreground))]'}`}>
+                        {selectedEleve.absences}
+                      </p>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Absences ({selectedEleve.absences_non_justifiees} non just.)</p>
+                    </div>
+                    <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
+                      <p className={`text-3xl font-bold ${selectedEleve.retards >= 4 ? 'text-[rgb(var(--error))]' : 'text-[rgb(var(--foreground))]'}`}>
+                        {selectedEleve.retards}
+                      </p>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Retards</p>
+                    </div>
+                    <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
+                      <p className="text-3xl font-bold text-[rgb(var(--accent))]">
+                        {Math.ceil((new Date(selectedEleve.date_fin.split('/').reverse().join('-')).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
+                      </p>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Jours restants</p>
+                    </div>
+                  </div>
+
+                  {/* Formation & Session */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg">
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mb-2">Formation</p>
+                      <p className="text-lg font-bold text-[rgb(var(--foreground))]">{selectedEleve.formation}</p>
+                    </div>
+                    <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg">
+                      <p className="text-xs text-[rgb(var(--muted-foreground))] mb-2">Session</p>
+                      <p className="text-lg font-bold text-[rgb(var(--foreground))]">{selectedEleve.session}</p>
+                    </div>
+                  </div>
+
+                  {/* Prochaine évaluation */}
+                  <div className="p-4 bg-gradient-to-r from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-[rgb(var(--accent))]" />
+                      <span className="text-sm font-medium text-[rgb(var(--foreground))]">
+                        Prochaine évaluation : {selectedEleve.prochaine_eval}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Stats principales - 5 cartes */}
-              <div className="grid grid-cols-5 gap-4 mt-4">
-                <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
-                  <p className={`text-3xl font-bold ${getMoyenneColor(selectedEleve.notes_moyennes)}`}>
-                    {selectedEleve.notes_moyennes.toFixed(1)}
-                  </p>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Moyenne générale</p>
-                </div>
-                <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
-                  <p className="text-3xl font-bold text-[rgb(var(--accent))]">
-                    {selectedEleve.heures_effectuees}
-                  </p>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Heures / {selectedEleve.heures_totales}h</p>
-                </div>
-                <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
-                  <p className={`text-3xl font-bold ${selectedEleve.absences >= 3 ? 'text-[rgb(var(--error))]' : 'text-[rgb(var(--foreground))]'}`}>
-                    {selectedEleve.absences}
-                  </p>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Absences ({selectedEleve.absences_non_justifiees} non just.)</p>
-                </div>
-                <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
-                  <p className={`text-3xl font-bold ${selectedEleve.retards >= 4 ? 'text-[rgb(var(--error))]' : 'text-[rgb(var(--foreground))]'}`}>
-                    {selectedEleve.retards}
-                  </p>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Retards</p>
-                </div>
-                <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
-                  <p className="text-3xl font-bold text-[rgb(var(--accent))]">
-                    {Math.ceil((new Date(selectedEleve.date_fin.split('/').reverse().join('-')).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
-                  </p>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Jours restants</p>
-                </div>
-              </div>
-
-              {/* Prochaine évaluation */}
-              <div className="mt-4 p-3 bg-gradient-to-r from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[rgb(var(--accent))]" />
-                  <span className="text-sm font-medium text-[rgb(var(--foreground))]">
-                    Prochaine évaluation : {selectedEleve.prochaine_eval}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-[rgba(var(--border),0.3)]">
-              {['synthese', 'evaluations', 'presences', 'documents', 'historique'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-3 text-sm font-medium capitalize transition-all ${
-                    activeTab === tab
-                      ? 'text-[rgb(var(--accent))] border-b-2 border-[rgb(var(--accent))]'
-                      : 'text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'
-                  }`}
-                >
-                  {tab === 'synthese' && 'Synthèse'}
-                  {tab === 'evaluations' && 'Évaluations'}
-                  {tab === 'presences' && 'Présences'}
-                  {tab === 'documents' && 'Documents'}
-                  {tab === 'historique' && 'Historique'}
-                </button>
-              ))}
-            </div>
-
-            {/* Contenu des tabs */}
-            <div className="flex-1 overflow-y-auto p-6">
               {/* Tab Synthèse */}
               {activeTab === 'synthese' && (
                 <div className="space-y-6">
