@@ -15,7 +15,7 @@ export default async function EleveLayout({
   const session = await getServerSession(authConfig)
 
   // Vérifier l'authentification et le rôle
-  if (!session) {
+  if (!session || !session.user) {
     redirect('/connexion')
   }
 
