@@ -70,7 +70,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
           { icon: Calendar, label: 'Planning', href: '/formateur/planning' },
           { icon: Users, label: 'Mes élèves', href: '/formateur/eleves' },
           { icon: PenTool, label: 'Évaluations', href: '/formateur/evaluations' },
-          { icon: ClipboardList, label: 'Présences', href: '/formateur/presences' },
           { icon: MessageSquare, label: 'Chat Marjorie', href: '/formateur/marjorie', special: true },
           { icon: Calendar, label: 'Disponibilités', href: '/formateur/disponibilites' },
         ]

@@ -44,7 +44,8 @@
       "Bash(timeout /t 8 /nobreak)",
       "Bash(git push:*)",
       "Bash(timeout /t 3 /nobreak)",
-      "Bash(\"C:\\crm_abj\\src\\app\\formateur\\marjorie\\page.tsx\")"
+      "Bash(\"C:\\crm_abj\\src\\app\\formateur\\marjorie\\page.tsx\")",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
