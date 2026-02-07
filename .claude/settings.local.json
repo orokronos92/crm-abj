@@ -41,7 +41,9 @@
       "Bash(timeout /t 10 /nobreak)",
       "Bash(del /F nul 2)",
       "Bash(powershell -Command \"if (Test-Path ''.next'') { Remove-Item -Recurse -Force ''.next'' }\")",
-      "Bash(timeout /t 8 /nobreak)"
+      "Bash(timeout /t 8 /nobreak)",
+      "Bash(git push:*)",
+      "Bash(timeout /t 3 /nobreak)"
     ],
     "deny": [],
     "ask": []

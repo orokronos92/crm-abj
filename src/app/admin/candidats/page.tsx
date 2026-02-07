@@ -38,6 +38,7 @@ import {
   X,
   Target,
   FolderOpen,
+  UserPlus,
 } from 'lucide-react'
 
 // Données mockées
@@ -454,6 +455,49 @@ export default function CandidatsPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Historique récent */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-[rgb(var(--foreground))]">Historique récent</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-3 p-3 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]">
+                        <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg">
+                          <Mail className="w-4 h-4 text-[rgb(var(--accent))]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">Email de bienvenue envoyé</p>
+                            <span className="text-xs text-[rgb(var(--muted-foreground))]">{selectedCandidat.dernier_contact}</span>
+                          </div>
+                          <p className="text-xs text-[rgb(var(--muted-foreground))]">Confirmation de réception du dossier</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]">
+                        <div className="p-2 bg-[rgba(var(--success),0.1)] rounded-lg">
+                          <FileText className="w-4 h-4 text-[rgb(var(--success))]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">Dossier créé</p>
+                            <span className="text-xs text-[rgb(var(--muted-foreground))]">{selectedCandidat.date_candidature}</span>
+                          </div>
+                          <p className="text-xs text-[rgb(var(--muted-foreground))]">N° {selectedCandidat.numero_dossier} généré automatiquement</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]">
+                        <div className="p-2 bg-[rgba(var(--info),0.1)] rounded-lg">
+                          <UserPlus className="w-4 h-4 text-[rgb(var(--info))]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">Candidature reçue</p>
+                            <span className="text-xs text-[rgb(var(--muted-foreground))]">{selectedCandidat.date_candidature}</span>
+                          </div>
+                          <p className="text-xs text-[rgb(var(--muted-foreground))]">Formulaire web soumis avec {selectedCandidat.documents.length} documents</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -812,6 +856,48 @@ export default function CandidatsPage() {
                       <p className="text-lg font-medium text-[rgb(var(--success))]">
                         Accepter
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Points forts détectés */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-[rgb(var(--foreground))]">Points forts détectés</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-3 p-3 bg-[rgba(var(--success),0.05)] border border-[rgba(var(--success),0.2)] rounded-lg">
+                        <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-[rgb(var(--foreground))]">Motivation solide</p>
+                          <p className="text-xs text-[rgb(var(--muted-foreground))]">Projet professionnel clairement défini et cohérent</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-[rgba(var(--success),0.05)] border border-[rgba(var(--success),0.2)] rounded-lg">
+                        <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-[rgb(var(--foreground))]">Expérience pertinente</p>
+                          <p className="text-xs text-[rgb(var(--muted-foreground))]">Background artistique et manuel adapté</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-[rgba(var(--success),0.05)] border border-[rgba(var(--success),0.2)] rounded-lg">
+                        <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-[rgb(var(--foreground))]">Engagement fort</p>
+                          <p className="text-xs text-[rgb(var(--muted-foreground))]">Démarches proactives et nombreux échanges</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Points d'attention */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-[rgb(var(--foreground))]">Points d'attention</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-3 p-3 bg-[rgba(var(--warning),0.05)] border border-[rgba(var(--warning),0.2)] rounded-lg">
+                        <AlertCircle className="w-5 h-5 text-[rgb(var(--warning))] flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-[rgb(var(--foreground))]">Financement à finaliser</p>
+                          <p className="text-xs text-[rgb(var(--muted-foreground))]">Dossier OPCO en cours, suivi nécessaire</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
