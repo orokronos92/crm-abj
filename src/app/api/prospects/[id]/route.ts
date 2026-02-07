@@ -10,9 +10,9 @@ import { authConfig } from '@/config/auth.config'
 import { ROLES } from '@/config/constants'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // GET - Récupération d'un prospect
@@ -30,8 +30,10 @@ export async function GET(
       )
     }
 
+    const { id } = await params
+
     const prospect = await prisma.prospect.findUnique({
-      where: { idProspect: params.id },
+      where: { idProspect: id },
       include: {
         candidats: {
           orderBy: { dateCandidature: 'desc' }
@@ -82,11 +84,12 @@ export async function PATCH(
       )
     }
 
+    const { id } = await params
     const body = await request.json()
 
     // Mise à jour du prospect
     const prospect = await prisma.prospect.update({
-      where: { idProspect: params.id },
+      where: { idProspect: id },
       data: {
         ...body,
         dateNaissance: body.dateNaissance ? new Date(body.dateNaissance) : undefined,
@@ -124,9 +127,11 @@ export async function DELETE(
       )
     }
 
+    const { id } = await params
+
     // Vérification si le prospect a des candidatures
     const candidatsCount = await prisma.candidat.count({
-      where: { idProspect: params.id }
+      where: { idProspect: id }
     })
 
     if (candidatsCount > 0) {
@@ -138,7 +143,7 @@ export async function DELETE(
 
     // Suppression du prospect
     await prisma.prospect.delete({
-      where: { idProspect: params.id }
+      where: { idProspect: id }
     })
 
     return NextResponse.json({

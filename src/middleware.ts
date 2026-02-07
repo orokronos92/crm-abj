@@ -17,21 +17,21 @@ export default withAuth(
       return NextResponse.redirect(new URL('/connexion', req.url))
     }
 
-    const userRole = token.role as keyof typeof ROLES
+    const userRole = token.role as string
 
     // Protection des routes admin
     if (path.startsWith('/admin') && userRole !== ROLES.ADMIN) {
-      return NextResponse.redirect(new URL(HOME_ROUTES[userRole], req.url))
+      return NextResponse.redirect(new URL(HOME_ROUTES[userRole as keyof typeof HOME_ROUTES], req.url))
     }
 
     // Protection des routes formateur
     if (path.startsWith('/formateur') && userRole !== ROLES.PROFESSEUR) {
-      return NextResponse.redirect(new URL(HOME_ROUTES[userRole], req.url))
+      return NextResponse.redirect(new URL(HOME_ROUTES[userRole as keyof typeof HOME_ROUTES], req.url))
     }
 
     // Protection des routes élève
     if (path.startsWith('/eleve') && userRole !== ROLES.ELEVE) {
-      return NextResponse.redirect(new URL(HOME_ROUTES[userRole], req.url))
+      return NextResponse.redirect(new URL(HOME_ROUTES[userRole as keyof typeof HOME_ROUTES], req.url))
     }
 
     // Protection des API routes

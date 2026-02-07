@@ -238,29 +238,29 @@ export default function EleveEvaluations() {
             </div>
           </div>
           <div className="p-6 space-y-4">
-            {MOCK_EVALUATIONS.map((eval) => (
+            {MOCK_EVALUATIONS.map((evaluation) => (
               <div
-                key={eval.id}
+                key={evaluation.id}
                 className="p-4 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-medium text-[rgb(var(--foreground))] mb-1">
-                      {eval.matiere}
+                      {evaluation.matiere}
                     </h3>
                     <div className="flex items-center gap-3 text-sm text-[rgb(var(--muted-foreground))]">
-                      <span>{eval.type}</span>
+                      <span>{evaluation.type}</span>
                       <span>•</span>
-                      <span>{eval.date}</span>
+                      <span>{evaluation.date}</span>
                       <span>•</span>
-                      <span>Coeff. {eval.coefficient}</span>
+                      <span>Coeff. {evaluation.coefficient}</span>
                     </div>
                   </div>
                   <div className="text-center">
-                    <p className={`text-2xl font-bold ${getNoteColor(eval.note, eval.sur)}`}>
-                      {eval.note}/{eval.sur}
+                    <p className={`text-2xl font-bold ${getNoteColor(evaluation.note, evaluation.sur)}`}>
+                      {evaluation.note}/{evaluation.sur}
                     </p>
-                    {eval.note >= 16 && (
+                    {evaluation.note >= 16 && (
                       <div className="flex gap-1 mt-1 justify-center">
                         {[1, 2, 3].map((i) => (
                           <Star
@@ -273,15 +273,15 @@ export default function EleveEvaluations() {
                   </div>
                 </div>
 
-                {eval.commentaire && (
+                {evaluation.commentaire && (
                   <p className="text-sm text-[rgb(var(--muted-foreground))] mb-3 italic">
-                    "{eval.commentaire}"
+                    "{evaluation.commentaire}"
                   </p>
                 )}
 
                 {/* Compétences évaluées */}
                 <div className="space-y-2">
-                  {eval.competences.map((comp, idx) => (
+                  {evaluation.competences.map((comp, idx) => (
                     <div key={idx} className="flex items-center gap-3">
                       <span className="text-xs text-[rgb(var(--muted-foreground))] w-24">
                         {comp.nom}
@@ -330,30 +330,30 @@ export default function EleveEvaluations() {
               </h3>
             </div>
             <div className="p-4 space-y-3">
-              {MOCK_EVALUATIONS_A_VENIR.map((eval) => (
+              {MOCK_EVALUATIONS_A_VENIR.map((evaluation) => (
                 <div
-                  key={eval.id}
+                  key={evaluation.id}
                   className="p-3 bg-[rgb(var(--secondary))] rounded-lg"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-sm text-[rgb(var(--foreground))]">
-                      {eval.matiere}
+                      {evaluation.matiere}
                     </h4>
                     <span className="badge-warning text-xs">
-                      Coeff. {eval.coefficient}
+                      Coeff. {evaluation.coefficient}
                     </span>
                   </div>
                   <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">
-                    {eval.type}
+                    {evaluation.type}
                   </p>
                   <div className="flex items-center gap-3 text-xs text-[rgb(var(--accent))]">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {eval.date}
+                      {evaluation.date}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {eval.duree}
+                      {evaluation.duree}
                     </span>
                   </div>
                 </div>

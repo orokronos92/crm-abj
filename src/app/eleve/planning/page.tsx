@@ -276,7 +276,7 @@ export default function ElevePlanning() {
                       <div
                         key={cours.id}
                         className={`p-4 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-colors ${
-                          cours.important ? 'border-l-4 border-[rgb(var(--accent))]' : ''
+                          'important' in cours && cours.important ? 'border-l-4 border-[rgb(var(--accent))]' : ''
                         }`}
                       >
                         <div className="flex items-start justify-between mb-2">
@@ -284,7 +284,7 @@ export default function ElevePlanning() {
                             <h4 className="font-medium text-[rgb(var(--foreground))] mb-1">
                               {cours.nom}
                             </h4>
-                            {cours.ancienHoraire && (
+                            {'ancienHoraire' in cours && cours.ancienHoraire && (
                               <p className="text-xs text-[rgb(var(--warning))] mb-1">
                                 <AlertCircle className="w-3 h-3 inline mr-1" />
                                 Horaire modifié (ancien: {cours.ancienHoraire})
