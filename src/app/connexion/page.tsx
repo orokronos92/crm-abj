@@ -82,7 +82,7 @@ export default function ConnexionPage() {
           <div className="mb-8 flex justify-center">
             <div className="relative">
               <DiamondLogo size={96} className="animate-pulse-gold" />
-              <div className="absolute inset-0 blur-2xl bg-[rgb(var(--accent))] opacity-20 animate-pulse" />
+              <div className="absolute inset-0 blur-2xl bg-[rgb(var(--accent))] opacity-10 animate-pulse" />
             </div>
           </div>
 

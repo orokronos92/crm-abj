@@ -12,15 +12,15 @@ export function SplashScreen() {
   const [fadeOut, setFadeOut] = useState(false)
 
   useEffect(() => {
-    // Commencer le fade out après 3.5 secondes
+    // Commencer le fade out après 4.5 secondes
     const fadeTimer = setTimeout(() => {
       setFadeOut(true)
-    }, 3500)
+    }, 4500)
 
-    // Cacher complètement après 4 secondes
+    // Cacher complètement après 5 secondes
     const hideTimer = setTimeout(() => {
       setIsVisible(false)
-    }, 4000)
+    }, 5000)
 
     return () => {
       clearTimeout(fadeTimer)
@@ -120,7 +120,7 @@ export function SplashScreen() {
 
           {/* Halo lumineux animé */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-32 h-32 bg-[rgb(var(--accent))] rounded-full opacity-20 animate-pulse-gold blur-xl" />
+            <div className="w-32 h-32 bg-[rgb(var(--accent))] rounded-full opacity-10 animate-pulse-gold blur-xl" />
           </div>
         </div>
 
@@ -140,7 +140,7 @@ export function SplashScreen() {
             <div
               className="h-full bg-gradient-to-r from-[rgb(var(--accent))] to-[rgb(var(--accent-light))] rounded-full"
               style={{
-                animation: 'loadingBar 3.5s ease-out forwards',
+                animation: 'loadingBar 4.5s ease-out forwards',
               }}
             />
           </div>
