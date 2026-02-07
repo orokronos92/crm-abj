@@ -807,14 +807,18 @@ export default function ElevesPage() {
               {/* Tab Évaluations */}
               {activeTab === 'evaluations' && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-                      Évaluations ({selectedEleve.evaluations.length})
-                    </h3>
-                    <div className="text-right">
-                      <p className="text-xs text-[rgb(var(--muted-foreground))]">Moyenne pondérée</p>
-                      <p className={`text-2xl font-bold ${getMoyenneColor(parseFloat(calculateMoyennePonderee(selectedEleve.evaluations)))}`}>
-                        {calculateMoyennePonderee(selectedEleve.evaluations)}/20
+                  {/* Tuile stats évaluations */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-6 bg-[rgb(var(--secondary))] rounded-xl border border-[rgba(var(--border),0.3)]">
+                      <p className="text-sm text-[rgb(var(--muted-foreground))] mb-2">Nombre d'évaluations</p>
+                      <p className="text-4xl font-bold text-[rgb(var(--accent))]">
+                        {selectedEleve.evaluations.length}
+                      </p>
+                    </div>
+                    <div className="p-6 bg-[rgb(var(--secondary))] rounded-xl border border-[rgba(var(--border),0.3)]">
+                      <p className="text-sm text-[rgb(var(--muted-foreground))] mb-2">Moyenne pondérée</p>
+                      <p className={`text-4xl font-bold ${getMoyenneColor(parseFloat(calculateMoyennePonderee(selectedEleve.evaluations)))}`}>
+                        {calculateMoyennePonderee(selectedEleve.evaluations)}<span className="text-2xl">/20</span>
                       </p>
                     </div>
                   </div>
