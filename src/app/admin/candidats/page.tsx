@@ -368,20 +368,20 @@ export default function CandidatsPage() {
                     <h2 className="text-2xl font-bold text-[rgb(var(--foreground))]">
                       {selectedCandidat.prenom} {selectedCandidat.nom}
                     </h2>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="flex items-center gap-1 text-sm text-[rgb(var(--muted-foreground))]">
-                        <Mail className="w-4 h-4" />
+                    <div className="flex items-center gap-6 mt-3">
+                      <span className="flex items-center gap-2 text-base text-[rgb(var(--foreground))]">
+                        <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
                         {selectedCandidat.email}
                       </span>
-                      <span className="flex items-center gap-1 text-sm text-[rgb(var(--muted-foreground))]">
-                        <Phone className="w-4 h-4" />
+                      <span className="flex items-center gap-2 text-base text-[rgb(var(--foreground))]">
+                        <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
                         {selectedCandidat.telephone}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <FileText className="w-4 h-4 text-[rgb(var(--accent))]" />
-                      <p className="text-sm text-[rgb(var(--muted-foreground))]">N° Dossier:</p>
-                      <p className="text-sm font-bold text-[rgb(var(--accent))]">{selectedCandidat.numero_dossier}</p>
+                    <div className="flex items-center gap-3 mt-3">
+                      <FileText className="w-5 h-5 text-[rgb(var(--accent))]" />
+                      <p className="text-base text-[rgb(var(--muted-foreground))]">N° Dossier:</p>
+                      <p className="text-xl font-bold text-[rgb(var(--accent))]">{selectedCandidat.numero_dossier}</p>
                     </div>
                   </div>
                 </div>
@@ -421,13 +421,7 @@ export default function CandidatsPage() {
               </div>
 
               {/* Infos principales */}
-              <div className="grid grid-cols-4 gap-4 mt-4 p-4 bg-[rgb(var(--secondary))] rounded-lg">
-                <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">N° Dossier</p>
-                  <p className="text-sm font-medium text-[rgb(var(--accent))]">
-                    {selectedCandidat.numero_dossier}
-                  </p>
-                </div>
+              <div className="grid grid-cols-3 gap-4 mt-4 p-4 bg-[rgb(var(--secondary))] rounded-lg">
                 <div>
                   <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Formation</p>
                   <p className="text-sm font-medium text-[rgb(var(--foreground))]">
@@ -447,26 +441,6 @@ export default function CandidatsPage() {
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-[rgba(var(--border),0.3)]">
-              {['parcours', 'documents', 'financement', 'notes'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-3 text-sm font-medium capitalize transition-all ${
-                    activeTab === tab
-                      ? 'text-[rgb(var(--accent))] border-b-2 border-[rgb(var(--accent))]'
-                      : 'text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'
-                  }`}
-                >
-                  {tab === 'parcours' && 'Parcours admission'}
-                  {tab === 'documents' && 'Documents'}
-                  {tab === 'financement' && 'Financement'}
-                  {tab === 'notes' && 'Notes IA'}
-                </button>
-              ))}
             </div>
 
             {/* Contenu des tabs */}
