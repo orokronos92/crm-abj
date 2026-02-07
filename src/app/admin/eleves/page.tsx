@@ -34,8 +34,6 @@ import {
   Target,
   Book,
   Clipboard,
-  Edit,
-  Trash2,
   Send,
   Plus,
   FolderOpen,
@@ -547,9 +545,8 @@ export default function ElevesPage() {
       {selectedEleve && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl overflow-hidden flex flex-col max-w-6xl w-full max-h-[90vh]">
-            {/* Header avec titre et bouton fermer */}
-            <div className="p-4 border-b border-[rgba(var(--border),0.3)] flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">Fiche élève</h2>
+            {/* Header avec bouton fermer */}
+            <div className="p-4 border-b border-[rgba(var(--border),0.3)] flex items-center justify-end">
               <button
                 onClick={() => setSelectedEleve(null)}
                 className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
@@ -856,14 +853,6 @@ export default function ElevesPage() {
                                 </span>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button className="p-2 hover:bg-[rgba(var(--accent),0.1)] rounded-lg transition-colors">
-                              <Edit className="w-4 h-4 text-[rgb(var(--accent))]" />
-                            </button>
-                            <button className="p-2 hover:bg-[rgba(var(--error),0.1)] rounded-lg transition-colors">
-                              <Trash2 className="w-4 h-4 text-[rgb(var(--error))]" />
-                            </button>
                           </div>
                         </div>
 
