@@ -52,7 +52,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
         return [
           { icon: Home, label: 'Tableau de bord', href: '/admin/dashboard' },
           { icon: Users, label: 'Prospects', href: '/admin/prospects' },
-          { icon: UserPlus, label: 'Ajouter un prospect', href: '/admin/prospects/nouveau' },
           { icon: UserCheck, label: 'Candidats', href: '/admin/candidats' },
           { icon: GraduationCap, label: 'Élèves', href: '/admin/eleves' },
           { icon: Award, label: 'Formateurs', href: '/admin/formateurs' },
