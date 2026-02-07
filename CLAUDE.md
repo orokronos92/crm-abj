@@ -60,6 +60,7 @@ docs/                 # Spécifications (ne pas modifier sans demander)
 - @docs/spec.md — Spécifications fonctionnelles complètes
 - @docs/architecture.md — Architecture technique et schéma BDD
 - @docs/ui-analysis.md — Analyse des maquettes UI et mapping BDD
+- @docs/CHANGELOG.md — Historique des modifications par session
 
 ## Imports
 
@@ -143,3 +144,68 @@ import type { Candidat } from '@/types/candidat'
 4. **Vérifier** : `npm run build` + `npm run lint`
 5. **Commiter** : Message descriptif en français
 6. **Confirmer** : Dire ce qui a été fait et ce qui reste
+7. **Documenter** : Mettre à jour `docs/CHANGELOG.md` en fin de session
+
+---
+
+## Design System & Conventions UI
+
+### Logo Officiel ABJ
+**Composant** : `@/components/ui/diamond-logo.tsx`
+- Emoji diamond SVG adapté aux couleurs ABJ
+- Couleurs : Or (#D4AF37, #FFD700) + Noir (#1a1a1a)
+- Props : `size` (default 32), `className`
+
+### Badges Statuts
+**Constantes à utiliser** :
+```typescript
+STATUT_DOSSIER_COLORS = {
+  RECU: 'badge-info',
+  EN_COURS: 'badge-warning',
+  COMPLET: 'badge-success',
+  REFUSE: 'badge-error',
+}
+
+STATUT_FINANCEMENT_COLORS = {
+  EN_ATTENTE: 'badge-warning',
+  EN_COURS: 'badge-info',
+  VALIDE: 'badge-success',
+  REFUSE: 'badge-error',
+}
+```
+
+### Score Candidat
+**Fonction à utiliser** :
+```typescript
+const getScoreColor = (score: number) => {
+  if (score >= 80) return 'text-[rgb(var(--success))]'
+  if (score >= 60) return 'text-[rgb(var(--warning))]'
+  return 'text-[rgb(var(--error))]'
+}
+```
+
+### Modals - Footer Sticky
+**Pattern à suivre** (inspiré de `src/app/admin/eleves/page.tsx`) :
+```tsx
+<div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
+  <div className="flex items-center justify-between">
+    {/* Bouton gauche : action secondaire */}
+    <button className="px-4 py-2 bg-[rgb(var(--secondary))] ...">
+      <MessageSquare className="w-4 h-4" />
+      Contacter
+    </button>
+    {/* Boutons droite : actions principales */}
+    <div className="flex gap-2">
+      <button className="...">Télécharger</button>
+      <button className="bg-[rgb(var(--accent))] ...">Action principale</button>
+    </div>
+  </div>
+</div>
+```
+
+### Onglets Type Dossier
+**Pattern "Folder Tabs"** :
+- Positionnement : En haut du modal avec `pt-4 px-4`
+- Onglet actif : `bg-[rgb(var(--card))]` avec border-t-2 accent
+- Onglet inactif : `bg-[rgb(var(--secondary))]` avec hover
+- Icons : 4x4 avec couleur accent si actif
