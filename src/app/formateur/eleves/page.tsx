@@ -552,7 +552,7 @@ export default function FormateurElevesPage() {
             </div>
 
             {/* Contenu des onglets */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 min-h-[600px]">
               {/* Tab Général */}
               {activeTab === 'general' && (
                 <div className="space-y-6">
