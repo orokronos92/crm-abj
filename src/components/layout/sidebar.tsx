@@ -100,46 +100,17 @@ export function Sidebar({ role, userName }: SidebarProps) {
           isCollapsed ? 'w-20' : 'w-64'
         } sidebar flex flex-col`}
       >
-        {/* Header avec logo et profil */}
+        {/* Header avec logo */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-[rgba(var(--accent),0.1)]">
-          <Link href="/" className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
             <DiamondLogo className="text-[rgb(var(--accent))] animate-pulse-gold" size={32} />
             {!isCollapsed && (
-              <span className="text-xl font-bold text-gradient-gold">
-                ABJ
-              </span>
+              <div>
+                <div className="text-sm font-bold text-[rgb(var(--foreground))]">ABJ CRM</div>
+                <div className="text-[9px] text-[rgb(var(--accent))] font-semibold uppercase tracking-wider">Joaillerie</div>
+              </div>
             )}
-          </Link>
-
-          {/* Profil + Déconnexion en haut à droite */}
-          {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              {userName && (
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center text-[rgb(var(--primary))] font-bold text-xs">
-                    {userName.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-              )}
-              <button
-                onClick={() => signOut({ callbackUrl: '/connexion' })}
-                className="p-1.5 rounded-lg hover:bg-[rgba(var(--error),0.1)] transition-colors"
-                title="Déconnexion"
-              >
-                <LogOut className="w-4 h-4 text-[rgb(var(--error))]" />
-              </button>
-            </div>
-          )}
-
-          {/* Bouton collapse pour mode réduit */}
-          {isCollapsed && (
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
-            >
-              <ChevronRight className="w-5 h-5 text-[rgb(var(--accent))]" />
-            </button>
-          )}
+          </div>
         </div>
 
         {/* Navigation */}
@@ -198,20 +169,31 @@ export function Sidebar({ role, userName }: SidebarProps) {
           </ul>
         </nav>
 
-        {/* Footer avec bouton collapse */}
-        {!isCollapsed && (
-          <div className="p-4 border-t border-[rgba(var(--accent),0.1)]">
-            <button
-              onClick={() => setIsCollapsed(true)}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors group"
-            >
-              <ChevronLeft className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-              <span className="text-sm font-medium text-[rgb(var(--foreground))]">
-                Réduire le menu
-              </span>
-            </button>
+        {/* Footer avec profil utilisateur */}
+        <div className="p-4 border-t border-[rgba(var(--accent),0.1)]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex-shrink-0 bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+              {userName ? (
+                <span className="text-white text-xs font-bold">
+                  {userName.charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <LogOut className="w-4 h-4 text-white" />
+              )}
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] font-semibold text-[rgb(var(--foreground))] truncate">
+                  {userName || 'Utilisateur'}
+                </div>
+                <div className="text-[9px] text-[rgb(var(--muted-foreground))]">
+                  {role === 'admin' ? 'Direction' :
+                   role === 'professeur' ? 'Formateur' : 'Élève'}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </aside>
 
       {/* Overlay mobile */}
