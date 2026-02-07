@@ -521,14 +521,14 @@ export default function CompetencesPage() {
                       {FORMATEUR_DATA.statut}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-[rgb(var(--muted-foreground))]">
-                        <Mail className="w-4 h-4 text-[rgb(var(--accent))]" />
-                        {FORMATEUR_DATA.email}
+                    <div className="grid grid-cols-2 gap-4 text-base">
+                      <div className="flex items-center gap-3 text-[rgb(var(--foreground))]">
+                        <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
+                        <span className="font-medium">{FORMATEUR_DATA.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[rgb(var(--muted-foreground))]">
-                        <Phone className="w-4 h-4 text-[rgb(var(--accent))]" />
-                        {FORMATEUR_DATA.telephone}
+                      <div className="flex items-center gap-3 text-[rgb(var(--foreground))]">
+                        <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
+                        <span className="font-medium">{FORMATEUR_DATA.telephone}</span>
                       </div>
                     </div>
                   </div>
