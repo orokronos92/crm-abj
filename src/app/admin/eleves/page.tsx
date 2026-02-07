@@ -545,18 +545,8 @@ export default function ElevesPage() {
       {selectedEleve && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl overflow-hidden flex flex-col max-w-6xl w-full max-h-[90vh]">
-            {/* Header avec bouton fermer */}
-            <div className="p-4 border-b border-[rgba(var(--border),0.3)] flex items-center justify-end">
-              <button
-                onClick={() => setSelectedEleve(null)}
-                className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-              </button>
-            </div>
-
-            {/* Onglets en forme de dossier (folder tabs) */}
-            <div className="pt-4 px-4 flex gap-1 bg-[rgb(var(--secondary))]">
+            {/* Onglets en forme de dossier */}
+            <div className="relative flex gap-1 px-4 pt-4 bg-[rgb(var(--background))]">
               {[
                 { id: 'general', label: 'Général', icon: User },
                 { id: 'synthese', label: 'Synthèse', icon: BarChart3 },
@@ -570,17 +560,30 @@ export default function ElevesPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-4 py-3 rounded-t-lg transition-all flex items-center gap-2 ${
+                    className={`group relative px-6 py-3 rounded-t-lg transition-all ${
                       activeTab === tab.id
-                        ? 'bg-[rgb(var(--card))] text-[rgb(var(--accent))] border-t-2 border-[rgb(var(--accent))] -mb-[1px] shadow-sm'
-                        : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))] hover:bg-[rgba(var(--accent),0.05)]'
+                        ? 'bg-[rgb(var(--card))] text-[rgb(var(--accent))] border-t-2 border-x-2 border-[rgba(var(--accent),0.5)] -mb-[2px]'
+                        : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))] hover:bg-[rgba(var(--accent),0.05)] hover:text-[rgb(var(--foreground))]'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[rgb(var(--accent))]' : ''}`} />
-                    <span className="text-sm font-medium">{tab.label}</span>
+                    <div className="flex items-center gap-2">
+                      <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[rgb(var(--accent))]' : ''}`} />
+                      <span className="text-sm font-medium">{tab.label}</span>
+                    </div>
+                    {/* Effet coin de dossier */}
+                    {activeTab === tab.id && (
+                      <div className="absolute top-0 right-0 w-3 h-3 bg-[rgb(var(--accent))] opacity-20 rounded-bl-lg" />
+                    )}
                   </button>
                 )
               })}
+              {/* Bouton fermer en position absolue */}
+              <button
+                onClick={() => setSelectedEleve(null)}
+                className="absolute top-2 right-4 p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors z-10"
+              >
+                <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+              </button>
             </div>
 
             {/* Contenu des onglets */}
