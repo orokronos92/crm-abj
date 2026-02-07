@@ -8,7 +8,8 @@
 import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Mail, Lock, Diamond } from 'lucide-react'
+import { Loader2, Mail, Lock } from 'lucide-react'
+import { DiamondLogo } from '@/components/ui/diamond-logo'
 
 export default function ConnexionPage() {
   const router = useRouter()
@@ -80,7 +81,7 @@ export default function ConnexionPage() {
           {/* Logo Diamant */}
           <div className="mb-8 flex justify-center">
             <div className="relative">
-              <Diamond className="w-24 h-24 text-[rgb(var(--accent))] animate-pulse-gold" />
+              <DiamondLogo size={96} className="animate-pulse-gold" />
               <div className="absolute inset-0 blur-2xl bg-[rgb(var(--accent))] opacity-20 animate-pulse" />
             </div>
           </div>
@@ -111,7 +112,7 @@ export default function ConnexionPage() {
             {/* Header */}
             <div className="text-center mb-8">
               <div className="lg:hidden mb-6 flex justify-center">
-                <Diamond className="w-16 h-16 text-[rgb(var(--accent))]" />
+                <DiamondLogo size={64} />
               </div>
               <h2 className="text-2xl font-bold text-[rgb(var(--foreground))]">
                 Connexion

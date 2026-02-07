@@ -56,86 +56,64 @@ export function SplashScreen() {
       </div>
 
       <div className="relative flex flex-col items-center">
-        {/* Logo Diamant SVG */}
+        {/* Logo Diamant Emoji */}
         <div className="relative">
           <svg
             width="120"
             height="120"
-            viewBox="0 0 200 200"
+            viewBox="0 0 72 72"
+            id="emoji"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
             className="animate-diamond"
             style={{ filter: 'drop-shadow(0 0 30px rgba(218, 165, 32, 0.6))' }}
           >
-            <defs>
-              <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFD700" />
-                <stop offset="50%" stopColor="#DAA520" />
-                <stop offset="100%" stopColor="#B8860B" />
-              </linearGradient>
-              <linearGradient id="goldGradient2" x1="100%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#FFD700" />
-                <stop offset="100%" stopColor="#DAA520" />
-              </linearGradient>
-            </defs>
-
-            {/* Forme principale du diamant */}
-            <g transform="translate(100, 100)">
-              {/* Facette supérieure */}
+            <g id="color">
+              <polygon fill="#D4AF37" points="56.3771,11.9798 16.3771,11.9798 4,23.3481 36,64.0837 68,23.3481"/>
+              <polyline fill="#FFD700" points="37.3698,62.3355 55.7486,23.3482 36,11.9798 56.3771,11.9798 68,23.3481 37.3698,62.3355"/>
+            </g>
+            <g id="line">
               <polygon
-                points="0,-60 -40,-20 0,-30 40,-20"
-                fill="url(#goldGradient)"
-                opacity="0.9"
-                className="animate-diamond-shine"
+                fill="none"
+                stroke="#1a1a1a"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeMiterlimit="10"
+                strokeWidth="2"
+                points="56.3771,11.9798 16.3771,11.9798 4,23.3481 36,64.0837 68,23.3481"
               />
-              {/* Facettes latérales */}
-              <polygon
-                points="-40,-20 -60,0 -40,20 0,-30"
-                fill="url(#goldGradient2)"
-                opacity="0.8"
-              />
-              <polygon
-                points="40,-20 60,0 40,20 0,-30"
-                fill="url(#goldGradient2)"
-                opacity="0.8"
-              />
-              {/* Facette centrale */}
-              <polygon
-                points="0,-30 -40,20 0,60 40,20"
-                fill="url(#goldGradient)"
-                opacity="1"
-                className="animate-pulse"
-              />
-              {/* Facettes inférieures */}
-              <polygon
-                points="-40,-20 -40,20 -60,0"
-                fill="#B8860B"
-                opacity="0.7"
-              />
-              <polygon
-                points="40,-20 40,20 60,0"
-                fill="#B8860B"
-                opacity="0.7"
-              />
-              {/* Pointe inférieure */}
-              <polygon
-                points="-40,20 0,60 40,20"
-                fill="#DAA520"
-                opacity="0.85"
-              />
-
-              {/* Lignes de brillance */}
-              <line
-                x1="0" y1="-60"
-                x2="0" y2="60"
-                stroke="#FFD700"
-                strokeWidth="0.5"
-                opacity="0.6"
+              <polyline
+                fill="none"
+                stroke="#1a1a1a"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeMiterlimit="10"
+                strokeWidth="2"
+                points="55.7486,23.8595 36,64.0837 36,24.3482 36,11.9798 16.2556,23.3482"
               />
               <line
-                x1="-60" y1="0"
-                x2="60" y2="0"
-                stroke="#FFD700"
-                strokeWidth="0.5"
-                opacity="0.6"
+                x1="16.2556"
+                x2="36.0042"
+                y1="23.8595"
+                y2="64.0837"
+                fill="none"
+                stroke="#1a1a1a"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeMiterlimit="10"
+                strokeWidth="2"
+              />
+              <line
+                x1="4"
+                x2="68"
+                y1="23.3482"
+                y2="23.3482"
+                fill="none"
+                stroke="#1a1a1a"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeMiterlimit="10"
+                strokeWidth="2"
               />
             </g>
           </svg>
