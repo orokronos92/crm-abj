@@ -813,7 +813,7 @@ export default function CandidatsPage() {
 
                   <div className="flex gap-3">
                     <button className="flex-1 px-4 py-3 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors">
-                      Générer devis
+                      Envoyer un devis
                     </button>
                     <button className="flex-1 px-4 py-3 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium border border-[rgba(var(--border),0.5)] hover:bg-[rgba(var(--accent),0.05)] transition-colors">
                       Envoyer facture
@@ -900,11 +900,6 @@ export default function CandidatsPage() {
                       </div>
                     </div>
                   </div>
-
-                  <button className="w-full px-4 py-3 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.2)] rounded-lg text-[rgb(var(--accent))] font-medium hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center justify-center gap-2">
-                    <MessageSquare className="w-5 h-5" />
-                    Demander une analyse approfondie à Marjorie
-                  </button>
                 </div>
               )}
             </div>
