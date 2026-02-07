@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import Link from 'next/link'
 import {
   Search,
   Filter,
@@ -30,6 +31,7 @@ import {
   Euro,
   GraduationCap,
   Sparkles,
+  Users,
 } from 'lucide-react'
 
 // Données mockées
@@ -107,18 +109,32 @@ export default function ProspectsPage() {
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">
-                  Prospects
-                </h1>
-                <p className="text-[rgb(var(--muted-foreground))] mt-1">
-                  {MOCK_PROSPECTS.length} prospects au total
-                </p>
+              <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">
+                Prospects
+              </h1>
+              <Link href="/admin/prospects/nouveau">
+                <button className="btn-gold px-4 py-2 rounded-lg flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Nouveau prospect
+                </button>
+              </Link>
+            </div>
+
+            {/* Card total prospects */}
+            <div className="mb-4 p-4 bg-gradient-to-br from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-xl">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-[rgb(var(--accent))] flex items-center justify-center">
+                  <Users className="w-6 h-6 text-[rgb(var(--primary))]" />
+                </div>
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))] font-medium">
+                    Total prospects
+                  </p>
+                  <p className="text-2xl font-bold text-[rgb(var(--foreground))]">
+                    {MOCK_PROSPECTS.length}
+                  </p>
+                </div>
               </div>
-              <button className="btn-gold px-4 py-2 rounded-lg flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Nouveau prospect
-              </button>
             </div>
 
             {/* Barre de recherche et filtres */}
@@ -152,7 +168,7 @@ export default function ProspectsPage() {
             {/* Filtres détaillés */}
             {showFilters && (
               <div className="mt-4 p-4 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg animate-fadeIn">
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <select className="px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))]">
                     <option value="">Tous les statuts</option>
                     <option value="NOUVEAU">Nouveau</option>
@@ -164,12 +180,6 @@ export default function ProspectsPage() {
                     <option value="CAP">CAP Bijouterie</option>
                     <option value="INIT">Initiation</option>
                     <option value="PERF">Perfectionnement</option>
-                  </select>
-                  <select className="px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))]">
-                    <option value="">Toutes les sources</option>
-                    <option value="web">Site web</option>
-                    <option value="salon">Salon</option>
-                    <option value="reco">Recommandation</option>
                   </select>
                   <select className="px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))]">
                     <option value="">Tous les financements</option>
