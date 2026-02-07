@@ -43,7 +43,8 @@
       "Bash(powershell -Command \"if (Test-Path ''.next'') { Remove-Item -Recurse -Force ''.next'' }\")",
       "Bash(timeout /t 8 /nobreak)",
       "Bash(git push:*)",
-      "Bash(timeout /t 3 /nobreak)"
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(\"C:\\crm_abj\\src\\app\\formateur\\marjorie\\page.tsx\")"
     ],
     "deny": [],
     "ask": []
