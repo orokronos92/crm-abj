@@ -83,6 +83,8 @@ export default function ConnexionPage() {
             <div className="relative">
               <DiamondLogo size={96} className="animate-pulse-gold" />
               <div className="absolute inset-0 blur-2xl bg-[rgb(var(--accent))] opacity-10 animate-pulse" />
+              {/* Grand halo centré derrière le logo uniquement */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[rgb(var(--accent))] rounded-full opacity-[2.5%] blur-3xl animate-pulse" />
             </div>
           </div>
 
@@ -99,9 +101,6 @@ export default function ConnexionPage() {
             "L'excellence dans l'art de la bijouterie"
           </blockquote>
         </div>
-
-        {/* Effet de brillance en arrière-plan */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[rgb(var(--accent))] rounded-full opacity-5 blur-3xl animate-pulse" />
       </div>
 
       {/* Partie droite - Formulaire */}

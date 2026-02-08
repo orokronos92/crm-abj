@@ -137,7 +137,7 @@ export function SplashScreen() {
             ABJ
           </h1>
           <p className="text-sm text-[rgb(var(--accent))] mt-2 tracking-[0.3em] uppercase opacity-80">
-            Académie de Bijouterie
+            Académie de Bijouterie Joaillerie
           </p>
         </div>
 
