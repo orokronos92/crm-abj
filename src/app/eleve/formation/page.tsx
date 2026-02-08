@@ -84,26 +84,13 @@ export default function EleveFormation() {
     <DashboardLayout>
       {/* Header avec progression */}
       <div className="mb-8 p-6 bg-gradient-to-r from-[rgb(var(--card))] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.1)] rounded-xl">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-2">
-              {MOCK_FORMATION.nom}
-            </h1>
-            <p className="text-[rgb(var(--muted-foreground))]">
-              {MOCK_FORMATION.session}
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center gap-2 mb-1">
-              <Trophy className="w-6 h-6 text-[rgb(var(--accent))]" />
-              <span className="text-3xl font-bold text-[rgb(var(--accent))]">
-                {MOCK_FORMATION.score}
-              </span>
-            </div>
-            <p className="text-sm text-[rgb(var(--muted-foreground))]">
-              Points • Rang {MOCK_FORMATION.rang}/{MOCK_FORMATION.totalEleves}
-            </p>
-          </div>
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-2">
+            {MOCK_FORMATION.nom}
+          </h1>
+          <p className="text-[rgb(var(--muted-foreground))]">
+            {MOCK_FORMATION.session}
+          </p>
         </div>
 
         {/* Barre de progression */}
@@ -306,18 +293,14 @@ export default function EleveFormation() {
       </div>
 
       {/* Actions rapides */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <button className="p-4 bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.2)] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center justify-center gap-2 text-[rgb(var(--accent))] font-medium">
-          <Download className="w-5 h-5" />
-          Télécharger attestation
+          <MessageSquare className="w-5 h-5" />
+          Envoyer un message
         </button>
         <button className="p-4 bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.2)] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center justify-center gap-2 text-[rgb(var(--accent))] font-medium">
           <FileText className="w-5 h-5" />
-          Mes documents
-        </button>
-        <button className="p-4 bg-gradient-to-r from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] text-[rgb(var(--primary))] rounded-lg hover:shadow-lg transition-all font-medium flex items-center justify-center gap-2">
-          <MessageSquare className="w-5 h-5" />
-          Chat Marjorie
+          Demander une attestation
         </button>
       </div>
     </DashboardLayout>
