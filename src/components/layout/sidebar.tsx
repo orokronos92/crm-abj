@@ -60,7 +60,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
           { icon: BarChart3, label: 'Statistiques', href: '/admin/stats' },
           { icon: Bell, label: 'Notifications', href: '/admin/notifications' },
           { icon: MessageSquare, label: 'Chat Marjorie', href: '/admin/marjorie', special: true },
-          { icon: Settings, label: 'Paramètres', href: '/admin/settings' },
         ]
 
       case 'professeur':
@@ -78,7 +77,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
         return [
           { icon: Home, label: 'Ma formation', href: '/eleve/formation' },
           { icon: Calendar, label: 'Planning', href: '/eleve/planning' },
-          { icon: Award, label: 'Mes notes', href: '/eleve/notes' },
+          { icon: Award, label: 'Mes notes', href: '/eleve/evaluations' },
           { icon: FileText, label: 'Documents', href: '/eleve/documents' },
           { icon: BookOpen, label: 'Cours', href: '/eleve/cours' },
           { icon: MessageSquare, label: 'Chat Marjorie', href: '/eleve/marjorie', special: true },

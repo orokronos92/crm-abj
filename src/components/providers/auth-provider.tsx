@@ -1,6 +1,6 @@
 /**
  * Provider NextAuth
- * Wrapper pour l'authentification
+ * Wrapper pour l'authentification (SessionProvider gère le SSR nativement)
  */
 
 'use client'

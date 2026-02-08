@@ -1005,7 +1005,7 @@ export default function CompetencesPage() {
                           >
                             <div className="flex-1">
                               <p className="text-sm font-medium text-[rgb(var(--foreground))]">{activite.nom}</p>
-                              {activite.organisme && (
+                              {'organisme' in activite && activite.organisme && (
                                 <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">{activite.organisme}</p>
                               )}
                             </div>
@@ -1016,7 +1016,7 @@ export default function CompetencesPage() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {activite.duree_jours ? `${activite.duree_jours}j` : `${activite.duree_heures}h`}
+                                {'duree_jours' in activite && activite.duree_jours ? `${activite.duree_jours}j` : 'duree_heures' in activite ? `${activite.duree_heures}h` : ''}
                               </div>
                             </div>
                           </div>
@@ -1395,7 +1395,7 @@ export default function CompetencesPage() {
                                 <p className="text-sm font-medium text-[rgb(var(--foreground))]">{doc.nom}</p>
                                 <p className="text-xs text-[rgb(var(--muted-foreground))]">
                                   Ajouté le {new Date(doc.date_ajout).toLocaleDateString('fr-FR')}
-                                  {doc.expiration && ` • Expire le ${new Date(doc.expiration).toLocaleDateString('fr-FR')}`}
+                                  {'expiration' in doc && doc.expiration && ` • Expire le ${new Date(doc.expiration).toLocaleDateString('fr-FR')}`}
                                 </p>
                               </div>
                             </div>

@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { Sidebar } from './sidebar'
-import { Bell, Search, Sun, Moon, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp } from 'lucide-react'
+import { Bell, Search, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp, Palette, Moon, Sun } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 interface DashboardLayoutProps {
@@ -71,6 +71,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showMarjorieChat, setShowMarjorieChat] = useState(false)
+  const [showSettingsCanvas, setShowSettingsCanvas] = useState(false)
   const [marjorieMessage, setMarjorieMessage] = useState('')
 
   const userRole = session?.user?.role || 'admin'
@@ -261,16 +262,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   )}
                 </div>
 
-                {/* Theme toggle */}
+                {/* Paramètres */}
                 <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="p-2 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
+                  onClick={() => setShowSettingsCanvas(!showSettingsCanvas)}
+                  className="p-2 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors group relative"
                 >
-                  {darkMode ? (
-                    <Sun className="w-5 h-5 text-[rgb(var(--foreground))]" />
-                  ) : (
-                    <Moon className="w-5 h-5 text-[rgb(var(--foreground))]" />
-                  )}
+                  <Settings className="w-5 h-5 text-[rgb(var(--foreground))] group-hover:rotate-90 transition-transform duration-300" />
                 </button>
 
                 {/* User menu avec déconnexion */}
@@ -429,6 +426,125 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Canvas Paramètres */}
+      {showSettingsCanvas && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/50 z-50 animate-fadeIn"
+            onClick={() => setShowSettingsCanvas(false)}
+          />
+
+          {/* Canvas panneau latéral */}
+          <div className="fixed top-0 right-0 h-full w-96 bg-[rgb(var(--card))] border-l border-[rgba(var(--accent),0.2)] shadow-2xl z-50 animate-slideInRight overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-[rgb(var(--card))] p-6 border-b border-[rgba(var(--border),0.3)]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center">
+                    <Settings className="w-5 h-5 text-[rgb(var(--primary))]" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">Paramètres</h2>
+                    <p className="text-xs text-[rgb(var(--muted-foreground))]">Personnalisez votre interface</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSettingsCanvas(false)}
+                  className="p-2 hover:bg-[rgba(var(--accent),0.1)] rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+                </button>
+              </div>
+            </div>
+
+            {/* Contenu */}
+            <div className="p-6 space-y-6">
+              {/* Section Apparence */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Palette className="w-5 h-5 text-[rgb(var(--accent))]" />
+                  <h3 className="font-semibold text-[rgb(var(--foreground))]">Apparence</h3>
+                </div>
+
+                {/* Mode sombre/clair */}
+                <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {darkMode ? (
+                        <Moon className="w-4 h-4 text-[rgb(var(--accent))]" />
+                      ) : (
+                        <Sun className="w-4 h-4 text-[rgb(var(--accent))]" />
+                      )}
+                      <span className="text-sm font-medium text-[rgb(var(--foreground))]">
+                        Mode sombre
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setDarkMode(!darkMode)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        darkMode ? 'bg-[rgb(var(--accent))]' : 'bg-[rgba(var(--muted-foreground),0.3)]'
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                          darkMode ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                    {darkMode ? 'Interface en mode sombre' : 'Interface en mode clair'}
+                  </p>
+                </div>
+
+                {/* Palette de couleurs */}
+                <div className="mt-4 p-4 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]">
+                  <div className="mb-3">
+                    <span className="text-sm font-medium text-[rgb(var(--foreground))]">
+                      Couleur d'accent
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {/* Couleurs prédéfinies */}
+                    {[
+                      { name: 'Or ABJ', color: '#D4AF37' },
+                      { name: 'Bleu', color: '#3B82F6' },
+                      { name: 'Vert', color: '#10B981' },
+                      { name: 'Violet', color: '#8B5CF6' },
+                      { name: 'Rose', color: '#EC4899' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.name}
+                        className="w-full aspect-square rounded-lg border-2 border-transparent hover:border-white transition-colors"
+                        style={{ backgroundColor: preset.color }}
+                        title={preset.name}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-3">
+                    Fonctionnalité à venir
+                  </p>
+                </div>
+              </div>
+
+              {/* Badge "Inactif" */}
+              <div className="p-4 bg-gradient-to-r from-[rgba(var(--warning),0.1)] to-[rgba(var(--warning),0.05)] border border-[rgba(var(--warning),0.2)] rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 text-[rgb(var(--warning))]" />
+                  <span className="text-sm font-semibold text-[rgb(var(--warning))]">
+                    Fonctionnalité en développement
+                  </span>
+                </div>
+                <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                  Les paramètres de personnalisation seront bientôt disponibles. Vous pourrez personnaliser les couleurs, le thème, les notifications et plus encore.
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </>
   )

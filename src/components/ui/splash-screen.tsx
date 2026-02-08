@@ -41,18 +41,25 @@ export function SplashScreen() {
     >
       {/* Effet de particules dorées en arrière-plan */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-[rgb(var(--accent))] rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 2}s`,
-              boxShadow: '0 0 6px rgba(218, 165, 32, 0.8)',
-            }}
-          />
-        ))}
+        {[...Array(20)].map((_, i) => {
+          // Générer positions aléatoires une seule fois au render
+          const left = (i * 5 + (i % 3) * 30) % 100
+          const top = (i * 7 + (i % 5) * 20) % 100
+          const delay = (i * 0.1) % 2
+
+          return (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-[rgb(var(--accent))] rounded-full animate-pulse"
+              style={{
+                left: `${left}%`,
+                top: `${top}%`,
+                animationDelay: `${delay}s`,
+                boxShadow: '0 0 6px rgba(218, 165, 32, 0.8)',
+              }}
+            />
+          )
+        })}
       </div>
 
       <div className="relative flex flex-col items-center">

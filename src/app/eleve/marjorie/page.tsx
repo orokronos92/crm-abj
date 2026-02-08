@@ -18,8 +18,17 @@ import {
   Bot,
 } from 'lucide-react'
 
+// Type pour les messages
+interface Message {
+  id: number
+  role: string
+  content: string
+  timestamp: string
+  suggestions?: string[]
+}
+
 // Messages mockés pour l'élève
-const MOCK_MESSAGES = [
+const MOCK_MESSAGES: Message[] = [
   {
     id: 1,
     role: 'assistant',
@@ -53,7 +62,7 @@ const QUICK_ACTIONS = [
 ]
 
 export default function EleveMarjoriePage() {
-  const [messages, setMessages] = useState(MOCK_MESSAGES)
+  const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES)
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
 

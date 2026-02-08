@@ -55,6 +55,7 @@ const MOCK_CANDIDATS = [
     statut_dossier: 'EN_COURS',
     statut_financement: 'VALIDE',
     date_candidature: '2024-01-15',
+    dernier_contact: 'Il y a 2 jours',
     nb_echanges: 15,
     score: 75,
     // Parcours admission
@@ -89,6 +90,7 @@ const MOCK_CANDIDATS = [
     statut_dossier: 'COMPLET',
     statut_financement: 'EN_ATTENTE',
     date_candidature: '2024-01-20',
+    dernier_contact: 'Il y a 5 jours',
     nb_echanges: 8,
     score: 60,
     entretien_telephonique: true,
