@@ -134,6 +134,66 @@ import type { Candidat } from '@/types/candidat'
 - Pagination obligatoire sur les listes : `take` + `skip` ou `cursor`
 - Transactions pour les opérations multi-tables
 
+#### Patterns Prisma qui FONCTIONNENT
+
+**✅ Relations indirectes (Prospect → Candidat → Eleve)**
+```typescript
+// CORRECT : Utiliser la chaîne de relations
+where: {
+  candidats: {
+    some: {
+      eleve: {
+        statutFormation: 'EN_COURS'
+      }
+    }
+  }
+}
+
+// ❌ INCORRECT : Relation directe n'existe pas
+where: {
+  eleves: {
+    some: { statutFormation: 'EN_COURS' }
+  }
+}
+```
+
+**✅ Filtrage avec notIn**
+```typescript
+where: {
+  statutProspect: {
+    notIn: ['CANDIDAT', 'ELEVE']
+  }
+}
+```
+
+**✅ Filtrage NULL côté TypeScript (pas Prisma)**
+```typescript
+// ❌ Ne fonctionne PAS avec Prisma
+where: { statutDossier: { not: null } }
+
+// ✅ Faire le filtrage côté TypeScript
+const statuts = await prisma.candidat.findMany({
+  distinct: ['statutDossier'],
+  select: { statutDossier: true }
+})
+return statuts
+  .map(s => s.statutDossier)
+  .filter((s): s is string => s !== null)
+```
+
+**✅ Relations avec include/select**
+```typescript
+const candidat = await prisma.candidat.findUnique({
+  where: { idCandidat },
+  include: {
+    prospect: {
+      select: { nom: true, prenom: true, emails: true }
+    },
+    documentsCandidat: true
+  }
+})
+```
+
 ---
 
 ## Workflow de travail
@@ -209,3 +269,51 @@ const getScoreColor = (score: number) => {
 - Onglet actif : `bg-[rgb(var(--card))]` avec border-t-2 accent
 - Onglet inactif : `bg-[rgb(var(--secondary))]` avec hover
 - Icons : 4x4 avec couleur accent si actif
+
+---
+
+## Logique Métier Critique : Cycle de Vie Prospects
+
+**Documentation complète** : `@docs/PROSPECTS-LIFECYCLE.md`
+
+### Règle Fondamentale
+La table `prospects` est la **mémoire permanente**. Elle n'est JAMAIS vidée et trace tout le parcours d'une personne.
+
+### Cycle de Vie
+```
+PROSPECT → candidate → CANDIDAT (actif)
+    ↓ refusé                ↓ accepté + inscrit
+ANCIEN_CANDIDAT         ELEVE (actif)
+    ↓                       ↓ formation terminée
+Peut recandidater      ANCIEN_ELEVE
+```
+
+### Statuts `statutProspect`
+- `NOUVEAU` : Premier contact, jamais candidaté
+- `EN_ATTENTE_DOSSIER` : Formulaire envoyé
+- `CANDIDAT` : Admission en cours (**MASQUÉ page Prospects**)
+- `ANCIEN_CANDIDAT` : Refusé ou abandonné (redevenu visible)
+- `ELEVE` : Formation en cours (**MASQUÉ page Prospects**)
+- `ANCIEN_ELEVE` : Formation terminée (redevenu visible)
+
+### Filtrage Page Prospects
+**Par défaut** : Afficher UNIQUEMENT prospects disponibles pour marketing
+```typescript
+where: {
+  statutProspect: {
+    notIn: ['CANDIDAT', 'ELEVE']
+  }
+}
+```
+
+**Raison** : Les campagnes marketing ne doivent PAS cibler les personnes actuellement en admission ou en formation.
+
+### Relations BDD
+```
+prospects (1) → candidats (N) → eleves (1)
+```
+⚠️ **Attention** : La relation `Prospect → Eleve` est **indirecte** via `Candidat`
+
+### Scripts Maintenance
+- `update-statuts-lifecycle.ts` : Synchronise statutProspect avec relations BDD
+- `test-prospect-filtrage.ts` : Vérifie logique filtrage

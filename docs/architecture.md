@@ -8,9 +8,9 @@ Le CRM ABJ est construit sur une architecture moderne avec Next.js 16 (App Route
 
 ## État d'Avancement du Projet
 
-**Date de mise à jour** : 5 février 2026
+**Date de mise à jour** : 9 février 2026
 
-### Phase Actuelle : Mise en place de la base de données
+### Phase Actuelle : Connexion UI-BDD
 
 #### ✅ Terminé
 - **Infrastructure Docker** : PostgreSQL 16 + pgAdmin configurés en local
@@ -20,15 +20,18 @@ Le CRM ABJ est construit sur une architecture moderne avec Next.js 16 (App Route
   - 12 nouvelles tables Phase 1 (utilisateurs, élèves, formations, etc.)
 - **Extensions PostgreSQL** : pg_trgm installée pour recherche floue
 - **Champs ajoutés** : `score` et `notes_ia` à la table `candidats` (UI élève)
+- **Seed data** : Base de données locale avec données synthétiques de test
+- **Documentation Phase Connexion** : CONNECTION-PHASE.md créé
+- **Inventaire Composants** : COMPONENTS-INVENTORY.md créé (~150 composants inventoriés)
 
 #### 🔄 En cours
-- Configuration Prisma Client
-- Seed data de base (formations, statuts, types documents)
+- **Architecture Services/Repositories** : Définition de la séparation des responsabilités
+- **Connexion Dashboard Admin** : Identification des sources de données (70% direct, 30% calculs)
 
 #### 📋 À venir
+- Création services et repositories
+- Connexion progressive des composants (Dashboard → Candidats → Prospects → Élèves)
 - NextAuth.js (authentification 3 rôles)
-- API Routes Next.js (endpoints REST)
-- Composants UI (interfaces admin, formateur, élève)
 - Intégration n8n webhooks
 - Tests et validation
 
@@ -815,7 +818,88 @@ export function applyRLS(role: 'admin' | 'professeur' | 'eleve', userId: number)
 
 ---
 
-## 3. Architecture n8n
+## 3. Architecture de Connexion UI-BDD
+
+### 3.1. Principe de Séparation des Responsabilités
+
+L'architecture suit le pattern **Services → Repositories → Prisma** pour une séparation claire des responsabilités :
+
+```typescript
+// Page (Server Component) - Orchestration
+export default async function DashboardPage() {
+  const service = new DashboardService()
+  const stats = await service.getStats()
+  return <DashboardView stats={stats} />
+}
+
+// Service - Logique métier et calculs
+class DashboardService {
+  async getStats() {
+    const prospects = await this.repo.getProspectsCount()
+    const eleves = await this.repo.getElevesCount()
+    const tauxConversion = (eleves / prospects) * 100 // CALCUL ICI
+    return { prospects, eleves, tauxConversion }
+  }
+}
+
+// Repository - Requêtes Prisma pures
+class DashboardRepository {
+  async getProspectsCount() {
+    return await prisma.prospects.count()
+  }
+}
+```
+
+### 3.2. Règles d'Architecture
+
+| Couche | Responsabilité | Exemples | Interdit |
+|--------|---------------|----------|----------|
+| **Page/Component** | Présentation uniquement | Formatage, styles, interaction UI | Requêtes BDD, calculs métier |
+| **Service** | Logique métier | Calculs, agrégations, règles business | SQL direct, présentation |
+| **Repository** | Accès données | Requêtes Prisma simples | Logique métier, calculs |
+
+### 3.3. Stratégie de Connexion Progressive
+
+#### Phase 1 : Composants Directs (70% du Dashboard)
+- Cards statistiques (COUNT simples)
+- Listes avec pagination
+- Données d'une seule table
+
+#### Phase 2 : Composants Calculés (20%)
+- Taux de conversion (multi-tables)
+- CA et agrégations financières
+- Moyennes et pourcentages
+
+#### Phase 3 : Composants Complexes (10%)
+- Graphiques temporels
+- Tableaux croisés dynamiques
+- Rapports multi-sources
+
+### 3.4. Gestion des Données
+
+#### Données Directes
+```typescript
+// Simple : une requête, une table
+const totalProspects = await prisma.prospects.count()
+```
+
+#### Données Calculées
+```typescript
+// Service : agrégation et calcul
+const caRealise = candidats
+  .filter(c => c.statut_financement === 'VALIDE')
+  .reduce((sum, c) => sum + c.montant_total_formation, 0)
+```
+
+#### Données Dérivées
+```typescript
+// Nécessite historique ou cache
+const variation = this.calculateVariation(currentWeek, lastWeek)
+```
+
+---
+
+## 4. Architecture n8n
 
 ### 3.1. Workflows Existants
 

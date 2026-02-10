@@ -1,15 +1,16 @@
 /**
  * Dashboard Admin
  * Interface principale avec statistiques et actions
+ * Server Component pour data fetching
  */
 
-'use client'
-
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { DashboardService } from '@/services/dashboard.service'
 import {
   Users,
   UserCheck,
   GraduationCap,
+  UserCog,
   FolderCheck,
   TrendingUp,
   Euro,
@@ -27,15 +28,8 @@ import {
   Activity,
 } from 'lucide-react'
 
-// Données mockées pour la démo
-const MOCK_STATS = {
-  prospects: { total: 156, variation: +12, new: 8 },
-  candidats: { total: 42, variation: +5, enCours: 18 },
-  eleves: { total: 28, variation: +3, actifs: 24 },
-  dossiers: { complets: 35, variation: +8, taux: 83 },
-  ca: { realise: 18600, previsionnel: 36100, variation: +15 },
-  conversion: { taux: 62, variation: +5 },
-}
+// Ces données mockées seront remplacées par les vraies données
+// Conservées temporairement pour les sections non connectées
 
 const MOCK_PROSPECTS = [
   { id: 1, nom: 'Martin Sophie', email: 'sophie.martin@email.fr', formation: 'CAP Bijouterie', statut: 'NOUVEAU', date: '2024-02-06' },
@@ -57,7 +51,13 @@ const MOCK_ACTIVITES = [
   { id: 4, type: 'formation', message: 'Session CAP confirmée', time: 'Hier', icon: Calendar },
 ]
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  // Récupération des données depuis le service
+  const dashboardService = new DashboardService()
+  const stats = await dashboardService.getStats()
+  const derniersProspects = await dashboardService.getRecentProspects(3)
+  const formationsStats = await dashboardService.getFormationsStats()
+
   return (
     <DashboardLayout>
       {/* Header de page */}
@@ -71,102 +71,97 @@ export default function AdminDashboard() {
       </div>
 
       {/* Statistiques principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {/* Prospects */}
         <div className="stat-card group">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="p-3 bg-[rgba(var(--info),0.1)] rounded-lg">
               <Users className="w-6 h-6 text-[rgb(var(--info))]" />
             </div>
-            <div className="flex items-center gap-1 text-sm">
-              {MOCK_STATS.prospects.variation > 0 ? (
-                <>
-                  <ArrowUp className="w-4 h-4 text-[rgb(var(--success))]" />
-                  <span className="text-[rgb(var(--success))]">+{MOCK_STATS.prospects.variation}%</span>
-                </>
-              ) : (
-                <>
-                  <ArrowDown className="w-4 h-4 text-[rgb(var(--error))]" />
-                  <span className="text-[rgb(var(--error))]">{MOCK_STATS.prospects.variation}%</span>
-                </>
-              )}
-            </div>
+            <h3 className="text-6xl font-bold text-[rgb(var(--foreground))]">
+              {stats.prospects.total}
+            </h3>
           </div>
-          <h3 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-1">
-            {MOCK_STATS.prospects.total}
-          </h3>
           <p className="text-sm text-[rgb(var(--muted-foreground))]">
             Prospects total
           </p>
           <div className="mt-3 pt-3 border-t border-[rgba(var(--border),0.3)]">
             <span className="text-xs text-[rgb(var(--accent))]">
-              +{MOCK_STATS.prospects.new} cette semaine
+              +{stats.prospects.new} cette semaine
             </span>
           </div>
         </div>
 
         {/* Candidats */}
         <div className="stat-card group">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="p-3 bg-[rgba(var(--warning),0.1)] rounded-lg">
               <UserCheck className="w-6 h-6 text-[rgb(var(--warning))]" />
             </div>
-            <div className="flex items-center gap-1 text-sm">
-              <ArrowUp className="w-4 h-4 text-[rgb(var(--success))]" />
-              <span className="text-[rgb(var(--success))]">+{MOCK_STATS.candidats.variation}%</span>
-            </div>
+            <h3 className="text-6xl font-bold text-[rgb(var(--foreground))]">
+              {stats.candidats.total}
+            </h3>
           </div>
-          <h3 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-1">
-            {MOCK_STATS.candidats.total}
-          </h3>
           <p className="text-sm text-[rgb(var(--muted-foreground))]">
             Candidats actifs
           </p>
           <div className="mt-3 pt-3 border-t border-[rgba(var(--border),0.3)]">
             <span className="text-xs text-[rgb(var(--accent))]">
-              {MOCK_STATS.candidats.enCours} en cours
+              {stats.candidats.enCours} en cours
             </span>
           </div>
         </div>
 
         {/* Élèves */}
         <div className="stat-card group">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="p-3 bg-[rgba(var(--success),0.1)] rounded-lg">
               <GraduationCap className="w-6 h-6 text-[rgb(var(--success))]" />
             </div>
-            <div className="flex items-center gap-1 text-sm">
-              <ArrowUp className="w-4 h-4 text-[rgb(var(--success))]" />
-              <span className="text-[rgb(var(--success))]">+{MOCK_STATS.eleves.variation}%</span>
-            </div>
+            <h3 className="text-6xl font-bold text-[rgb(var(--foreground))]">
+              {stats.eleves.total}
+            </h3>
           </div>
-          <h3 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-1">
-            {MOCK_STATS.eleves.total}
-          </h3>
           <p className="text-sm text-[rgb(var(--muted-foreground))]">
             Élèves en formation
           </p>
           <div className="mt-3 pt-3 border-t border-[rgba(var(--border),0.3)]">
             <span className="text-xs text-[rgb(var(--accent))]">
-              {MOCK_STATS.eleves.actifs} actifs
+              {stats.eleves.actifs} actifs
+            </span>
+          </div>
+        </div>
+
+        {/* Formateurs */}
+        <div className="stat-card group">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-3 bg-[rgba(var(--error),0.1)] rounded-lg">
+              <UserCog className="w-6 h-6 text-[rgb(var(--error))]" />
+            </div>
+            <h3 className="text-6xl font-bold text-[rgb(var(--foreground))]">
+              {stats.formateurs.total}
+            </h3>
+          </div>
+          <p className="text-sm text-[rgb(var(--muted-foreground))]">
+            Formateurs
+          </p>
+          <div className="mt-3 pt-3 border-t border-[rgba(var(--border),0.3)]">
+            <span className="text-xs text-[rgb(var(--accent))]">
+              {stats.formateurs.actifs} actifs
             </span>
           </div>
         </div>
 
         {/* Taux conversion */}
         <div className="stat-card group">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="p-3 bg-[rgba(var(--accent),0.1)] rounded-lg">
               <TrendingUp className="w-6 h-6 text-[rgb(var(--accent))]" />
             </div>
-            <div className="flex items-center gap-1 text-sm">
-              <ArrowUp className="w-4 h-4 text-[rgb(var(--success))]" />
-              <span className="text-[rgb(var(--success))]">+{MOCK_STATS.conversion.variation}%</span>
-            </div>
+            <h3 className="text-6xl font-bold text-[rgb(var(--foreground))]">
+              {stats.conversion.taux}%
+            </h3>
           </div>
-          <h3 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-1">
-            {MOCK_STATS.conversion.taux}%
-          </h3>
           <p className="text-sm text-[rgb(var(--muted-foreground))]">
             Taux de conversion
           </p>
@@ -194,13 +189,13 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))] mb-1">CA Réalisé</p>
                 <p className="text-2xl font-bold text-[rgb(var(--success))]">
-                  {MOCK_STATS.ca.realise.toLocaleString('fr-FR')} €
+                  {stats.finance.caRealise.toLocaleString('fr-FR')} €
                 </p>
               </div>
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))] mb-1">CA Prévisionnel</p>
                 <p className="text-2xl font-bold text-[rgb(var(--accent))]">
-                  {MOCK_STATS.ca.previsionnel.toLocaleString('fr-FR')} €
+                  {stats.finance.caPrevisionnel.toLocaleString('fr-FR')} €
                 </p>
               </div>
 
@@ -208,12 +203,12 @@ export default function AdminDashboard() {
               <div className="mt-4">
                 <div className="flex justify-between text-xs text-[rgb(var(--muted-foreground))] mb-2">
                   <span>Progression</span>
-                  <span>{Math.round((MOCK_STATS.ca.realise / MOCK_STATS.ca.previsionnel) * 100)}%</span>
+                  <span>{stats.finance.caPrevisionnel > 0 ? Math.round((stats.finance.caRealise / stats.finance.caPrevisionnel) * 100) : 0}%</span>
                 </div>
                 <div className="h-2 bg-[rgb(var(--secondary))] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-[rgb(var(--accent))] to-[rgb(var(--accent-light))] transition-all duration-500"
-                    style={{ width: `${(MOCK_STATS.ca.realise / MOCK_STATS.ca.previsionnel) * 100}%` }}
+                    style={{ width: `${stats.finance.caPrevisionnel > 0 ? (stats.finance.caRealise / stats.finance.caPrevisionnel) * 100 : 0}%` }}
                   />
                 </div>
               </div>
@@ -232,7 +227,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="space-y-3">
-              {MOCK_FORMATIONS.map((formation, index) => (
+              {formationsStats.map((formation, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-[rgb(var(--foreground))]">{formation.nom}</span>
@@ -242,7 +237,7 @@ export default function AdminDashboard() {
                     <div
                       className="h-full transition-all duration-500 animate-slideInLeft"
                       style={{
-                        width: `${(formation.count / 28) * 100}%`,
+                        width: `${Math.min((formation.count / Math.max(...formationsStats.map(f => f.count), 1)) * 100, 100)}%`,
                         background: formation.color,
                         animationDelay: `${index * 100}ms`,
                       }}
@@ -274,7 +269,7 @@ export default function AdminDashboard() {
 
             <div className="p-6">
               <div className="space-y-4">
-                {MOCK_PROSPECTS.map((prospect) => (
+                {derniersProspects.map((prospect) => (
                   <div key={prospect.id} className="flex items-center justify-between p-4 rounded-lg bg-[rgb(var(--secondary))]/50 hover:bg-[rgb(var(--secondary))] transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center text-[rgb(var(--primary))] font-bold">

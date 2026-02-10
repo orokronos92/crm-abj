@@ -1,0 +1,25 @@
+
+> crm_abj@0.1.0 build
+> next build
+
+⚠ You are using a non-standard "NODE_ENV" value in your environment. This creates inconsistencies in the project and is strongly advised against. Read more: https://nextjs.org/docs/messages/non-standard-node-env
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 17.0s
+  Running TypeScript ...
+Failed to compile.
+
+./prisma/seed-enrichi.ts:395:11
+Type error: 'prospect' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+[0m [90m 393 |[39m
+ [90m 394 |[39m   [36mfor[39m ([36mconst[39m data [36mof[39m prospectsCandidats) {
+[31m[1m>[22m[39m[90m 395 |[39m     [36mconst[39m prospect [33m=[39m [36mawait[39m prisma[33m.[39mprospect[33m.[39mupsert({
+ [90m     |[39m           [31m[1m^[22m[39m
+ [90m 396 |[39m       where[33m:[39m { idProspect[33m:[39m data[33m.[39mid }[33m,[39m
+ [90m 397 |[39m       update[33m:[39m {}[33m,[39m
+ [90m 398 |[39m       create[33m:[39m {[0m
+Next.js build worker exited with code: 1 and signal: null

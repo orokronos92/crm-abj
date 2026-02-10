@@ -392,7 +392,14 @@ async function main() {
   ]
 
   for (const data of prospectsCandidats) {
-    const prospect = await prisma.prospect.upsert({
+    // Dates cohérentes
+    const datePremier = new Date(2024, 10, 1 + prospects.length)
+    const dateDernier = new Date(2025, 1, 1 + prospects.length)
+    // Calculer nbEchanges basé sur la différence de dates
+    const nbJours = Math.floor((dateDernier.getTime() - datePremier.getTime()) / (1000 * 60 * 60 * 24))
+    const nbEchanges = Math.max(1, Math.floor(nbJours / 15)) // 1 échange tous les 15 jours minimum
+
+    const prospect: any = await prisma.prospect.upsert({
       where: { idProspect: data.id },
       update: {},
       create: {
@@ -406,8 +413,9 @@ async function main() {
         modeFinancement: data.financement,
         statutProspect: data.statut,
         sourceOrigine: 'Site web',
-        datePremierContact: new Date(2024, 10, 1 + prospects.length),
-        dateDernierContact: new Date(2025, 1, 1 + prospects.length)
+        datePremierContact: datePremier,
+        dateDernierContact: dateDernier,
+        nbEchanges: nbEchanges
       }
     })
     prospects.push(prospect)
@@ -423,7 +431,14 @@ async function main() {
   ]
 
   for (const data of prospectsPurs) {
-    const prospect = await prisma.prospect.upsert({
+    // Dates cohérentes
+    const datePremier = new Date(2025, 1, 1 + prospects.length)
+    const dateDernier = new Date(2025, 1, 5 + prospects.length)
+    // Calculer nbEchanges basé sur la différence de dates
+    const nbJours = Math.floor((dateDernier.getTime() - datePremier.getTime()) / (1000 * 60 * 60 * 24))
+    const nbEchanges = Math.max(1, Math.ceil(nbJours / 2)) // 1 échange tous les 2 jours pour prospects récents
+
+    const prospect: any = await prisma.prospect.upsert({
       where: { idProspect: data.id },
       update: {},
       create: {
@@ -436,8 +451,9 @@ async function main() {
         formationPrincipale: data.formation,
         statutProspect: data.statut,
         sourceOrigine: 'Formulaire contact',
-        datePremierContact: new Date(2025, 1, 1 + prospects.length),
-        dateDernierContact: new Date(2025, 1, 5 + prospects.length)
+        datePremierContact: datePremier,
+        dateDernierContact: dateDernier,
+        nbEchanges: nbEchanges
       }
     })
     prospects.push(prospect)

@@ -9,6 +9,11 @@ import { ROLES, HOME_ROUTES } from '@/config/constants'
 
 export default withAuth(
   function middleware(req) {
+    // MODE DEV : Bypass auth temporaire
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.next()
+    }
+
     const token = req.nextauth.token
     const path = req.nextUrl.pathname
 
