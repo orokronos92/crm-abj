@@ -325,6 +325,10 @@ model Utilisateur {
   formateur            Formateur?
   historiqueMarjorie   HistoriqueMarjorieCrm[]
   sessionsAuth         SessionAuth[]
+  notificationsRecues    Notification[] @relation("NotificationsRecues")
+  notificationsTraitees  Notification[] @relation("NotificationsTraitees")
+  lecturesNotifications  NotificationLecture[]
+  preferencesNotifications PreferenceNotification[]
 
   @@map("utilisateurs")
 }
@@ -581,4 +585,111 @@ model SessionAuth {
   utilisateur    Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
 
   @@map("sessions_auth")
+}
+
+// ============================================================
+// 3. SYSTÈME DE NOTIFICATIONS (nouvelles tables)
+// ============================================================
+
+/// Système centralisé de notifications CRM ↔ Agents IA
+model Notification {
+  idNotification     Int       @id @default(autoincrement()) @map("id_notification")
+
+  // === SOURCE ===
+  sourceAgent        String    @map("source_agent")       // "marjorie" | "morrigan" | "system" | "admin"
+  sourceWorkflow     String?   @map("source_workflow")     // ID ou nom du workflow n8n
+  sourceExecutionId  String?   @map("source_execution_id") // ID d'exécution n8n pour traçabilité
+
+  // === CONTENU ===
+  categorie          String    // PROSPECT | CANDIDAT | DEVIS | DOCUMENT | EMAIL | PLANNING | EVALUATION | FINANCE | SYSTEM | ALERTE
+  type               String    // Ex: "NOUVEAU_PROSPECT" | "DEVIS_ENVOYE" | "DOCUMENT_RECU" | "ERREUR_WORKFLOW" etc.
+  priorite           String    @default("NORMALE") // BASSE | NORMALE | HAUTE | URGENTE
+  titre              String    // Titre court affiché dans la cloche
+  message            String    @db.Text // Description détaillée
+  icone              String?   // Emoji ou code icône pour l'UI
+  couleur            String?   // Code couleur selon catégorie
+
+  // === CIBLAGE (qui voit cette notification) ===
+  audience           String    @default("ADMIN") // TOUS | ADMIN | FORMATEUR | ELEVE | SPECIFIQUE
+  idUtilisateurCible Int?      @map("id_utilisateur_cible") // Si audience = SPECIFIQUE
+  idFormateurCible   Int?      @map("id_formateur_cible")   // Notification pour un formateur précis
+  idEleveCible       Int?      @map("id_eleve_cible")       // Notification pour un élève précis
+
+  // === ENTITÉ LIÉE (navigation deep-link) ===
+  entiteType         String?   @map("entite_type")  // "prospect" | "candidat" | "document" | "session" | "evaluation"
+  entiteId           String?   @map("entite_id")    // ID de l'entité pour construire le lien
+  lienAction         String?   @map("lien_action")  // URL relative directe ex: "/admin/candidats/JURI102025"
+
+  // === ACTION REQUISE ===
+  actionRequise      Boolean   @default(false) @map("action_requise")
+  typeAction         String?   @map("type_action")      // "VALIDER" | "RELANCER" | "CORRIGER" | "DECIDER" | "VERIFIER"
+  actionEffectuee    Boolean   @default(false) @map("action_effectuee")
+  dateAction         DateTime? @map("date_action") @db.Timestamptz(6)
+  actionPar          Int?      @map("action_par")       // idUtilisateur qui a agi
+  resultatAction     String?   @map("resultat_action")  // Résultat de l'action (JSON ou texte)
+
+  // === STATUT LECTURE ===
+  lue                Boolean   @default(false)
+  dateLecture        DateTime? @map("date_lecture") @db.Timestamptz(6)
+  archivee           Boolean   @default(false)
+  dateArchivage      DateTime? @map("date_archivage") @db.Timestamptz(6)
+
+  // === MÉTADONNÉES ===
+  metadonnees        Json?     // Données additionnelles libres (contexte IA, scores, etc.)
+  expirationDate     DateTime? @map("expiration_date") @db.Timestamptz(6) // Auto-archive après cette date
+
+  // === TRAÇABILITÉ ===
+  creeLe             DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe          DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // === RELATIONS ===
+  utilisateurCible   Utilisateur? @relation("NotificationsRecues", fields: [idUtilisateurCible], references: [idUtilisateur])
+  actionParUtilisateur Utilisateur? @relation("NotificationsTraitees", fields: [actionPar], references: [idUtilisateur])
+  lecturesUtilisateurs NotificationLecture[]
+
+  @@index([audience])
+  @@index([categorie])
+  @@index([priorite])
+  @@index([lue])
+  @@index([actionRequise, actionEffectuee])
+  @@index([idUtilisateurCible])
+  @@index([idEleveCible])
+  @@index([idFormateurCible])
+  @@index([creeLe(sort: Desc)])
+  @@index([entiteType, entiteId])
+  @@map("notifications")
+}
+
+/// Suivi de lecture par utilisateur (pour notifications collectives)
+/// Quand audience = TOUS/ADMIN/FORMATEUR/ELEVE, chaque user a son propre état de lecture
+model NotificationLecture {
+  idLecture          Int       @id @default(autoincrement()) @map("id_lecture")
+  idNotification     Int       @map("id_notification")
+  idUtilisateur      Int       @map("id_utilisateur")
+  lue                Boolean   @default(false)
+  dateLecture        DateTime? @map("date_lecture") @db.Timestamptz(6)
+  archivee           Boolean   @default(false)
+  dateArchivage      DateTime? @map("date_archivage") @db.Timestamptz(6)
+
+  notification       Notification @relation(fields: [idNotification], references: [idNotification], onDelete: Cascade)
+  utilisateur        Utilisateur  @relation(fields: [idUtilisateur], references: [idUtilisateur])
+
+  @@unique([idNotification, idUtilisateur])
+  @@index([idUtilisateur, lue])
+  @@map("notifications_lectures")
+}
+
+/// Préférences de notification par utilisateur
+model PreferenceNotification {
+  idPreference       Int       @id @default(autoincrement()) @map("id_preference")
+  idUtilisateur      Int       @map("id_utilisateur")
+  categorie          String    // Catégorie de notification
+  activee            Boolean   @default(true)
+  emailActivee       Boolean   @default(false) @map("email_activee")  // Aussi par email ?
+  prioriteMinimale   String    @default("BASSE") @map("priorite_minimale") // Filtre par priorité
+
+  utilisateur        Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
+
+  @@unique([idUtilisateur, categorie])
+  @@map("preferences_notifications")
 }
