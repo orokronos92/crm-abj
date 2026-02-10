@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { sseManager, type NotificationBroadcast } from '@/lib/sse-manager'
 
 // Route publique - exempte d'authentification
 export const runtime = 'nodejs'
@@ -158,18 +159,49 @@ async function createNotification(payload: NotificationPayload) {
     data: notificationData,
     select: {
       idNotification: true,
+      sourceAgent: true,
       titre: true,
       message: true,
       priorite: true,
       categorie: true,
       type: true,
       audience: true,
+      idUtilisateurCible: true,
+      idFormateurCible: true,
+      idEleveCible: true,
+      lienAction: true,
+      actionRequise: true,
+      typeAction: true,
       creeLe: true
     }
   })
 
-  // TODO: Déclencher SSE pour push temps réel (Phase 2)
-  // await broadcastNotification(notification)
+  // Broadcast SSE pour push temps réel
+  try {
+    const broadcastData: NotificationBroadcast = {
+      idNotification: notification.idNotification,
+      sourceAgent: notification.sourceAgent,
+      categorie: notification.categorie,
+      type: notification.type,
+      priorite: notification.priorite,
+      titre: notification.titre,
+      message: notification.message,
+      audience: notification.audience,
+      idUtilisateurCible: notification.idUtilisateurCible,
+      idFormateurCible: notification.idFormateurCible,
+      idEleveCible: notification.idEleveCible,
+      lienAction: notification.lienAction,
+      actionRequise: notification.actionRequise || false,
+      typeAction: notification.typeAction,
+      creeLe: notification.creeLe
+    }
+
+    sseManager.broadcast(broadcastData)
+    console.log(`[SSE] Notification ${notification.idNotification} broadcastée`)
+  } catch (sseError) {
+    console.error('[SSE] Erreur lors du broadcast:', sseError)
+    // On ne fait pas échouer la création pour une erreur SSE
+  }
 
   return notification
 }

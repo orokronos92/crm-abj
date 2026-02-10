@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { sseManager, type NotificationBroadcast } from '@/lib/sse-manager'
 
 // Clé API pour sécuriser l'endpoint
 const API_KEY = process.env.NOTIFICATIONS_API_KEY || 'default-api-key-change-me'
@@ -80,12 +81,47 @@ export async function POST(request: NextRequest) {
           data: mappedData,
           select: {
             idNotification: true,
+            sourceAgent: true,
             titre: true,
             message: true,
             priorite: true,
+            categorie: true,
+            type: true,
+            audience: true,
+            idUtilisateurCible: true,
+            idFormateurCible: true,
+            idEleveCible: true,
+            lienAction: true,
+            actionRequise: true,
+            typeAction: true,
             creeLe: true
           }
         })
+
+        // Broadcast SSE pour push temps réel
+        try {
+          const broadcastData: NotificationBroadcast = {
+            idNotification: created.idNotification,
+            sourceAgent: created.sourceAgent,
+            categorie: created.categorie,
+            type: created.type,
+            priorite: created.priorite,
+            titre: created.titre,
+            message: created.message,
+            audience: created.audience,
+            idUtilisateurCible: created.idUtilisateurCible,
+            idFormateurCible: created.idFormateurCible,
+            idEleveCible: created.idEleveCible,
+            lienAction: created.lienAction,
+            actionRequise: created.actionRequise || false,
+            typeAction: created.typeAction,
+            creeLe: created.creeLe
+          }
+
+          sseManager.broadcast(broadcastData)
+        } catch (sseError) {
+          console.error(`[SSE] Erreur broadcast notif ${created.idNotification}:`, sseError)
+        }
 
         results.created.push({
           idNotification: created.idNotification,
