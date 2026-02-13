@@ -29,6 +29,85 @@ npx prisma migrate dev --name "description"  # Migration BDD
 npx prisma studio    # Interface BDD visuelle
 ```
 
+## Système de Notifications (SSE Temps Réel)
+
+### Architecture
+- **Server-Sent Events (SSE)** pour notifications temps réel
+- **SSE Manager Singleton** côté serveur pour broadcast
+- **Reconnexion automatique** après 5 secondes si déconnexion
+- **Heartbeat** toutes les 30 secondes pour maintenir connexion
+
+### Envoi de notifications (depuis n8n ou tests)
+```bash
+# Envoyer des notifications de test à l'UI admin
+npx tsx scripts/send-notification-admin.ts 1  # 1 = une notification simple
+npx tsx scripts/send-notification-admin.ts 2  # 2 = plusieurs exemples
+
+# Envoyer des notifications de test pour formateur
+npx tsx scripts/send-notification-formateur.ts
+
+# Envoyer des notifications de test pour élève
+npx tsx scripts/send-notification-eleve.ts
+npx tsx scripts/send-notification-eleve.ts test  # Test filtrage par audience
+
+# Test navigation complète (3 rôles)
+npx tsx scripts/test-navigation-complete.ts
+npx tsx scripts/test-navigation-complete.ts charge  # Test de charge (50 notifs)
+
+# Test navigation formateur spécifique
+npx tsx scripts/test-formateur-navigation.ts
+
+# Test complet système SSE (connexion, envoi, action)
+npx tsx scripts/test-sse-system.ts
+
+# Test continu temps réel (envoie toutes les 5s)
+npx tsx scripts/test-hook-sse.ts
+
+# Test du filtrage par rôle (admin/formateur/élève)
+npx tsx scripts/test-role-filtering.ts
+
+# Vérifier les notifications en base
+npx tsx scripts/check-notifications.ts
+```
+
+### Structure notification pour n8n (supporte snake_case ET camelCase)
+```json
+{
+  "sourceAgent": "marjorie",        // ou source_agent
+  "categorie": "CANDIDAT",
+  "type": "NOUVEAU_DOSSIER",
+  "priorite": "HAUTE",
+  "titre": "Nouveau candidat - Marie Dupont",
+  "message": "Dossier complet reçu pour formation CAP ATBJ",
+  "audience": "ADMIN",
+  "lienAction": "/admin/candidats/DUMI15092024"  // ou lien_action
+}
+```
+
+### Endpoints disponibles
+- `POST /api/notifications/ingest` — Réception notification simple (API Key requis)
+- `POST /api/notifications/ingest/batch` — Réception batch multiple
+- `GET /api/notifications/stream` — SSE temps réel (EventSource)
+- `GET /api/notifications` — Récupération avec filtres
+- `PATCH /api/notifications` — Marquer comme lu
+- `POST /api/notifications/[id]/action` — Exécuter action + callback n8n
+
+**API Key** : Dans `.env.local` → `NOTIFICATIONS_API_KEY`
+
+### Comportement UI
+- **Cloche badge** : Mise à jour temps réel sans refresh
+- **Popup notifications** : Click → redirige vers page avec highlight
+- **Page notifications** : Scroll automatique + animation pulse sur notification ciblée
+- **Pas de boutons refresh** : SSE gère tout automatiquement
+- **Filtrage par rôle** : Admin voit ADMIN seulement, Formateur voit FORMATEUR+TOUS, Élève voit ELEVE+TOUS
+- **Détection automatique du rôle** : Basée sur l'URL (/admin, /formateur, /eleve)
+- **Navigation intelligente** : Popup détecte le rôle et redirige vers la bonne page notifications
+
+### Interfaces Notifications Complètes
+- **Admin** : `/admin/notifications` - Toutes notifications admin (prospects, candidats, devis)
+- **Formateur** : `/formateur/notifications` - Notifications formateur + globales (sessions, évaluations)
+- **Élève** : `/eleve/notifications` - Notifications personnelles + globales (notes, planning, documents)
+
 ## Structure
 
 ```
@@ -37,21 +116,37 @@ src/
     (auth)/           # Login, register
     (admin)/          # Interface admin (7 vues)
     (formateur)/      # Interface formateur
+      notifications/  # ✅ Page notifications formateur avec SSE
     (eleve)/          # Interface élève
+      notifications/  # ✅ Page notifications élève avec SSE
     api/              # API Routes REST
   components/
     admin/            # Composants admin
     formateur/        # Composants formateur
+      NotificationStats.tsx   # ✅ Stats notifications formateur
+      NotificationFilters.tsx # ✅ Filtres notifications formateur
+      NotificationCard.tsx    # ✅ Carte notification formateur
     eleve/            # Composants élève
+      NotificationFiltersEleve.tsx # ✅ Filtres élève
+      NotificationStatsEleve.tsx   # ✅ Stats élève
     shared/           # Composants partagés (MarjorieChat, etc.)
     ui/               # Composants UI de base
-  lib/                # Utilitaires (prisma.ts, auth.ts, n8n.ts)
-  hooks/              # Hooks custom
+  lib/                # Utilitaires (prisma.ts, auth.ts, n8n.ts, sse-manager.ts)
+  hooks/              # Hooks custom (use-notifications.ts avec SSE)
   types/              # Types TypeScript partagés
 prisma/
   schema.prisma       # Schéma BDD complet
   migrations/         # Migrations SQL
   seed.ts             # Données initiales
+scripts/              # Scripts utilitaires et tests
+  seed-complete-dataset.ts        # ✅ Dataset professionnel complet (12 prospects, 20 candidats, 10 élèves, 7 formateurs)
+  send-notification-admin.ts      # Test notifications admin
+  send-notification-formateur.ts  # Test notifications formateur
+  send-notification-eleve.ts      # ✅ Test notifications élève
+  test-navigation-complete.ts     # ✅ Test complet 3 rôles
+  test-sse-system.ts              # Test système SSE
+  check-notifications.ts          # Vérification BDD
+  test-dashboard-counts.ts        # ✅ Vérification compteurs dashboard
 docs/                 # Spécifications (ne pas modifier sans demander)
 ```
 
@@ -61,6 +156,12 @@ docs/                 # Spécifications (ne pas modifier sans demander)
 - @docs/architecture.md — Architecture technique et schéma BDD
 - @docs/ui-analysis.md — Analyse des maquettes UI et mapping BDD
 - @docs/CHANGELOG.md — Historique des modifications par session
+- @docs/PROSPECTS-LIFECYCLE.md — Cycle de vie des prospects (IMPORTANT)
+- @docs/notification-strategy-crm-abj.md — Stratégie notifications CRM ↔ n8n
+- @docs/resume_last2.md — Session connexion BDD + cycle vie prospects
+- @docs/resume_last3.md — Session système notifications SSE complet v1.1 (avec multi-interface)
+- @docs/resume_last4.md — Session système documentaire Qualiopi + dataset professionnel complet
+- @docs/resume_last6.md — Session refonte section Planning avec vues annuelles et gestion événements
 
 ## Imports
 
@@ -80,6 +181,7 @@ import type { Candidat } from '@/types/candidat'
 - **Fichiers de config** : `next.config.ts`, `tsconfig.json`, `tailwind.config.ts`, `package.json`, `prisma/schema.prisma`
 - **Fichiers dans `docs/`** : Ce sont les specs validées, ne pas les modifier
 - **`.env` et `.env.local`** : Ne jamais toucher aux variables d'environnement
+- **7 tables n8n** : `prospects`, `candidats`, `documents_candidat`, `historique_emails`, `journal_erreurs`, `statuts_documents`, `types_documents` — Ces tables sont utilisées par les workflows n8n. Tu peux AJOUTER des champs mais JAMAIS modifier/supprimer les existants
 
 ### 2. Ne JAMAIS casser ce qui fonctionne
 
@@ -317,3 +419,95 @@ prospects (1) → candidats (N) → eleves (1)
 ### Scripts Maintenance
 - `update-statuts-lifecycle.ts` : Synchronise statutProspect avec relations BDD
 - `test-prospect-filtrage.ts` : Vérifie logique filtrage
+
+---
+
+## Sections Admin UI Connectées
+
+### Section Élèves
+
+**Pattern** : Même architecture que candidats
+- Canevas principal avec filtres server-side
+- Modal détaillé 5 onglets sur click de ligne
+- Server Components + Repository/Service
+
+**Composants** :
+- `ElevesPageClient.tsx` : Tableau interactif
+- `ElevesFilters.tsx` : Filtres URL params
+- `EleveDetailModal.tsx` : Modal avec Général/Notes/Présences/Documents/Planning
+
+**Point d'attention** : Le mot `eval` est réservé, utiliser `evaluation` partout
+
+### Section Formateurs - Conformité Qualiopi
+
+**Architecture Modal 6 Onglets** :
+1. **Profil** : Bio, contact, années d'expérience
+2. **Compétences & Qualifications** : Diplômes, certifications, spécialités
+3. **Expertise & Méthodes** : Pédagogie, outils, approche
+4. **Maintien des Compétences** : Formations continues, veille
+5. **Traçabilité Pédagogique** : Stats, témoignages, résultats
+6. **Documents & Preuves** : 12 types organisés en 3 catégories
+
+**Tables Documents Qualiopi** :
+- `DocumentFormateur` : Documents avec expiration et validation
+- `TypeDocumentFormateur` : 12 types (CV, CNI, RCP, DIPLOME, etc.)
+- `DocumentRequis` : Exigences par formation
+
+**Système Placeholders** :
+```typescript
+// Repository crée automatiquement des placeholders pour documents manquants
+if (!existingDoc) {
+  documentsWithPlaceholders.push({
+    idDocument: 0,
+    codeTypeDocument: type.code,
+    statut: 'ATTENDU'
+  })
+}
+```
+
+**Vérification Qualiopi** :
+- Méthode `checkQualiopi(id, useFullData)` uniforme
+- Badge visuel liste : "Conforme" ou "X documents manquants"
+- Seuls les documents obligatoires comptent pour le manquant
+
+**16 Champs Ajoutés au Schema** :
+- `cvUrl`, `qualificationsResume`, `dateValidationQualiopi`
+- `anneesExperience`, `anneesEnseignement`, `bio`
+- `methodesPedagogiques`, `approchePedagogique`, `outilsSupports`
+- `competencesTechniques`, `portfolio`, `publicationsArticles`
+- `satisfactionMoyenne`, `tauxReussite`, `nombreElevesFormes`
+- `temoignagesEleves`, `formationsContinues`, `certifications`, `languesParlees`
+
+### Section Planning - Gestion Stratégique
+
+**Architecture 3 Onglets** :
+1. **Salles** : Vue annuelle timeline avec taux d'occupation
+2. **Formateurs** : Vue annuelle timeline avec disponibilités
+3. **Événements** : Gestion complète création/édition
+
+**Composants Modaux** :
+- `MonthDetailModal.tsx` : Drill-down mensuel avec granularité jour/heure (195 lignes)
+- `EvenementFormModal.tsx` : Formulaire création/édition événements (220 lignes)
+
+**Fonctionnalités Clés** :
+- Timeline annuelle 12 mois avec code couleur
+- Sélecteur année 2026/2027 sur tous les onglets
+- Click sur mois → modal détail jour/heure
+- Salles : créneaux 9h-21h (6 blocs de 2h)
+- Formateurs : créneaux Matin/Après-midi/Soir
+- Alertes automatiques si <2 formateurs disponibles
+- Gestion événements : 5 types (Portes ouvertes, Stage initiation, Réunion, Remise diplômes, Entretien)
+- 9 salles disponibles (Ateliers A/B/C, Salle informatique, Salle théorie, etc.)
+
+**Code Couleur Occupation Salles** :
+- 🟢 Vert (≥80%) : Forte occupation
+- 🟡 Jaune (50-79%) : Occupation moyenne
+- 🔵 Bleu (<50%) : Faible occupation → opportunité marketing
+- ⚪ Transparent : Aucune session
+
+**Indicateurs Formateurs** :
+- 📘 Icône livre : En session (occupé)
+- ✅ Check vert : Disponible
+- ❌ X rouge : Indisponible
+
+### Scripts Maintenance
