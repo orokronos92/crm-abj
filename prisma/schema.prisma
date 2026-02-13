@@ -405,7 +405,11 @@ model Session {
   capaciteMax          Int?      @map("capacite_max")
   nbInscrits           Int       @default(0) @map("nb_inscrits")
   statutSession        String?   @map("statut_session") // PREVUE | CONFIRMEE | EN_COURS | TERMINEE | ANNULEE
-  sallePrincipale      String?   @map("salle_principale")
+
+  // === SALLE (dual approach pour migration progressive) ===
+  sallePrincipale      String?   @map("salle_principale") // Conservé pour compatibilité (nom texte)
+  idSalle              Int?      @map("id_salle") // Nouvelle FK vers table Salle (optionnel pour migration)
+
   formateurPrincipalId Int?      @map("formateur_principal_id")
   notes                String?
   creeLe               DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
@@ -413,6 +417,7 @@ model Session {
 
   // Relations
   formation            Formation @relation(fields: [idFormation], references: [idFormation])
+  salle                Salle?    @relation("SessionsSalle", fields: [idSalle], references: [idSalle])
   formateurPrincipal   Formateur? @relation(fields: [formateurPrincipalId], references: [idFormateur])
   inscriptionsSessions InscriptionSession[]
   evaluations          Evaluation[]
@@ -420,6 +425,7 @@ model Session {
   interventions        InterventionFormateur[]
 
   @@index([idFormation])
+  @@index([idSalle])
   @@index([dateDebut])
   @@map("sessions")
 }
@@ -799,6 +805,53 @@ model PreferenceNotification {
 
   @@unique([idUtilisateur, categorie])
   @@map("preferences_notifications")
+}
+
+/// Salles de formation et ateliers (table de référence fixe)
+/// Soft delete : statut ACTIVE/INACTIVE au lieu de suppression
+model Salle {
+  idSalle            Int       @id @default(autoincrement()) @map("id_salle")
+
+  // === IDENTIFICATION ===
+  nom                String    @unique // "Atelier A", "Salle informatique", etc.
+  code               String?   @unique // "ATEL_A", "INFO", etc. (pour références programmatiques)
+
+  // === CAPACITÉ ET CARACTÉRISTIQUES ===
+  capaciteMax        Int       @map("capacite_max") // Nombre max de personnes
+  surfaceM2          Int?      @map("surface_m2") // Surface en m²
+  etage              Int?      // Numéro d'étage
+
+  // === ÉQUIPEMENTS ===
+  equipements        String[]  @default([]) // ["ETABLI_BIJOU", "POSTE_SERTI", "ORDINATEUR_CAO", etc.]
+  formationsCompatibles String[] @default([]) @map("formations_compatibles") // Formations pouvant utiliser cette salle
+
+  // === DISPONIBILITÉ ===
+  disponibleWeekend  Boolean   @default(false) @map("disponible_weekend")
+  disponibleSoir     Boolean   @default(false) @map("disponible_soir") // Après 18h
+
+  // === STATUT (soft delete) ===
+  statut             String    @default("ACTIVE") // ACTIVE | MAINTENANCE | HORS_SERVICE | INACTIVE
+  motifIndisponibilite String? @db.Text @map("motif_indisponibilite") // Si MAINTENANCE ou HORS_SERVICE
+  dateDebutIndispo   DateTime? @map("date_debut_indispo") @db.Date
+  dateFinIndispo     DateTime? @map("date_fin_indispo") @db.Date
+
+  // === MÉTADONNÉES ===
+  notes              String?   @db.Text // Notes internes admin
+  photoUrl           String?   @map("photo_url") // Photo de la salle (optionnel)
+
+  // === TRAÇABILITÉ ===
+  creeLe             DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe          DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // === RELATIONS ===
+  sessions           Session[] @relation("SessionsSalle")
+  // evenements: on garde String pour l'instant, FK plus tard
+  // reservations: table optionnelle pour planning détaillé
+
+  // === INDEX POUR PERFORMANCES ===
+  @@index([nom]) // Recherche par nom
+  @@index([statut]) // Filtrage salles actives
+  @@map("salles")
 }
 
 /// Événements du planning (portes ouvertes, stages, réunions, etc.)
