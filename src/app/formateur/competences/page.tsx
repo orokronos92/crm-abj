@@ -458,116 +458,81 @@ export default function CompetencesPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-full">
-        {/* Section sticky : Titre + Cartouche + Onglets */}
-        <div className="flex-shrink-0 bg-[rgb(var(--background))]">
-          {/* Titre */}
-          <div className="px-6 pt-6 pb-4">
-            <h1 className="text-2xl font-bold text-[rgb(var(--foreground))]">
+      <div className="flex flex-col h-[calc(100vh-8rem)]">
+        {/* Header/Cartouche/Onglets - partie fixe (ne scroll jamais) */}
+        <div className="flex-shrink-0 space-y-4 pb-6">
+          {/* Header */}
+          <div>
+            <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">
               Compétences & Conformité Qualiopi
             </h1>
-            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
+            <p className="text-[rgb(var(--muted-foreground))] mt-1">
               Gestion de votre profil formateur et justificatifs Qualiopi (Indicateurs 21 & 22)
             </p>
           </div>
 
           {/* Cartouche Formateur */}
-          <div className="px-6 pb-4">
-            <div className="p-4 bg-[rgb(var(--card))] rounded-xl border border-[rgba(var(--border),0.3)] flex items-center gap-4">
-              {/* Photo placeholder avec pointillés */}
-              <div className="w-20 h-20 rounded-full border-2 border-dashed border-[rgba(var(--border),0.5)] flex items-center justify-center bg-[rgba(var(--accent),0.05)] flex-shrink-0">
-                <span className="text-2xl font-bold text-[rgb(var(--accent))]">
-                  {FORMATEUR_DATA.photo_initiales}
-                </span>
-              </div>
+          <div className="p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgba(var(--border),0.3)] flex items-center gap-6">
+            {/* Photo placeholder rectangulaire avec pointillés */}
+            <div className="w-32 h-40 rounded-lg border-2 border-dashed border-[rgba(var(--border),0.5)] flex items-center justify-center bg-[rgba(var(--accent),0.05)] flex-shrink-0">
+              <span className="text-4xl font-bold text-[rgb(var(--accent))]">
+                {FORMATEUR_DATA.photo_initiales}
+              </span>
+            </div>
 
-              {/* Informations formateur */}
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-[rgb(var(--foreground))]">
-                  {FORMATEUR_DATA.prenom} {FORMATEUR_DATA.nom}
-                </h2>
-                <div className="flex items-center gap-4 mt-2 text-sm text-[rgb(var(--muted-foreground))]">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    <span>{FORMATEUR_DATA.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    <span>{FORMATEUR_DATA.telephone}</span>
-                  </div>
+            {/* Informations formateur */}
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-[rgb(var(--foreground))] mb-3">
+                {FORMATEUR_DATA.prenom} {FORMATEUR_DATA.nom}
+              </h2>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 text-base text-[rgb(var(--foreground))]">
+                  <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
+                  <span className="font-medium">{FORMATEUR_DATA.email}</span>
+                </div>
+                <div className="flex items-center gap-3 text-base text-[rgb(var(--foreground))]">
+                  <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
+                  <span className="font-medium">{FORMATEUR_DATA.telephone}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Onglets */}
-          <div className="px-6">
-            <div className="flex gap-2 border-b border-[rgba(var(--border),0.3)]">
-              {[
-                { id: 'profil', label: 'Profil', icon: User },
-                { id: 'competences', label: 'Compétences & Qualifications', icon: Award },
-                { id: 'expertise', label: 'Expertise & Méthodes', icon: Lightbulb },
-                { id: 'maintien', label: 'Maintien des Compétences', icon: TrendingUp },
-                { id: 'tracabilite', label: 'Traçabilité Pédagogique', icon: BarChart3 },
-                { id: 'documents', label: 'Documents & Preuves', icon: FolderOpen },
-              ].map((tab) => {
-                const Icon = tab.icon
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${
-                      activeTab === tab.id
-                        ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))]'
-                        : 'border-transparent text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{tab.label}</span>
-                  </button>
-                )
-              })}
-            </div>
+          <div className="flex gap-2 border-b border-[rgba(var(--border),0.3)]">
+            {[
+              { id: 'profil', label: 'Profil', icon: User },
+              { id: 'competences', label: 'Compétences & Qualifications', icon: Award },
+              { id: 'expertise', label: 'Expertise & Méthodes', icon: Lightbulb },
+              { id: 'maintien', label: 'Maintien des Compétences', icon: TrendingUp },
+              { id: 'tracabilite', label: 'Traçabilité Pédagogique', icon: BarChart3 },
+              { id: 'documents', label: 'Documents & Preuves', icon: FolderOpen },
+            ].map((tab) => {
+              const Icon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${
+                    activeTab === tab.id
+                      ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))]'
+                      : 'border-transparent text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{tab.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {/* Contenu scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-6">
           {/* Onglet 1 - Profil Formateur */}
           {activeTab === 'profil' && (
             <div className="space-y-6">
-              {/* Carte identité */}
-              <div className="p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgba(var(--border),0.3)]">
-                <div className="flex items-start gap-6">
-                  {/* Photo */}
-                  <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white font-bold text-3xl flex-shrink-0">
-                    {FORMATEUR_DATA.photo_initiales}
-                  </div>
-
-                  {/* Infos principales */}
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-[rgb(var(--foreground))] mb-2">
-                      {FORMATEUR_DATA.prenom} {FORMATEUR_DATA.nom}
-                    </h2>
-                    <div className="inline-block px-3 py-1 bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] rounded-full text-sm font-medium mb-4">
-                      {FORMATEUR_DATA.statut}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-base">
-                      <div className="flex items-center gap-3 text-[rgb(var(--foreground))]">
-                        <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
-                        <span className="font-medium">{FORMATEUR_DATA.email}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-[rgb(var(--foreground))]">
-                        <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
-                        <span className="font-medium">{FORMATEUR_DATA.telephone}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Expertise métier */}
               <div className="p-6 bg-[rgb(var(--card))] rounded-xl border border-[rgba(var(--border),0.3)]">
                 <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-4 flex items-center gap-2">
