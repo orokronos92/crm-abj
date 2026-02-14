@@ -458,49 +458,82 @@ export default function CompetencesPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        {/* Header page */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[rgb(var(--foreground))]">
-            Compétences & Conformité Qualiopi
-          </h1>
-          <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
-            Gestion de votre profil formateur et justificatifs Qualiopi (Indicateurs 21 & 22)
-          </p>
-        </div>
+      <div className="flex flex-col h-full">
+        {/* Section sticky : Titre + Cartouche + Onglets */}
+        <div className="flex-shrink-0 bg-[rgb(var(--background))]">
+          {/* Titre */}
+          <div className="px-6 pt-6 pb-4">
+            <h1 className="text-2xl font-bold text-[rgb(var(--foreground))]">
+              Compétences & Conformité Qualiopi
+            </h1>
+            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
+              Gestion de votre profil formateur et justificatifs Qualiopi (Indicateurs 21 & 22)
+            </p>
+          </div>
 
-        {/* Onglets horizontaux dans le canvas */}
-        <div className="mb-6">
-          <div className="flex gap-2 border-b border-[rgba(var(--border),0.3)]">
-            {[
-              { id: 'profil', label: 'Profil', icon: User },
-              { id: 'competences', label: 'Compétences & Qualifications', icon: Award },
-              { id: 'expertise', label: 'Expertise & Méthodes', icon: Lightbulb },
-              { id: 'maintien', label: 'Maintien des Compétences', icon: TrendingUp },
-              { id: 'tracabilite', label: 'Traçabilité Pédagogique', icon: BarChart3 },
-              { id: 'documents', label: 'Documents & Preuves', icon: FolderOpen },
-            ].map((tab) => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${
-                    activeTab === tab.id
-                      ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))]'
-                      : 'border-transparent text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{tab.label}</span>
-                </button>
-              )
-            })}
+          {/* Cartouche Formateur */}
+          <div className="px-6 pb-4">
+            <div className="p-4 bg-[rgb(var(--card))] rounded-xl border border-[rgba(var(--border),0.3)] flex items-center gap-4">
+              {/* Photo placeholder avec pointillés */}
+              <div className="w-20 h-20 rounded-full border-2 border-dashed border-[rgba(var(--border),0.5)] flex items-center justify-center bg-[rgba(var(--accent),0.05)] flex-shrink-0">
+                <span className="text-2xl font-bold text-[rgb(var(--accent))]">
+                  {FORMATEUR_DATA.photo_initiales}
+                </span>
+              </div>
+
+              {/* Informations formateur */}
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-[rgb(var(--foreground))]">
+                  {FORMATEUR_DATA.prenom} {FORMATEUR_DATA.nom}
+                </h2>
+                <div className="flex items-center gap-4 mt-2 text-sm text-[rgb(var(--muted-foreground))]">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    <span>{FORMATEUR_DATA.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    <span>{FORMATEUR_DATA.telephone}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Onglets */}
+          <div className="px-6">
+            <div className="flex gap-2 border-b border-[rgba(var(--border),0.3)]">
+              {[
+                { id: 'profil', label: 'Profil', icon: User },
+                { id: 'competences', label: 'Compétences & Qualifications', icon: Award },
+                { id: 'expertise', label: 'Expertise & Méthodes', icon: Lightbulb },
+                { id: 'maintien', label: 'Maintien des Compétences', icon: TrendingUp },
+                { id: 'tracabilite', label: 'Traçabilité Pédagogique', icon: BarChart3 },
+                { id: 'documents', label: 'Documents & Preuves', icon: FolderOpen },
+              ].map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${
+                      activeTab === tab.id
+                        ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))]'
+                        : 'border-transparent text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{tab.label}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Contenu des onglets */}
-        <div className="space-y-6">
+        {/* Contenu scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="space-y-6">
           {/* Onglet 1 - Profil Formateur */}
           {activeTab === 'profil' && (
             <div className="space-y-6">
@@ -1516,6 +1549,7 @@ export default function CompetencesPage() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </DashboardLayout>
