@@ -162,6 +162,7 @@ docs/                 # Spécifications (ne pas modifier sans demander)
 - @docs/resume_last3.md — Session système notifications SSE complet v1.1 (avec multi-interface)
 - @docs/resume_last4.md — Session système documentaire Qualiopi + dataset professionnel complet
 - @docs/resume_last6.md — Session refonte section Planning avec vues annuelles et gestion événements
+- @docs/resume_last7.md — Session optimisation timeline Planning : calcul occupation réel + code couleur stratégique
 
 ## Imports
 
