@@ -11,7 +11,10 @@ import type { NextRequest } from 'next/server'
 const publicRoutes = [
   '/connexion',
   '/api/auth',
-  '/api/notifications/ingest', // Endpoint pour n8n (API Key auth uniquement)
+  '/api/notifications', // Tous les endpoints de notifications (temporaire pour tests)
+  '/api/salles', // API salles (temporaire pour tests)
+  '/api/evenements', // API événements (temporaire pour tests)
+  '/api/formateurs', // API formateurs (création rapide sans auth)
   '/_next',
   '/favicon.ico'
 ]
