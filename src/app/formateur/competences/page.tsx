@@ -17,6 +17,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  Euro,
   Calendar,
   Briefcase,
   GraduationCap,
@@ -46,6 +47,7 @@ const FORMATEUR_DATA = {
   telephone: '06 12 34 56 78',
   statut: 'Intervenant externe',
   photo_initiales: 'ML',
+  taux_horaire: 65, // 520€/jour ÷ 8h
 
   // Profil
   domaines_expertise: ['Bijouterie', 'Sertissage', 'Joaillerie fine'],
@@ -482,17 +484,21 @@ export default function CompetencesPage() {
 
             {/* Informations formateur */}
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-[rgb(var(--foreground))] mb-3">
+              <h2 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-4">
                 {FORMATEUR_DATA.prenom} {FORMATEUR_DATA.nom}
               </h2>
               <div className="space-y-2">
-                <div className="flex items-center gap-3 text-base text-[rgb(var(--foreground))]">
-                  <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
+                <div className="flex items-center gap-3 text-lg text-[rgb(var(--foreground))]">
+                  <Mail className="w-6 h-6 text-[rgb(var(--accent))]" />
                   <span className="font-medium">{FORMATEUR_DATA.email}</span>
                 </div>
-                <div className="flex items-center gap-3 text-base text-[rgb(var(--foreground))]">
-                  <Phone className="w-5 h-5 text-[rgb(var(--accent))]" />
+                <div className="flex items-center gap-3 text-lg text-[rgb(var(--foreground))]">
+                  <Phone className="w-6 h-6 text-[rgb(var(--accent))]" />
                   <span className="font-medium">{FORMATEUR_DATA.telephone}</span>
+                </div>
+                <div className="flex items-center gap-3 text-lg text-[rgb(var(--foreground))]">
+                  <Euro className="w-6 h-6 text-[rgb(var(--accent))]" />
+                  <span className="font-medium">{FORMATEUR_DATA.taux_horaire}€/heure</span>
                 </div>
               </div>
             </div>
