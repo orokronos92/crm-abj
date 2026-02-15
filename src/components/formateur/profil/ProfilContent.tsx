@@ -3,12 +3,15 @@
 import { useProfilFormateur } from '@/contexts/ProfilFormateurContext'
 import { StepInformationsEssentielles } from './steps/StepInformationsEssentielles'
 import { StepDiplomes } from './steps/StepDiplomes'
+import { StepCertifications } from './steps/StepCertifications'
+import { StepFormationsPedagogiques } from './steps/StepFormationsPedagogiques'
+import { StepPortfolio } from './steps/StepPortfolio'
+import { StepCompetences } from './steps/StepCompetences'
+import { StepMethodesPedagogiques } from './steps/StepMethodesPedagogiques'
+import { StepFormationsContinues } from './steps/StepFormationsContinues'
+import { StepVeilleProfessionnelle } from './steps/StepVeilleProfessionnelle'
 import { ETAPES_PROFIL_FORMATEUR } from '@/config/formateur/profil.config'
 import { Loader2 } from 'lucide-react'
-
-// Import des autres étapes (à créer)
-// import { StepCertifications } from './steps/StepCertifications'
-// etc...
 
 export function ProfilContent() {
   const { etapeActuelle, chargement } = useProfilFormateur()
@@ -62,54 +65,19 @@ function renderEtapeContent(etapeIndex: number) {
     case 1:
       return <StepDiplomes />
     case 2:
-      // return <StepCertifications />
-      return (
-        <div className="text-center py-12 text-[rgb(var(--muted-foreground))]">
-          Composant StepCertifications à créer
-        </div>
-      )
+      return <StepCertifications />
     case 3:
-      // return <StepFormationsPedagogiques />
-      return (
-        <div className="text-center py-12 text-[rgb(var(--muted-foreground))]">
-          Composant StepFormationsPedagogiques à créer
-        </div>
-      )
+      return <StepFormationsPedagogiques />
     case 4:
-      // return <StepPortfolio />
-      return (
-        <div className="text-center py-12 text-[rgb(var(--muted-foreground))]">
-          Composant StepPortfolio à créer
-        </div>
-      )
+      return <StepPortfolio />
     case 5:
-      // return <StepCompetences />
-      return (
-        <div className="text-center py-12 text-[rgb(var(--muted-foreground))]">
-          Composant StepCompetences à créer
-        </div>
-      )
+      return <StepCompetences />
     case 6:
-      // return <StepMethodesPedagogiques />
-      return (
-        <div className="text-center py-12 text-[rgb(var(--muted-foreground))]">
-          Composant StepMethodesPedagogiques à créer
-        </div>
-      )
+      return <StepMethodesPedagogiques />
     case 7:
-      // return <StepFormationsContinues />
-      return (
-        <div className="text-center py-12 text-[rgb(var(--muted-foreground))]">
-          Composant StepFormationsContinues à créer
-        </div>
-      )
+      return <StepFormationsContinues />
     case 8:
-      // return <StepVeilleProfessionnelle />
-      return (
-        <div className="text-center py-12 text-[rgb(var(--muted-foreground))]">
-          Composant StepVeilleProfessionnelle à créer
-        </div>
-      )
+      return <StepVeilleProfessionnelle />
     default:
       return null
   }
