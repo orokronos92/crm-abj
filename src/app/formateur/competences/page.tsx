@@ -482,22 +482,27 @@ export default function CompetencesPage() {
               </span>
             </div>
 
-            {/* Informations formateur */}
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-4">
-                {FORMATEUR_DATA.prenom} {FORMATEUR_DATA.nom}
-              </h2>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 text-lg text-[rgb(var(--foreground))]">
-                  <Mail className="w-6 h-6 text-[rgb(var(--accent))]" />
+            {/* Informations formateur - Grid 2 colonnes pour remplir tout l'espace */}
+            <div className="flex-1 grid grid-cols-2 gap-8 items-center">
+              {/* Colonne gauche - Nom */}
+              <div>
+                <h2 className="text-5xl font-bold text-[rgb(var(--foreground))]">
+                  {FORMATEUR_DATA.prenom} {FORMATEUR_DATA.nom}
+                </h2>
+              </div>
+
+              {/* Colonne droite - Contacts */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-4 text-2xl text-[rgb(var(--foreground))]">
+                  <Mail className="w-8 h-8 text-[rgb(var(--accent))]" />
                   <span className="font-medium">{FORMATEUR_DATA.email}</span>
                 </div>
-                <div className="flex items-center gap-3 text-lg text-[rgb(var(--foreground))]">
-                  <Phone className="w-6 h-6 text-[rgb(var(--accent))]" />
+                <div className="flex items-center gap-4 text-2xl text-[rgb(var(--foreground))]">
+                  <Phone className="w-8 h-8 text-[rgb(var(--accent))]" />
                   <span className="font-medium">{FORMATEUR_DATA.telephone}</span>
                 </div>
-                <div className="flex items-center gap-3 text-lg text-[rgb(var(--foreground))]">
-                  <Euro className="w-6 h-6 text-[rgb(var(--accent))]" />
+                <div className="flex items-center gap-4 text-2xl text-[rgb(var(--foreground))]">
+                  <Euro className="w-8 h-8 text-[rgb(var(--accent))]" />
                   <span className="font-medium">{FORMATEUR_DATA.taux_horaire}€/heure</span>
                 </div>
               </div>

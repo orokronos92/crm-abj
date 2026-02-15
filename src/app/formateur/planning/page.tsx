@@ -67,7 +67,7 @@ export default function FormateurPlanning() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-2">
-          Mon Planning
+          Tableau de bord
         </h1>
         <p className="text-[rgb(var(--muted-foreground))]">
           Bienvenue dans votre espace formateur
@@ -113,7 +113,7 @@ export default function FormateurPlanning() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Sessions à venir */}
         <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl">
           <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
@@ -157,67 +157,6 @@ export default function FormateurPlanning() {
                     <BookOpen className="w-4 h-4" />
                     {session.salle}
                   </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Mes élèves */}
-        <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl">
-          <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-                Mes élèves actuels
-              </h2>
-              <button className="text-sm text-[rgb(var(--accent))] hover:text-[rgb(var(--accent-light))] flex items-center gap-1">
-                Voir tout
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="p-6 space-y-4">
-            {MOCK_ELEVES.map((eleve) => (
-              <div
-                key={eleve.id}
-                className="p-4 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-colors"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center text-[rgb(var(--primary))] font-bold">
-                      {eleve.nom.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-[rgb(var(--foreground))]">
-                        {eleve.nom}
-                      </h3>
-                      <p className="text-sm text-[rgb(var(--muted-foreground))]">
-                        {eleve.formation}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors">
-                      <Eye className="w-4 h-4 text-[rgb(var(--accent))]" />
-                    </button>
-                    <button className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors">
-                      <Edit className="w-4 h-4 text-[rgb(var(--accent))]" />
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div>
-                    <p className="text-[rgb(var(--muted-foreground))]">Progression</p>
-                    <p className="font-medium text-[rgb(var(--foreground))]">{eleve.progression}%</p>
-                  </div>
-                  <div>
-                    <p className="text-[rgb(var(--muted-foreground))]">Présence</p>
-                    <p className="font-medium text-[rgb(var(--success))]">{eleve.presence}%</p>
-                  </div>
-                  <div>
-                    <p className="text-[rgb(var(--muted-foreground))]">Dernière note</p>
-                    <p className="font-medium text-[rgb(var(--accent))]">{eleve.derniereNote}/20</p>
-                  </div>
                 </div>
               </div>
             ))}

@@ -1,12 +1,14 @@
 /**
- * Page Notifications complète
- * Historique et gestion de toutes les notifications Marjorie
+ * Page Notifications complète avec SSE
+ * Historique et gestion de toutes les notifications Marjorie en temps réel
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { useNotifications } from '@/hooks/use-notifications'
 import {
   Bell,
   CheckCircle,
@@ -31,8 +33,11 @@ import {
   Target,
 } from 'lucide-react'
 
-// Mock notifications complètes
-const MOCK_NOTIFICATIONS = [
+// Types pour les filtres
+type NotifFilter = 'TOUTES' | 'NON_LUES' | 'BASSE' | 'NORMALE' | 'HAUTE' | 'URGENTE'
+
+// Mock notifications pour le développement (sera remplacé par les vraies)
+const MOCK_NOTIFICATIONS_BACKUP = [
   // Aujourd'hui
   {
     id: 1,
@@ -61,7 +66,7 @@ const MOCK_NOTIFICATIONS = [
     type: 'info',
     categorie: 'PROSPECTS',
     titre: '3 nouveaux prospects cette semaine',
-    message: 'Sophie Martin (CAP ATBJ - CPF), Lucas Dubois (Sertissage N1 - Personnel), Emma Rousseau (Joaillerie Création - OPCO). Emails de bienvenue envoyés automatiquement.',
+    message: 'Marie Leroy (CAP ATBJ - CPF), Lucas Dubois (Sertissage N1 - Personnel), Emma Rousseau (Joaillerie Création - OPCO). Emails de bienvenue envoyés automatiquement.',
     date: '2024-02-07 09:00',
     lu: true,
     icon: 'info',
@@ -176,12 +181,49 @@ const MOCK_NOTIFICATIONS = [
   },
 ]
 
-type NotifFilter = 'TOUTES' | 'NON_LUES' | 'success' | 'warning' | 'error' | 'info' | 'reminder'
-
 export default function NotificationsPage() {
+  const searchParams = useSearchParams()
+  const highlightId = searchParams.get('highlight') // ID de la notification à mettre en évidence
+
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState<NotifFilter>('TOUTES')
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS)
+
+  // Utiliser le hook avec SSE activé
+  const {
+    notifications: realNotifications,
+    counts,
+    loading,
+    error,
+    sseConnected,
+    refresh,
+    markAsRead,
+    markAllAsRead,
+    executeAction
+  } = useNotifications({
+    useSSE: true,
+    limit: 100 // Charger plus de notifications pour la page dédiée
+  })
+
+  // Utiliser les vraies notifications ou le mock si pas de connexion
+  const notifications = realNotifications.length > 0 ? realNotifications : []
+
+  // Faire défiler jusqu'à la notification mise en évidence
+  useEffect(() => {
+    if (highlightId) {
+      // Attendre un peu que le DOM soit prêt
+      setTimeout(() => {
+        const element = document.getElementById(`notification-${highlightId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          // Ajouter un effet visuel temporaire
+          element.classList.add('animate-pulse-highlight')
+          setTimeout(() => {
+            element.classList.remove('animate-pulse-highlight')
+          }, 3000) // Retirer l'animation après 3 secondes
+        }
+      }, 500)
+    }
+  }, [highlightId])
 
   const filteredNotifications = notifications.filter(notif => {
     const matchesSearch = notif.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -189,24 +231,26 @@ export default function NotificationsPage() {
       notif.categorie.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesFilter = filter === 'TOUTES' ? true :
-      filter === 'NON_LUES' ? !notif.lu :
-      notif.type === filter
+      filter === 'NON_LUES' ? !notif.lue :
+      notif.priorite === filter
 
     return matchesSearch && matchesFilter
   })
 
-  const marquerToutLu = () => {
-    setNotifications(notifications.map(n => ({ ...n, lu: true })))
+  const marquerToutLu = async () => {
+    await markAllAsRead()
   }
 
   const supprimerLues = () => {
-    setNotifications(notifications.filter(n => !n.lu))
+    // TODO: Implémenter suppression des notifications lues via API
+    console.log('Suppression des notifications lues à implémenter')
   }
 
-  const toggleLu = (id: number) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, lu: !n.lu } : n
-    ))
+  const toggleLu = async (id: number) => {
+    const notif = notifications.find(n => n.idNotification === id)
+    if (notif && !notif.lue) {
+      await markAsRead(id)
+    }
   }
 
   const getNotificationIcon = (iconType: string) => {
@@ -220,42 +264,42 @@ export default function NotificationsPage() {
     }
   }
 
-  const getNotificationColors = (type: string) => {
-    switch (type) {
-      case 'success':
-        return {
-          bg: 'bg-[rgba(var(--success),0.1)]',
-          border: 'border-[rgba(var(--success),0.3)]',
-          icon: 'text-[rgb(var(--success))]',
-          iconBg: 'bg-[rgba(var(--success),0.15)]',
-        }
-      case 'warning':
-        return {
-          bg: 'bg-[rgba(var(--warning),0.1)]',
-          border: 'border-[rgba(var(--warning),0.3)]',
-          icon: 'text-[rgb(var(--warning))]',
-          iconBg: 'bg-[rgba(var(--warning),0.15)]',
-        }
-      case 'error':
+  const getNotificationColors = (priorite: string) => {
+    switch (priorite) {
+      case 'URGENTE':
         return {
           bg: 'bg-[rgba(var(--error),0.1)]',
           border: 'border-[rgba(var(--error),0.3)]',
           icon: 'text-[rgb(var(--error))]',
           iconBg: 'bg-[rgba(var(--error),0.15)]',
         }
-      case 'reminder':
+      case 'HAUTE':
         return {
-          bg: 'bg-[rgba(var(--accent),0.1)]',
-          border: 'border-[rgba(var(--accent),0.3)]',
-          icon: 'text-[rgb(var(--accent))]',
-          iconBg: 'bg-[rgba(var(--accent),0.15)]',
+          bg: 'bg-[rgba(var(--warning),0.1)]',
+          border: 'border-[rgba(var(--warning),0.3)]',
+          icon: 'text-[rgb(var(--warning))]',
+          iconBg: 'bg-[rgba(var(--warning),0.15)]',
         }
-      default:
+      case 'NORMALE':
+        return {
+          bg: 'bg-[rgba(var(--success),0.1)]',
+          border: 'border-[rgba(var(--success),0.3)]',
+          icon: 'text-[rgb(var(--success))]',
+          iconBg: 'bg-[rgba(var(--success),0.15)]',
+        }
+      case 'BASSE':
         return {
           bg: 'bg-[rgba(var(--info),0.1)]',
           border: 'border-[rgba(var(--info),0.3)]',
           icon: 'text-[rgb(var(--info))]',
           iconBg: 'bg-[rgba(var(--info),0.15)]',
+        }
+      default:
+        return {
+          bg: 'bg-[rgba(var(--accent),0.1)]',
+          border: 'border-[rgba(var(--accent),0.3)]',
+          icon: 'text-[rgb(var(--accent))]',
+          iconBg: 'bg-[rgba(var(--accent),0.15)]',
         }
     }
   }
@@ -277,7 +321,7 @@ export default function NotificationsPage() {
     }
   }
 
-  const notificationsNonLues = notifications.filter(n => !n.lu).length
+  const notificationsNonLues = counts.nonLues
 
   return (
     <DashboardLayout>
@@ -288,6 +332,11 @@ export default function NotificationsPage() {
             <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">Notifications</h1>
             <p className="text-[rgb(var(--muted-foreground))] mt-1">
               Historique complet des retours et alertes de Marjorie
+              {sseConnected && (
+                <span className="ml-2 text-xs text-[rgb(var(--success))]">
+                  ● Temps réel activé
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -315,7 +364,7 @@ export default function NotificationsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Total</p>
                 <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {notifications.length}
+                  {counts.total}
                 </p>
               </div>
               <Bell className="w-8 h-8 text-[rgb(var(--accent))]" />
@@ -327,7 +376,7 @@ export default function NotificationsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Non lues</p>
                 <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
-                  {notificationsNonLues}
+                  {counts.nonLues}
                 </p>
               </div>
               <Sparkles className="w-8 h-8 text-[rgb(var(--accent))]" />
@@ -337,36 +386,40 @@ export default function NotificationsPage() {
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Succès</p>
-                <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">
-                  {notifications.filter(n => n.type === 'success').length}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Alertes</p>
-                <p className="text-3xl font-bold text-[rgb(var(--warning))] mt-1">
-                  {notifications.filter(n => n.type === 'warning').length}
-                </p>
-              </div>
-              <AlertCircle className="w-8 h-8 text-[rgb(var(--warning))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Erreurs</p>
+                <p className="text-sm text-[rgb(var(--muted-foreground))]">Urgentes</p>
                 <p className="text-3xl font-bold text-[rgb(var(--error))] mt-1">
-                  {notifications.filter(n => n.type === 'error').length}
+                  {counts.urgentes}
                 </p>
               </div>
-              <XCircle className="w-8 h-8 text-[rgb(var(--error))]" />
+              <AlertTriangle className="w-8 h-8 text-[rgb(var(--error))]" />
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[rgb(var(--muted-foreground))]">Actions requises</p>
+                <p className="text-3xl font-bold text-[rgb(var(--warning))] mt-1">
+                  {counts.actionsRequises}
+                </p>
+              </div>
+              <Target className="w-8 h-8 text-[rgb(var(--warning))]" />
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[rgb(var(--muted-foreground))]">Connexion SSE</p>
+                <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">
+                  {sseConnected ? 'Actif' : 'Inactif'}
+                </p>
+              </div>
+              {sseConnected ? (
+                <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
+              ) : (
+                <XCircle className="w-8 h-8 text-[rgb(var(--error))]" />
+              )}
             </div>
           </div>
         </div>
@@ -393,11 +446,10 @@ export default function NotificationsPage() {
               >
                 <option value="TOUTES">Toutes</option>
                 <option value="NON_LUES">Non lues</option>
-                <option value="success">Succès</option>
-                <option value="warning">Alertes</option>
-                <option value="error">Erreurs</option>
-                <option value="info">Infos</option>
-                <option value="reminder">Rappels</option>
+                <option value="URGENTE">Urgentes</option>
+                <option value="HAUTE">Haute priorité</option>
+                <option value="NORMALE">Normale</option>
+                <option value="BASSE">Basse priorité</option>
               </select>
             </div>
           </div>
@@ -405,17 +457,29 @@ export default function NotificationsPage() {
 
         {/* Liste notifications */}
         <div className="space-y-3">
-          {filteredNotifications.length > 0 ? (
+          {loading && notifications.length === 0 ? (
+            <div className="card p-12 text-center">
+              <div className="w-16 h-16 border-4 border-[rgb(var(--accent))] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-lg text-[rgb(var(--muted-foreground))]">
+                Chargement des notifications...
+              </p>
+            </div>
+          ) : filteredNotifications.length > 0 ? (
             filteredNotifications.map((notif) => {
-              const colors = getNotificationColors(notif.type)
-              const IconComponent = getNotificationIcon(notif.icon)
+              const colors = getNotificationColors(notif.priorite)
+              const IconComponent = getNotificationIcon(notif.type || 'info')
               const CategorieIcon = getCategorieIcon(notif.categorie)
 
               return (
                 <div
-                  key={notif.id}
+                  key={notif.idNotification}
+                  id={`notification-${notif.idNotification}`}
                   className={`card p-5 ${colors.bg} ${colors.border} ${
-                    !notif.lu ? 'ring-2 ring-[rgba(var(--accent),0.3)]' : 'opacity-75'
+                    !notif.lue ? 'ring-2 ring-[rgba(var(--accent),0.3)]' : 'opacity-75'
+                  } ${
+                    highlightId && parseInt(highlightId) === notif.idNotification
+                      ? 'ring-4 ring-[rgb(var(--accent))] shadow-lg shadow-[rgba(var(--accent),0.2)]'
+                      : ''
                   } hover:opacity-100 transition-all`}
                 >
                   <div className="flex items-start gap-4">
@@ -440,17 +504,17 @@ export default function NotificationsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => toggleLu(notif.id)}
+                            onClick={() => toggleLu(notif.idNotification)}
                             className="p-2 hover:bg-[rgba(var(--accent),0.1)] rounded-lg transition-colors"
-                            title={notif.lu ? 'Marquer non lu' : 'Marquer lu'}
+                            title={notif.lue ? 'Marquer non lu' : 'Marquer lu'}
                           >
-                            {notif.lu ? (
+                            {notif.lue ? (
                               <EyeOff className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
                             ) : (
                               <Eye className="w-5 h-5 text-[rgb(var(--accent))]" />
                             )}
                           </button>
-                          {!notif.lu && (
+                          {!notif.lue && (
                             <div className="w-3 h-3 bg-[rgb(var(--accent))] rounded-full animate-pulse" />
                           )}
                         </div>
@@ -463,13 +527,24 @@ export default function NotificationsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs text-[rgb(var(--muted-foreground))]">
                           <Clock className="w-4 h-4" />
-                          <span>{notif.date}</span>
+                          <span>{new Date(notif.creeLe).toLocaleString('fr-FR')}</span>
                         </div>
 
-                        {notif.action_possible && (
-                          <button className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${colors.iconBg} ${colors.icon} hover:bg-opacity-80`}>
-                            {notif.action_possible}
+                        {notif.actionRequise && notif.typeAction && (
+                          <button
+                            onClick={() => executeAction && executeAction(notif.idNotification, notif.typeAction || '')}
+                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${colors.iconBg} ${colors.icon} hover:bg-opacity-80`}
+                          >
+                            {notif.typeAction}
                           </button>
+                        )}
+                        {notif.lienAction && (
+                          <a
+                            href={notif.lienAction}
+                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${colors.iconBg} ${colors.icon} hover:bg-opacity-80`}
+                          >
+                            Voir détails
+                          </a>
                         )}
                       </div>
                     </div>

@@ -11,27 +11,34 @@ import prisma from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Vérification de l'authentification
-    const session = await getServerSession(authConfig)
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
     const categorie = searchParams.get('categorie')
     const priorite = searchParams.get('priorite')
     const nonLuesSeulement = searchParams.get('nonLues') === 'true'
+    const roleParam = searchParams.get('role')
+
+    // Vérification de l'authentification (sauf si mode démo avec role)
+    const session = await getServerSession(authConfig)
+
+    // En mode démo, permettre l'accès si le rôle est fourni
+    if (!session?.user && !roleParam) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // Utiliser le rôle passé en paramètre ou celui de la session
+    const userRole = roleParam || session?.user?.role || 'admin'
+    const userId = session?.user?.id || 1
 
     // Construction du filtre selon le rôle de l'utilisateur
     const where: any = {}
 
     // Filtre par audience selon le rôle
-    if (session.user.role === 'admin') {
+    if (userRole === 'admin') {
       // Admin voit TOUS, ADMIN et SPECIFIQUE (si c'est pour lui)
       where.OR = [
         { audience: 'TOUS' },
@@ -39,11 +46,11 @@ export async function GET(request: NextRequest) {
         {
           AND: [
             { audience: 'SPECIFIQUE' },
-            { idUtilisateurCible: session.user.id }
+            { idUtilisateurCible: userId }
           ]
         }
       ]
-    } else if (session.user.role === 'professeur') {
+    } else if (userRole === 'professeur') {
       // Professeur voit TOUS, FORMATEUR et SPECIFIQUE (si c'est pour lui)
       where.OR = [
         { audience: 'TOUS' },
@@ -51,11 +58,11 @@ export async function GET(request: NextRequest) {
         {
           AND: [
             { audience: 'SPECIFIQUE' },
-            { idUtilisateurCible: session.user.id }
+            { idUtilisateurCible: userId }
           ]
         }
       ]
-    } else if (session.user.role === 'eleve') {
+    } else if (userRole === 'eleve') {
       // Élève voit TOUS, ELEVE et SPECIFIQUE (si c'est pour lui)
       where.OR = [
         { audience: 'TOUS' },
@@ -63,7 +70,7 @@ export async function GET(request: NextRequest) {
         {
           AND: [
             { audience: 'SPECIFIQUE' },
-            { idUtilisateurCible: session.user.id }
+            { idUtilisateurCible: userId }
           ]
         }
       ]
@@ -198,7 +205,7 @@ export async function PATCH(request: NextRequest) {
           {
             AND: [
               { audience: 'SPECIFIQUE' },
-              { idUtilisateurCible: session.user.id }
+              { idUtilisateurCible: userId }
             ]
           }
         ]

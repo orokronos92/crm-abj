@@ -1,29 +1,30 @@
 /**
  * Modal création/édition d'événement
- * Limite : 200 lignes max
+ * Connecté au backend via API /api/evenements et /api/salles
  */
 
 'use client'
 
-import { useState } from 'react'
-import { X, Calendar, Clock, MapPin, Users, PartyPopper, GraduationCap, Briefcase, Award, Phone } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Calendar, Clock, MapPin, Users, PartyPopper, GraduationCap, Briefcase, Award, Phone, AlertCircle } from 'lucide-react'
 
 interface Evenement {
-  id?: number
+  idEvenement?: number
   type: string
   titre: string
   date: string
   heureDebut: string
   heureFin: string
   salle: string
-  participants: number
+  nombreParticipants: number
   description?: string
+  notes?: string
 }
 
 interface EvenementFormModalProps {
   evenement?: Evenement // Si fourni = mode édition
   onClose: () => void
-  onSave: (evenement: Evenement) => void
+  onSuccess?: () => void // Callback après succès pour refresh
 }
 
 const TYPES_EVENEMENT = [
@@ -34,20 +35,18 @@ const TYPES_EVENEMENT = [
   { value: 'ENTRETIEN', label: 'Entretien', icon: Phone },
 ]
 
-const SALLES_OPTIONS = [
-  'Atelier A',
-  'Atelier B',
-  'Atelier C',
-  'Salle informatique',
-  'Salle théorie',
-  'Atelier polissage',
-  'Atelier taille',
-  'Salle réunion',
-  'Tous les ateliers',
-]
+interface Salle {
+  idSalle: number
+  nom: string
+  capaciteMax: number
+}
 
-export function EvenementFormModal({ evenement, onClose, onSave }: EvenementFormModalProps) {
+export function EvenementFormModal({ evenement, onClose, onSuccess }: EvenementFormModalProps) {
   const isEditing = !!evenement
+
+  const [salles, setSalles] = useState<Salle[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<Evenement>({
     type: evenement?.type || 'PORTES_OUVERTES',
@@ -55,19 +54,85 @@ export function EvenementFormModal({ evenement, onClose, onSave }: EvenementForm
     date: evenement?.date || new Date().toISOString().split('T')[0],
     heureDebut: evenement?.heureDebut || '09:00',
     heureFin: evenement?.heureFin || '17:00',
-    salle: evenement?.salle || 'Atelier A',
-    participants: evenement?.participants || 10,
+    salle: evenement?.salle || '',
+    nombreParticipants: evenement?.nombreParticipants || 10,
     description: evenement?.description || '',
+    notes: evenement?.notes || '',
   })
+
+  // Charger les salles depuis l'API
+  useEffect(() => {
+    async function fetchSalles() {
+      try {
+        const res = await fetch('/api/salles')
+        const data = await res.json()
+        if (data.success) {
+          setSalles(data.salles)
+          // Définir la première salle par défaut si pas de salle définie
+          if (!formData.salle && data.salles.length > 0) {
+            setFormData(prev => ({ ...prev, salle: data.salles[0].nom }))
+          }
+        }
+      } catch (err) {
+        console.error('Erreur chargement salles:', err)
+      }
+    }
+    fetchSalles()
+  }, [])
 
   const handleChange = (field: keyof Evenement, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    // Réinitialiser l'erreur quand l'utilisateur modifie le formulaire
+    if (error) setError(null)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
-    onClose()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const method = isEditing ? 'PATCH' : 'POST'
+      const url = isEditing
+        ? `/api/evenements/${evenement.idEvenement}`
+        : '/api/evenements'
+
+      const body = {
+        type: formData.type,
+        titre: formData.titre,
+        description: formData.description,
+        date: formData.date,
+        heureDebut: formData.heureDebut,
+        heureFin: formData.heureFin,
+        salle: formData.salle,
+        nombreParticipants: formData.nombreParticipants,
+        notes: formData.notes,
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        // Succès
+        onSuccess?.()
+        onClose()
+      } else if (res.status === 409) {
+        // Conflit de salle
+        setError(`Salle déjà occupée : ${data.details?.conflitAvec || 'conflit détecté'}`)
+      } else {
+        setError(data.error || 'Erreur lors de la sauvegarde')
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+      setError('Erreur réseau')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const typeConfig = TYPES_EVENEMENT.find(t => t.value === formData.type)
@@ -102,6 +167,14 @@ export function EvenementFormModal({ evenement, onClose, onSave }: EvenementForm
         {/* Formulaire */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
+            {/* Message d'erreur */}
+            {error && (
+              <div className="bg-[rgba(var(--error),0.1)] border border-[rgb(var(--error))] rounded-lg p-3 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-[rgb(var(--error))] flex-shrink-0 mt-0.5" />
+                <p className="text-[rgb(var(--error))] text-sm">{error}</p>
+              </div>
+            )}
+
             {/* Type d'événement */}
             <div>
               <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
@@ -192,11 +265,15 @@ export function EvenementFormModal({ evenement, onClose, onSave }: EvenementForm
                   className="w-full px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
                   required
                 >
-                  {SALLES_OPTIONS.map(salle => (
-                    <option key={salle} value={salle}>
-                      {salle}
-                    </option>
-                  ))}
+                  {salles.length === 0 ? (
+                    <option value="">Chargement des salles...</option>
+                  ) : (
+                    salles.map(salle => (
+                      <option key={salle.idSalle} value={salle.nom}>
+                        {salle.nom} ({salle.capaciteMax} places)
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
               <div>
@@ -206,8 +283,8 @@ export function EvenementFormModal({ evenement, onClose, onSave }: EvenementForm
                 </label>
                 <input
                   type="number"
-                  value={formData.participants}
-                  onChange={(e) => handleChange('participants', parseInt(e.target.value))}
+                  value={formData.nombreParticipants}
+                  onChange={(e) => handleChange('nombreParticipants', parseInt(e.target.value))}
                   min="1"
                   className="w-full px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
                   required
@@ -237,15 +314,25 @@ export function EvenementFormModal({ evenement, onClose, onSave }: EvenementForm
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-[rgb(var(--card))] hover:bg-[rgba(var(--accent),0.05)] rounded-lg transition-all"
+              disabled={loading}
+              className="px-4 py-2 bg-[rgb(var(--card))] hover:bg-[rgba(var(--accent),0.05)] rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Annuler
             </button>
             <button
+              type="submit"
               onClick={handleSubmit}
-              className="px-6 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all"
+              disabled={loading}
+              className="px-6 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {isEditing ? 'Enregistrer' : 'Créer l\'événement'}
+              {loading ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin"></span>
+                  Enregistrement...
+                </>
+              ) : (
+                isEditing ? 'Enregistrer' : 'Créer l\'événement'
+              )}
             </button>
           </div>
         </div>

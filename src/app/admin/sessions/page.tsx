@@ -555,7 +555,7 @@ export default function SessionsPage() {
       {/* Modal fiche session détaillée */}
       {selectedSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-[rgb(var(--card))] rounded-2xl shadow-2xl">
+          <div className="w-full max-w-6xl h-[90vh] bg-[rgb(var(--card))] rounded-2xl shadow-2xl flex flex-col">
             {/* Header session */}
             <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
               <div className="flex items-start justify-between">
@@ -657,30 +657,40 @@ export default function SessionsPage() {
                   </>
                 )}
               </div>
-            </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-[rgba(var(--border),0.3)]">
-              {['synthese', 'eleves', 'planning', 'statistiques'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-4 text-sm font-medium transition-all ${
-                    activeTab === tab
-                      ? 'text-[rgb(var(--accent))] border-b-2 border-[rgb(var(--accent))]'
-                      : 'text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'
-                  }`}
-                >
-                  {tab === 'synthese' && 'Synthèse'}
-                  {tab === 'eleves' && `Élèves (${selectedSession.places_prises})`}
-                  {tab === 'planning' && 'Planning'}
-                  {tab === 'statistiques' && 'Statistiques'}
-                </button>
-              ))}
+              {/* Onglets en forme de dossier */}
+              <div className="flex gap-1 pt-4">
+                {[
+                  { key: 'synthese', label: 'Synthèse', icon: FileText },
+                  { key: 'eleves', label: `Élèves (${selectedSession.places_prises})`, icon: Users },
+                  { key: 'planning', label: 'Planning', icon: Calendar }
+                ].map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = activeTab === tab.key
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`
+                        relative px-6 py-3 rounded-t-lg font-medium text-sm transition-all
+                        ${isActive
+                          ? 'bg-[rgb(var(--card))] text-[rgb(var(--accent))] border-t-2 border-[rgb(var(--accent))] -mb-px'
+                          : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))] hover:bg-[rgba(var(--accent),0.05)]'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`} />
+                        <span>{tab.label}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Contenu tabs */}
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto p-6">
               {/* Tab Synthèse */}
               {activeTab === 'synthese' && (
                 <div className="space-y-6">
@@ -841,52 +851,6 @@ export default function SessionsPage() {
                   <p className="text-[rgb(var(--muted-foreground))]">
                     Planning détaillé à venir (calendrier dynamique)
                   </p>
-                </div>
-              )}
-
-              {/* Tab Statistiques */}
-              {activeTab === 'statistiques' && (
-                <div className="space-y-6">
-                  {selectedSession.statut === 'EN_COURS' || selectedSession.statut === 'TERMINEE' ? (
-                    <>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="p-6 bg-[rgb(var(--secondary))] rounded-xl text-center">
-                          <BarChart3 className="w-8 h-8 text-[rgb(var(--success))] mx-auto mb-2" />
-                          <p className="text-3xl font-bold text-[rgb(var(--success))]">
-                            {selectedSession.moyenne_session?.toFixed(1) || '-'}
-                          </p>
-                          <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Moyenne générale /20</p>
-                        </div>
-                        <div className="p-6 bg-[rgb(var(--secondary))] rounded-xl text-center">
-                          <CheckCircle className="w-8 h-8 text-[rgb(var(--success))] mx-auto mb-2" />
-                          <p className="text-3xl font-bold text-[rgb(var(--success))]">
-                            {selectedSession.taux_assiduite || '-'}%
-                          </p>
-                          <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Taux d'assiduité</p>
-                        </div>
-                        <div className="p-6 bg-[rgb(var(--secondary))] rounded-xl text-center">
-                          <AlertCircle className="w-8 h-8 text-[rgb(var(--error))] mx-auto mb-2" />
-                          <p className="text-3xl font-bold text-[rgb(var(--error))]">
-                            {selectedSession.nb_abandons}
-                          </p>
-                          <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Abandons</p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 bg-gradient-to-r from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
-                        <p className="text-sm text-[rgb(var(--foreground))]">
-                          📊 Graphiques détaillés et analyses à venir (évolution moyennes, taux présence, etc.)
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="p-12 text-center bg-[rgb(var(--secondary))] rounded-lg">
-                      <BarChart3 className="w-16 h-16 text-[rgb(var(--muted-foreground))] mx-auto mb-4 opacity-50" />
-                      <p className="text-[rgb(var(--muted-foreground))]">
-                        Les statistiques seront disponibles une fois la session démarrée
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
             </div>

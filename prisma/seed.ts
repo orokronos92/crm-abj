@@ -167,11 +167,13 @@ async function main() {
   console.log('📋 Création des types de documents...')
 
   const typesDocuments = [
+    // Documents candidature
     {
       code: 'CV',
       libelle: 'Curriculum Vitae',
       categorie: 'candidature',
       obligatoire: true,
+      obligatoireQualiopi: false,
       ordreAffichage: 1
     },
     {
@@ -179,28 +181,151 @@ async function main() {
       libelle: 'Lettre de motivation',
       categorie: 'candidature',
       obligatoire: true,
+      obligatoireQualiopi: false,
       ordreAffichage: 2
-    },
-    {
-      code: 'PIECE_IDENTITE',
-      libelle: 'Pièce d\'identité',
-      categorie: 'administratif',
-      obligatoire: true,
-      ordreAffichage: 3
-    },
-    {
-      code: 'JUSTIF_FINANCEMENT',
-      libelle: 'Justificatif de financement',
-      categorie: 'financement',
-      obligatoire: false,
-      ordreAffichage: 4
     },
     {
       code: 'PHOTO',
       libelle: 'Photo d\'identité',
       categorie: 'candidature',
       obligatoire: true,
+      obligatoireQualiopi: false,
+      ordreAffichage: 3
+    },
+    {
+      code: 'DIPLOMES',
+      libelle: 'Diplômes obtenus',
+      categorie: 'candidature',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 4
+    },
+
+    // Documents administratifs
+    {
+      code: 'PIECE_IDENTITE',
+      libelle: 'Pièce d\'identité (CNI ou passeport)',
+      categorie: 'administratif',
+      obligatoire: true,
+      obligatoireQualiopi: false,
       ordreAffichage: 5
+    },
+    {
+      code: 'JUSTIF_DOMICILE',
+      libelle: 'Justificatif de domicile',
+      categorie: 'administratif',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 6
+    },
+    {
+      code: 'RIB',
+      libelle: 'RIB (pour remboursements)',
+      categorie: 'administratif',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 7
+    },
+
+    // Documents contractuels (Qualiopi Indicateur 9)
+    {
+      code: 'DEVIS_SIGNE',
+      libelle: 'Devis signé',
+      categorie: 'contractuel',
+      obligatoire: true,
+      obligatoireQualiopi: true,
+      indicateurQualiopi: '9',
+      ordreAffichage: 8
+    },
+    {
+      code: 'CONTRAT_FORMATION',
+      libelle: 'Contrat de formation',
+      categorie: 'contractuel',
+      obligatoire: true,
+      obligatoireQualiopi: true,
+      indicateurQualiopi: '9',
+      ordreAffichage: 9
+    },
+    {
+      code: 'CONVENTION_FORMATION',
+      libelle: 'Convention de formation (si financement tiers)',
+      categorie: 'contractuel',
+      obligatoire: false,
+      obligatoireQualiopi: true,
+      indicateurQualiopi: '9',
+      ordreAffichage: 10
+    },
+    {
+      code: 'REGLEMENT_INTERIEUR',
+      libelle: 'Règlement intérieur signé',
+      categorie: 'contractuel',
+      obligatoire: true,
+      obligatoireQualiopi: true,
+      indicateurQualiopi: '13',
+      ordreAffichage: 11
+    },
+
+    // Documents financiers
+    {
+      code: 'JUSTIF_FINANCEMENT',
+      libelle: 'Justificatif de financement',
+      categorie: 'financier',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 12
+    },
+    {
+      code: 'ACCORD_OPCO',
+      libelle: 'Accord de prise en charge OPCO',
+      categorie: 'financier',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 13
+    },
+    {
+      code: 'ACCORD_CPF',
+      libelle: 'Validation financement CPF',
+      categorie: 'financier',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 14
+    },
+    {
+      code: 'ATTESTATION_POLE_EMPLOI',
+      libelle: 'Attestation Pôle Emploi (si demandeur d\'emploi)',
+      categorie: 'financier',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 15
+    },
+
+    // Documents pédagogiques (Qualiopi Indicateur 11)
+    {
+      code: 'ATTESTATION_ASSIDUITE',
+      libelle: 'Attestation d\'assiduité',
+      categorie: 'pedagogique',
+      obligatoire: false,
+      obligatoireQualiopi: true,
+      indicateurQualiopi: '11',
+      ordreAffichage: 16
+    },
+    {
+      code: 'ATTESTATION_FIN_FORMATION',
+      libelle: 'Attestation de fin de formation',
+      categorie: 'pedagogique',
+      obligatoire: false,
+      obligatoireQualiopi: true,
+      indicateurQualiopi: '11',
+      ordreAffichage: 17
+    },
+    {
+      code: 'CERTIFICAT_REALISATION',
+      libelle: 'Certificat de réalisation',
+      categorie: 'pedagogique',
+      obligatoire: false,
+      obligatoireQualiopi: true,
+      indicateurQualiopi: '11',
+      ordreAffichage: 18
     }
   ]
 
@@ -213,6 +338,90 @@ async function main() {
   }
 
   console.log('✅ Types de documents créés')
+
+  // ============================================================
+  // 4b. CRÉATION DES TYPES DE DOCUMENTS FORMATEUR (QUALIOPI)
+  // ============================================================
+  console.log('📋 Création des types de documents formateur...')
+
+  const typesDocumentsFormateur = [
+    {
+      code: 'CV',
+      libelle: 'CV du formateur',
+      obligatoire: true,
+      ordreAffichage: 1
+    },
+    {
+      code: 'DIPLOME',
+      libelle: 'Diplômes et certifications',
+      obligatoire: true,
+      ordreAffichage: 2
+    },
+    {
+      code: 'CNI',
+      libelle: 'Pièce d\'identité',
+      obligatoire: true,
+      ordreAffichage: 3
+    },
+    {
+      code: 'RCP',
+      libelle: 'Assurance RC Pro',
+      obligatoire: true,
+      ordreAffichage: 4
+    },
+    {
+      code: 'FORMATION_PEDAGOGIQUE',
+      libelle: 'Attestation formation pédagogique',
+      obligatoire: true,
+      ordreAffichage: 6
+    },
+    {
+      code: 'FORMATIONS_SUIVIES',
+      libelle: 'Formations suivies (continue)',
+      obligatoire: false,
+      ordreAffichage: 7
+    },
+    {
+      code: 'CERTIFICAT_QUALIOPI',
+      libelle: 'Certificat Qualiopi formateur',
+      obligatoire: false,
+      ordreAffichage: 8
+    },
+    {
+      code: 'PORTFOLIO',
+      libelle: 'Portfolio / Références travaux',
+      obligatoire: false,
+      ordreAffichage: 9
+    },
+    {
+      code: 'EVALUATIONS',
+      libelle: 'Évaluations formateur',
+      obligatoire: false,
+      ordreAffichage: 10
+    },
+    {
+      code: 'STATUT',
+      libelle: 'Statut juridique',
+      obligatoire: true,
+      ordreAffichage: 11
+    },
+    {
+      code: 'AUTRE',
+      libelle: 'Autre document',
+      obligatoire: false,
+      ordreAffichage: 12
+    }
+  ]
+
+  for (const typeDocForm of typesDocumentsFormateur) {
+    await prisma.typeDocumentFormateur.upsert({
+      where: { code: typeDocForm.code },
+      update: {},
+      create: typeDocForm
+    })
+  }
+
+  console.log('✅ Types de documents formateur créés')
 
   // ============================================================
   // 5. CRÉATION D'UN PROSPECT TEST
@@ -269,6 +478,73 @@ async function main() {
   })
 
   console.log('✅ Formateur créé')
+
+  // ============================================================
+  // 6b. CRÉATION DE DOCUMENTS POUR LE FORMATEUR (EXEMPLES)
+  // ============================================================
+  console.log('📄 Création de documents formateur exemples...')
+
+  const documentsFormateur = [
+    {
+      idFormateur: 1,
+      codeTypeDocument: 'CV',
+      libelle: 'CV Pierre Durand 2024',
+      urlFichier: '/documents/formateurs/cv_pierre_durand.pdf',
+      statut: 'VALIDE',
+      dateValidation: new Date(),
+      validePar: 1 // ID de l'admin
+    },
+    {
+      idFormateur: 1,
+      codeTypeDocument: 'DIPLOME',
+      libelle: 'CAP Bijouterie-Joaillerie',
+      urlFichier: '/documents/formateurs/diplomes/cap_bijouterie.pdf',
+      dateDocument: new Date('2005-06-15'),
+      statut: 'VALIDE',
+      dateValidation: new Date(),
+      validePar: 1
+    },
+    {
+      idFormateur: 1,
+      codeTypeDocument: 'DIPLOME',
+      libelle: 'Formation de formateur FPA',
+      urlFichier: '/documents/formateurs/diplomes/fpa_2012.pdf',
+      dateDocument: new Date('2012-09-20'),
+      statut: 'VALIDE',
+      dateValidation: new Date(),
+      validePar: 1
+    },
+    {
+      idFormateur: 1,
+      codeTypeDocument: 'RCP',
+      libelle: 'Assurance RC Pro 2024',
+      urlFichier: '/documents/formateurs/assurances/rc_pro_2024.pdf',
+      dateDocument: new Date('2024-01-01'),
+      dateExpiration: new Date('2025-01-01'),
+      statut: 'VALIDE',
+      dateValidation: new Date(),
+      validePar: 1
+    },
+    {
+      idFormateur: 1,
+      codeTypeDocument: 'AUTRE',
+      libelle: 'Formation Sertissage Avancé 2024',
+      urlFichier: '/documents/formateurs/formations/sertissage_avance_2024.pdf',
+      dateDocument: new Date('2024-03-15'),
+      statut: 'VALIDE',
+      dateValidation: new Date(),
+      validePar: 1,
+      commentaire: 'Formation de perfectionnement en sertissage invisible'
+    }
+  ]
+
+  for (const doc of documentsFormateur) {
+    await prisma.documentFormateur.create({
+      data: doc
+    })
+  }
+
+  console.log('✅ Documents formateur créés')
 
   // ============================================================
   // 7. CRÉATION D'UNE SESSION DE FORMATION

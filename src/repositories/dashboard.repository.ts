@@ -8,14 +8,22 @@ import prisma from '@/lib/prisma'
 
 export class DashboardRepository {
   /**
-   * Compte le nombre total de prospects
+   * Compte le nombre total de prospects disponibles
+   * Exclut les prospects qui sont actuellement CANDIDAT ou ELEVE
    */
   async countProspects(): Promise<number> {
-    return await prisma.prospect.count()
+    return await prisma.prospect.count({
+      where: {
+        statutProspect: {
+          notIn: ['CANDIDAT', 'ELEVE']
+        }
+      }
+    })
   }
 
   /**
    * Compte les prospects créés cette semaine
+   * Exclut les prospects qui sont actuellement CANDIDAT ou ELEVE
    */
   async countProspectsThisWeek(): Promise<number> {
     const startOfWeek = new Date()
@@ -25,6 +33,9 @@ export class DashboardRepository {
       where: {
         datePremierContact: {
           gte: startOfWeek
+        },
+        statutProspect: {
+          notIn: ['CANDIDAT', 'ELEVE']
         }
       }
     })
@@ -85,10 +96,16 @@ export class DashboardRepository {
   }
 
   /**
-   * Récupère les derniers prospects
+   * Récupère les derniers prospects disponibles
+   * Exclut les prospects qui sont actuellement CANDIDAT ou ELEVE
    */
   async getRecentProspects(limit: number = 3) {
     return await prisma.prospect.findMany({
+      where: {
+        statutProspect: {
+          notIn: ['CANDIDAT', 'ELEVE']
+        }
+      },
       take: limit,
       orderBy: {
         datePremierContact: 'desc'
@@ -107,6 +124,7 @@ export class DashboardRepository {
 
   /**
    * Récupère les statistiques par formation
+   * Compte uniquement les prospects disponibles (pas CANDIDAT ni ELEVE)
    */
   async getFormationsStats() {
     const result = await prisma.prospect.groupBy({
@@ -117,6 +135,9 @@ export class DashboardRepository {
       where: {
         formationPrincipale: {
           not: null
+        },
+        statutProspect: {
+          notIn: ['CANDIDAT', 'ELEVE']
         }
       },
       orderBy: {

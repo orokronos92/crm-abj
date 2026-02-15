@@ -47,12 +47,14 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
+    "@types/eventsource": "^1.1.15",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.32",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "eventsource": "^4.1.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"

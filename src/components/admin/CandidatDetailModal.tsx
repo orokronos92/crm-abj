@@ -22,7 +22,8 @@ import {
   Clock,
   Calendar,
   Download,
-  Send
+  Send,
+  User
 } from 'lucide-react'
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 
@@ -125,13 +126,13 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-[rgba(var(--accent),0.2)]">
+      <div className="bg-[rgb(var(--card))] rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col border border-[rgba(var(--accent),0.2)]">
         {/* Header */}
         <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center text-2xl font-bold text-[rgb(var(--primary))]">
-                {candidat.prenom[0]}{candidat.nom[0]}
+              <div className="w-16 h-16 rounded-lg border-2 border-dashed border-[rgba(var(--accent),0.4)] bg-[rgba(var(--accent),0.05)] flex items-center justify-center">
+                <User className="w-8 h-8 text-[rgba(var(--accent),0.3)]" />
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-[rgb(var(--foreground))]">

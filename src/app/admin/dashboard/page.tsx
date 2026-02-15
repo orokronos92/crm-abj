@@ -45,7 +45,7 @@ const MOCK_FORMATIONS = [
 ]
 
 const MOCK_ACTIVITES = [
-  { id: 1, type: 'prospect', message: 'Nouveau prospect: Sophie Martin', time: 'Il y a 2h', icon: UserCheck },
+  { id: 1, type: 'prospect', message: 'Nouveau prospect: Marie Leroy', time: 'Il y a 2h', icon: UserCheck },
   { id: 2, type: 'email', message: 'Email envoyé à 15 contacts', time: 'Il y a 4h', icon: Mail },
   { id: 3, type: 'document', message: 'Devis généré pour Jean Dupont', time: 'Il y a 6h', icon: FileText },
   { id: 4, type: 'formation', message: 'Session CAP confirmée', time: 'Hier', icon: Calendar },

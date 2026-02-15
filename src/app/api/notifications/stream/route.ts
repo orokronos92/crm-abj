@@ -23,12 +23,32 @@ export const runtime = 'nodejs'
 export async function GET(request: NextRequest) {
   console.log('[SSE] Nouvelle connexion SSE demandée')
 
-  // Pour le moment, on simule un utilisateur admin (à remplacer par auth réelle)
+  // Récupérer le rôle depuis les headers (envoyé par le frontend)
+  const roleFromHeader = request.headers.get('X-User-Role')
+
+  // Déterminer le rôle (header ou referer ou défaut admin)
+  let role = 'admin' as 'admin' | 'professeur' | 'eleve'
+
+  if (roleFromHeader) {
+    role = roleFromHeader as 'admin' | 'professeur' | 'eleve'
+  } else {
+    // Essayer de détecter depuis le referer
+    const referer = request.headers.get('referer') || ''
+    if (referer.includes('/formateur')) {
+      role = 'professeur'
+    } else if (referer.includes('/eleve')) {
+      role = 'eleve'
+    }
+  }
+
+  console.log('[SSE] Rôle détecté:', role, '(referer:', request.headers.get('referer'), ')')
+
+  // Pour le moment, on simule un utilisateur (à remplacer par auth réelle)
   // TODO: Récupérer la session utilisateur via NextAuth
   const mockUser = {
-    idUtilisateur: 1,
-    role: 'admin' as const,
-    email: 'admin@abj.fr'
+    idUtilisateur: role === 'professeur' ? 2 : role === 'eleve' ? 3 : 1,
+    role: role,
+    email: `${role}@abj.fr`
   }
 
   // Headers pour SSE

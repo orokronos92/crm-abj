@@ -511,4 +511,34 @@ if (!existingDoc) {
 - ✅ Check vert : Disponible
 - ❌ X rouge : Indisponible
 
+---
+
+## Système de Planification Avancé
+
+**Documentation complète** : `@docs/systeme_planning.md`
+
+### Problématique
+- **Formations simples** (Sertissage 40h) : 1 formateur, 1 salle, planification linéaire ✅
+- **Formations complexes** (CAP 800h) : 6-8 matières, 6-8 formateurs, plusieurs salles, contraintes croisées ⚠️
+
+### Tables Manquantes Identifiées
+1. **`Matiere`** : Référentiel matières enseignables (Sertissage, Dessin technique, Histoire de l'art, etc.)
+2. **`ProgrammeFormation`** : Composition formations (ex: CAP = 80h dessin + 150h sertissage + 100h polissage + ...)
+3. **`Seance`** : Granularité jour/heure pour planification détaillée (actuellement Session a juste dateDebut/dateFin globales)
+
+### Solution Proposée
+- **Mode Semi-Auto** : Admin attribue manuellement salle/formateur, IA vérifie faisabilité en temps réel (dispos, équipements)
+- **Agent IA Automatique** (futur) : Génération planning complet depuis programme formation + dispos formateurs/salles
+
+### Questions en Attente Client
+1. **Programmes CAP détaillés** : Matières + heures par matière (ex: CAP Bijouterie = ?)
+2. **Ordre des matières** : Strict (théorie avant pratique), recommandé ou libre ?
+3. **Organisation élèves** : Tous ensemble tout le temps ou groupes divisibles ?
+4. **Rythme hebdomadaire** : Combien de jours/semaine pour CAP ? (3j, 5j ?)
+5. **Amplitude horaire standard** : 9h-17h avec pause déjeuner ?
+
+**Statut** : En attente réponses client avant implémentation tables + workflows
+
+---
+
 ### Scripts Maintenance

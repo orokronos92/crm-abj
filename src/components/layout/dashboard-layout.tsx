@@ -8,8 +8,10 @@
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { Sidebar } from './sidebar'
-import { Bell, Search, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp, Palette, Moon, Sun } from 'lucide-react'
+import { Bell, Search, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp, Palette, Moon, Sun, RefreshCw } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import { useNotifications } from '@/hooks/use-notifications'
+import { NotificationSkeleton } from '@/components/ui/notification-skeleton'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -74,10 +76,33 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showSettingsCanvas, setShowSettingsCanvas] = useState(false)
   const [marjorieMessage, setMarjorieMessage] = useState('')
 
+  // Déterminer le rôle basé sur le path
+  const getRoleFromPath = () => {
+    if (pathname?.includes('/admin')) return 'admin'
+    if (pathname?.includes('/formateur')) return 'professeur'
+    if (pathname?.includes('/eleve')) return 'eleve'
+    return 'admin' // Par défaut
+  }
+
+  // Utiliser le hook pour les vraies notifications
+  const {
+    notifications,
+    counts,
+    loading: notificationsLoading,
+    refreshing: notificationsRefreshing, // État distinct pour l'actualisation
+    markAsRead,
+    markAllAsRead,
+    refresh: refreshNotifications
+  } = useNotifications({
+    limit: 10, // Limiter à 10 notifications dans le dropdown
+    nonLuesSeulement: false, // Afficher toutes les notifications
+    role: getRoleFromPath() // Passer le rôle pour filtrage approprié
+  })
+
   const userRole = session?.user?.role || 'admin'
   const userName = `${session?.user?.prenom || ''} ${session?.user?.nom || ''}`.trim()
 
-  const notificationsNonLues = MOCK_NOTIFICATIONS.filter(n => !n.lu).length
+  const notificationsNonLues = counts.nonLues
 
   // Masquer le bouton Marjorie sur la page Marjorie elle-même
   const showMarjorieButton = !pathname?.includes('/marjorie')
@@ -146,6 +171,41 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }
 
+  // Mapper les catégories/priorités vers les types d'affichage
+  const mapNotificationType = (categorie: string, priorite: string) => {
+    if (priorite === 'URGENTE') return 'error'
+    if (priorite === 'HAUTE') return 'warning'
+
+    switch (categorie) {
+      case 'DEVIS':
+      case 'DOCUMENT':
+      case 'FINANCE':
+        return 'success'
+      case 'ALERTE':
+      case 'SYSTEM':
+        return 'error'
+      case 'PLANNING':
+      case 'EVALUATION':
+        return 'reminder'
+      default:
+        return 'info'
+    }
+  }
+
+  // Mapper les catégories vers les icônes
+  const mapNotificationIcon = (categorie: string) => {
+    switch (categorie) {
+      case 'DEVIS': return 'send'
+      case 'DOCUMENT': return 'info'
+      case 'PLANNING': return 'calendar'
+      case 'ALERTE':
+      case 'SYSTEM': return 'alert'
+      case 'FINANCE':
+      case 'FINANCEMENT': return 'info'
+      default: return 'info'
+    }
+  }
+
   return (
     <>
       {/* Layout principal */}
@@ -208,56 +268,90 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
 
                       {/* Liste notifications */}
-                      <div className="p-2 space-y-2">
-                        {MOCK_NOTIFICATIONS.map((notif) => {
-                          const colors = getNotificationColors(notif.type)
-                          const IconComponent = getNotificationIcon(notif.icon)
+                      <div className="p-2 space-y-2 relative">
+                        {/* Overlay de chargement subtil pendant le refresh */}
+                        {notificationsRefreshing && (
+                          <div className="absolute inset-0 bg-[rgb(var(--card))]/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+                            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.2)] rounded-lg px-4 py-2 flex items-center gap-2">
+                              <RefreshCw className="w-4 h-4 text-[rgb(var(--accent))] animate-spin" />
+                              <span className="text-sm text-[rgb(var(--foreground))]">Actualisation...</span>
+                            </div>
+                          </div>
+                        )}
 
-                          return (
-                            <div
-                              key={notif.id}
-                              className={`p-4 rounded-lg border ${colors.bg} ${colors.border} hover:bg-opacity-80 transition-all cursor-pointer ${
-                                !notif.lu ? 'ring-2 ring-[rgba(var(--accent),0.3)]' : ''
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                {/* Icône */}
-                                <div className={`w-10 h-10 rounded-lg ${colors.iconBg} flex items-center justify-center flex-shrink-0`}>
-                                  <IconComponent className={`w-5 h-5 ${colors.icon}`} />
-                                </div>
+                        {notificationsLoading && notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--accent))]"></div>
+                            <p className="mt-2 text-sm text-[rgb(var(--muted-foreground))]">Chargement...</p>
+                          </div>
+                        ) : notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <Bell className="w-12 h-12 mx-auto text-[rgb(var(--muted-foreground))] opacity-50" />
+                            <p className="mt-2 text-sm text-[rgb(var(--muted-foreground))]">Aucune notification</p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => {
+                            const notifType = mapNotificationType(notif.categorie, notif.priorite)
+                            const colors = getNotificationColors(notifType)
+                            const IconComponent = getNotificationIcon(mapNotificationIcon(notif.categorie))
 
-                                {/* Contenu */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2 mb-1">
-                                    <h4 className={`font-semibold text-sm ${colors.icon}`}>
-                                      {notif.titre}
-                                    </h4>
-                                    {!notif.lu && (
-                                      <div className="w-2 h-2 bg-[rgb(var(--accent))] rounded-full flex-shrink-0 mt-1" />
-                                    )}
+                            return (
+                              <div
+                                key={notif.idNotification}
+                                onClick={() => {
+                                  if (!notif.lue) {
+                                    markAsRead(notif.idNotification)
+                                  }
+                                  // Rediriger vers la page notifications avec l'ID de la notification dans l'URL
+                                  // Rediriger selon le rôle
+                                  const role = getRoleFromPath()
+                                  const basePath = role === 'professeur' ? '/formateur' : role === 'eleve' ? '/eleve' : '/admin'
+                                  window.location.href = `${basePath}/notifications?highlight=${notif.idNotification}`
+                                  setShowNotifications(false) // Fermer le popup
+                                }}
+                                className={`p-4 rounded-lg border ${colors.bg} ${colors.border} hover:bg-opacity-80 transition-all cursor-pointer ${
+                                  !notif.lue ? 'ring-2 ring-[rgba(var(--accent),0.3)]' : ''
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  {/* Icône */}
+                                  <div className={`w-10 h-10 rounded-lg ${colors.iconBg} flex items-center justify-center flex-shrink-0`}>
+                                    <IconComponent className={`w-5 h-5 ${colors.icon}`} />
                                   </div>
-                                  <p className="text-xs text-[rgb(var(--muted-foreground))] leading-relaxed">
-                                    {notif.message}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <Clock className="w-3 h-3 text-[rgb(var(--muted-foreground))]" />
-                                    <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                                      {notif.date}
+
+                                  {/* Contenu */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                      <h4 className={`font-semibold text-sm ${colors.icon}`}>
+                                        {notif.titre}
+                                      </h4>
+                                      {!notif.lue && (
+                                        <div className="w-2 h-2 bg-[rgb(var(--accent))] rounded-full flex-shrink-0 mt-1" />
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-[rgb(var(--muted-foreground))] leading-relaxed">
+                                      {notif.message}
                                     </p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <Clock className="w-3 h-3 text-[rgb(var(--muted-foreground))]" />
+                                      <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                                        {new Date(notif.creeLe).toLocaleString('fr-FR', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )
-                        })}
+                            )
+                          })
+                        )}
                       </div>
 
-                      {/* Footer */}
-                      <div className="sticky bottom-0 bg-[rgb(var(--card))] p-3 border-t border-[rgba(var(--border),0.3)]">
-                        <button className="w-full px-4 py-2 bg-[rgb(var(--secondary))] hover:bg-[rgba(var(--accent),0.1)] rounded-lg text-sm font-medium text-[rgb(var(--foreground))] transition-all">
-                          Voir toutes les notifications
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -335,9 +429,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          {/* Page content */}
-          <main className="p-6">
-            <div className="animate-fadeIn">
+          {/* Page content avec scroll container pour permettre sticky headers dans les pages */}
+          <main className="h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="p-6 animate-fadeIn">
               {children}
             </div>
           </main>

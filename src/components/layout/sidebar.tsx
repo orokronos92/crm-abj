@@ -64,11 +64,12 @@ export function Sidebar({ role, userName }: SidebarProps) {
 
       case 'professeur':
         return [
-          { icon: Home, label: 'Accueil', href: '/formateur/planning' },
-          { icon: Award, label: 'Compétences & Conformité', href: '/formateur/competences' },
+          { icon: LayoutDashboard, label: 'Tableau de bord', href: '/formateur/planning' },
+          { icon: Award, label: 'Gérer mon profil', href: '/formateur/profil' },
           { icon: Calendar, label: 'Planning', href: '/formateur/planning' },
           { icon: Users, label: 'Mes élèves', href: '/formateur/eleves' },
           { icon: PenTool, label: 'Évaluations', href: '/formateur/evaluations' },
+          { icon: Bell, label: 'Notifications', href: '/formateur/notifications' },
           { icon: MessageSquare, label: 'Chat Marjorie', href: '/formateur/marjorie', special: true },
           { icon: Calendar, label: 'Disponibilités', href: '/formateur/disponibilites' },
         ]
