@@ -64,8 +64,8 @@ export function Sidebar({ role, userName }: SidebarProps) {
 
       case 'professeur':
         return [
-          { icon: LayoutDashboard, label: 'Tableau de bord', href: '/formateur/planning' },
-          { icon: Award, label: 'Gérer mon profil', href: '/formateur/profil' },
+          { icon: LayoutDashboard, label: 'Tableau de bord', href: '/formateur/dashboard' },
+          { icon: Award, label: 'Compétences et qualifications', href: '/formateur/competences' },
           { icon: Calendar, label: 'Planning', href: '/formateur/planning' },
           { icon: Users, label: 'Mes élèves', href: '/formateur/eleves' },
           { icon: PenTool, label: 'Évaluations', href: '/formateur/evaluations' },

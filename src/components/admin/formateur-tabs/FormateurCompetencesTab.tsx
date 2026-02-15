@@ -1,14 +1,34 @@
 'use client'
 
-import { Award, Star, Target, BookOpen, CheckCircle } from 'lucide-react'
+import { Award, Star, Target, BookOpen, CheckCircle, Edit } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface FormateurCompetencesTabProps {
   formateur: any
 }
 
 export function FormateurCompetencesTab({ formateur }: FormateurCompetencesTabProps) {
+  const router = useRouter()
+
   return (
     <div className="space-y-6">
+      {/* Bouton de gestion des qualifications */}
+      <div className="flex items-center justify-between pb-4 border-b border-[rgba(var(--border),0.3)]">
+        <div>
+          <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">Compétences et qualifications</h2>
+          <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
+            Gérez vos diplômes, certifications, formations et compétences
+          </p>
+        </div>
+        <button
+          onClick={() => router.push('/formateur/profil')}
+          className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2 font-medium"
+        >
+          <Edit className="w-4 h-4" />
+          Gérer mes qualifications
+        </button>
+      </div>
+
       {/* Qualifications principales */}
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">

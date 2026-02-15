@@ -6,6 +6,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import {
   User,
@@ -457,6 +458,7 @@ const FORMATEUR_DATA = {
 
 export default function CompetencesPage() {
   const [activeTab, setActiveTab] = useState('profil')
+  const router = useRouter()
 
   return (
     <DashboardLayout>
@@ -561,6 +563,17 @@ export default function CompetencesPage() {
                   ))}
                 </div>
 
+                {/* Bouton d'accès au formulaire Qualiopi */}
+                <div className="mb-6">
+                  <button
+                    onClick={() => router.push('/formateur/profil')}
+                    className="w-full px-6 py-4 bg-[rgb(var(--accent))] hover:bg-[rgb(var(--accent-light))] text-[rgb(var(--primary))] rounded-lg font-semibold flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <FileText className="w-5 h-5" />
+                    Renseigner mon profil Qualiopi complet
+                  </button>
+                </div>
+
                 {/* Stats expérience */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg">
@@ -569,12 +582,6 @@ export default function CompetencesPage() {
                       <p className="text-3xl font-bold text-[rgb(var(--accent))]">{FORMATEUR_DATA.annees_experience}</p>
                       <p className="text-sm text-[rgb(var(--muted-foreground))]">ans</p>
                     </div>
-                    <div className="mt-2 h-2 bg-[rgba(var(--muted),0.3)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-yellow-600"
-                        style={{ width: `${Math.min((FORMATEUR_DATA.annees_experience / 25) * 100, 100)}%` }}
-                      />
-                    </div>
                   </div>
 
                   <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg">
@@ -582,12 +589,6 @@ export default function CompetencesPage() {
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-bold text-[rgb(var(--accent))]">{FORMATEUR_DATA.annees_enseignement}</p>
                       <p className="text-sm text-[rgb(var(--muted-foreground))]">ans</p>
-                    </div>
-                    <div className="mt-2 h-2 bg-[rgba(var(--muted),0.3)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-yellow-600"
-                        style={{ width: `${Math.min((FORMATEUR_DATA.annees_enseignement / 25) * 100, 100)}%` }}
-                      />
                     </div>
                   </div>
                 </div>

@@ -41,7 +41,10 @@
       "Bash(cmd /c \"taskkill /F /PID 6480\")",
       "Bash(ping:*)",
       "Bash(cmd /c \"taskkill /F /PID 11692\")",
-      "Bash(powershell -Command \"Stop-Process -Id 11692 -Force\")"
+      "Bash(powershell -Command \"Stop-Process -Id 11692 -Force\")",
+      "Bash(dir /b /o-d \"C:\\crm_abj\\docs\\resume_*.md\")",
+      "Bash(timeout 15 npx wait-on:*)",
+      "Bash(cmd /c \"taskkill /F /PID 3176\")"
     ],
     "deny": [],
     "ask": []
