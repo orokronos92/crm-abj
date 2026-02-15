@@ -474,9 +474,9 @@ function EtapeInformationsEssentielles({ profil, setProfil }: { profil: ProfilFo
 function EtapeDiplomes({ profil, setProfil }: { profil: ProfilFormateur; setProfil: (p: ProfilFormateur) => void }) {
   const [nouveauDiplome, setNouveauDiplome] = useState({
     nomDiplome: '',
-    niveau: 'CAP',
+    typeFormation: 'CAP',
     specialite: '',
-    organisme: '',
+    etablissement: '',
     dateObtention: '',
     documentUrl: ''
   })
@@ -487,16 +487,16 @@ function EtapeDiplomes({ profil, setProfil }: { profil: ProfilFormateur; setProf
   ]
 
   const ajouterDiplome = () => {
-    if (nouveauDiplome.nomDiplome && nouveauDiplome.organisme && nouveauDiplome.dateObtention) {
+    if (nouveauDiplome.nomDiplome && nouveauDiplome.etablissement && nouveauDiplome.dateObtention) {
       setProfil({
         ...profil,
         diplomes: [...profil.diplomes, { ...nouveauDiplome, id: Date.now() }]
       })
       setNouveauDiplome({
         nomDiplome: '',
-        niveau: 'CAP',
+        typeFormation: 'CAP',
         specialite: '',
-        organisme: '',
+        etablissement: '',
         dateObtention: '',
         documentUrl: ''
       })
@@ -545,7 +545,7 @@ function EtapeDiplomes({ profil, setProfil }: { profil: ProfilFormateur; setProf
                       {diplome.nomDiplome}
                     </h4>
                     <span className="px-2 py-0.5 rounded text-xs font-medium bg-[rgba(var(--accent),0.2)] text-[rgb(var(--accent))]">
-                      {diplome.niveau}
+                      {diplome.typeFormation}
                     </span>
                   </div>
                   {diplome.specialite && (
@@ -554,7 +554,7 @@ function EtapeDiplomes({ profil, setProfil }: { profil: ProfilFormateur; setProf
                     </p>
                   )}
                   <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
-                    {diplome.organisme}
+                    {diplome.etablissement}
                   </p>
                 </div>
                 <button
@@ -605,15 +605,15 @@ function EtapeDiplomes({ profil, setProfil }: { profil: ProfilFormateur; setProf
             />
           </div>
 
-          {/* Niveau et Spécialité */}
+          {/* Type de formation et Spécialité */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Niveau *
+                Type de formation *
               </label>
               <select
-                value={nouveauDiplome.niveau}
-                onChange={(e) => setNouveauDiplome({ ...nouveauDiplome, niveau: e.target.value })}
+                value={nouveauDiplome.typeFormation}
+                onChange={(e) => setNouveauDiplome({ ...nouveauDiplome, typeFormation: e.target.value })}
                 className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
                 required
               >
@@ -636,15 +636,15 @@ function EtapeDiplomes({ profil, setProfil }: { profil: ProfilFormateur; setProf
             </div>
           </div>
 
-          {/* Organisme */}
+          {/* Établissement */}
           <div>
             <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-              Organisme délivrant *
+              Établissement délivrant *
             </label>
             <input
               type="text"
-              value={nouveauDiplome.organisme}
-              onChange={(e) => setNouveauDiplome({ ...nouveauDiplome, organisme: e.target.value })}
+              value={nouveauDiplome.etablissement}
+              onChange={(e) => setNouveauDiplome({ ...nouveauDiplome, etablissement: e.target.value })}
               placeholder="Ex: Éducation Nationale, CMA, École Boulle..."
               className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
               required
@@ -974,11 +974,9 @@ function EtapeFormationsPedagogiques({ profil, setProfil }: { profil: ProfilForm
   const [nouvelleFormation, setNouvelleFormation] = useState({
     intitule: '',
     organisme: '',
-    dateDebut: '',
-    dateFin: '',
+    dateFormation: '',
     dureeHeures: '',
-    domaine: 'Pédagogie',
-    documentUrl: ''
+    certificatUrl: ''
   })
   const [modeAjout, setModeAjout] = useState(false)
 
@@ -993,7 +991,7 @@ function EtapeFormationsPedagogiques({ profil, setProfil }: { profil: ProfilForm
   ]
 
   const ajouterFormation = () => {
-    if (nouvelleFormation.intitule && nouvelleFormation.organisme && nouvelleFormation.dateDebut) {
+    if (nouvelleFormation.intitule && nouvelleFormation.organisme && nouvelleFormation.dateFormation) {
       setProfil({
         ...profil,
         formationsPedagogiques: [...profil.formationsPedagogiques, { ...nouvelleFormation, id: Date.now() }]
@@ -1001,11 +999,9 @@ function EtapeFormationsPedagogiques({ profil, setProfil }: { profil: ProfilForm
       setNouvelleFormation({
         intitule: '',
         organisme: '',
-        dateDebut: '',
-        dateFin: '',
+        dateFormation: '',
         dureeHeures: '',
-        domaine: 'Pédagogie',
-        documentUrl: ''
+        certificatUrl: ''
       })
       setModeAjout(false)
     }
@@ -1067,10 +1063,9 @@ function EtapeFormationsPedagogiques({ profil, setProfil }: { profil: ProfilForm
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-[rgb(var(--muted-foreground))]">Période : </span>
+                  <span className="text-[rgb(var(--muted-foreground))]">Date : </span>
                   <span className="text-[rgb(var(--foreground))]">
-                    {new Date(formation.dateDebut).toLocaleDateString('fr-FR')}
-                    {formation.dateFin && ` - ${new Date(formation.dateFin).toLocaleDateString('fr-FR')}`}
+                    {new Date(formation.dateFormation).toLocaleDateString('fr-FR')}
                   </span>
                 </div>
                 {formation.dureeHeures && (
@@ -1149,31 +1144,18 @@ function EtapeFormationsPedagogiques({ profil, setProfil }: { profil: ProfilForm
             </div>
           </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Date de début *
-              </label>
-              <input
-                type="date"
-                value={nouvelleFormation.dateDebut}
-                onChange={(e) => setNouvelleFormation({ ...nouvelleFormation, dateDebut: e.target.value })}
-                className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Date de fin (optionnel)
-              </label>
-              <input
-                type="date"
-                value={nouvelleFormation.dateFin}
-                onChange={(e) => setNouvelleFormation({ ...nouvelleFormation, dateFin: e.target.value })}
-                className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
-              />
-            </div>
+          {/* Date de formation */}
+          <div>
+            <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
+              Date de formation *
+            </label>
+            <input
+              type="date"
+              value={nouvelleFormation.dateFormation}
+              onChange={(e) => setNouvelleFormation({ ...nouvelleFormation, dateFormation: e.target.value })}
+              className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
+              required
+            />
           </div>
 
           {/* Durée en heures */}
@@ -1209,17 +1191,17 @@ function EtapeFormationsPedagogiques({ profil, setProfil }: { profil: ProfilForm
                     }
                     // TODO: Upload vers S3 et récupérer l'URL
                     // Pour l'instant on stocke juste le nom du fichier localement
-                    setNouvelleFormation({ ...nouvelleFormation, documentUrl: file.name })
+                    setNouvelleFormation({ ...nouvelleFormation, certificatUrl: file.name })
                   }
                 }}
                 className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[rgba(var(--accent),0.1)] file:text-[rgb(var(--accent))] hover:file:bg-[rgba(var(--accent),0.2)] cursor-pointer"
               />
-              {nouvelleFormation.documentUrl && (
+              {nouvelleFormation.certificatUrl && (
                 <div className="flex items-center gap-2 p-2 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)]">
                   <FileText className="w-4 h-4 text-[rgb(var(--success))]" />
-                  <span className="text-sm text-[rgb(var(--success))] flex-1">{nouvelleFormation.documentUrl}</span>
+                  <span className="text-sm text-[rgb(var(--success))] flex-1">{nouvelleFormation.certificatUrl}</span>
                   <button
-                    onClick={() => setNouvelleFormation({ ...nouvelleFormation, documentUrl: '' })}
+                    onClick={() => setNouvelleFormation({ ...nouvelleFormation, certificatUrl: '' })}
                     className="p-1 hover:bg-[rgba(var(--error),0.1)] rounded transition-colors"
                   >
                     <X className="w-3 h-3 text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--error))]" />
@@ -1248,8 +1230,6 @@ function EtapePortfolio({ profil, setProfil }: { profil: ProfilFormateur; setPro
     titre: '',
     description: '',
     annee: new Date().getFullYear().toString(),
-    client: '',
-    type: 'Réalisation',
     imageUrl: ''
   })
   const [modeAjout, setModeAjout] = useState(false)
@@ -1273,8 +1253,6 @@ function EtapePortfolio({ profil, setProfil }: { profil: ProfilFormateur; setPro
         titre: '',
         description: '',
         annee: new Date().getFullYear().toString(),
-        client: '',
-        type: 'Réalisation',
         imageUrl: ''
       })
       setModeAjout(false)
@@ -1321,9 +1299,6 @@ function EtapePortfolio({ profil, setProfil }: { profil: ProfilFormateur; setPro
                     <h4 className="font-medium text-[rgb(var(--foreground))]">
                       {projet.titre}
                     </h4>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-[rgba(var(--accent),0.2)] text-[rgb(var(--accent))]">
-                      {projet.type}
-                    </span>
                     <span className="px-2 py-0.5 rounded text-xs font-medium bg-[rgba(var(--success),0.2)] text-[rgb(var(--success))]">
                       {projet.annee}
                     </span>
@@ -1331,11 +1306,6 @@ function EtapePortfolio({ profil, setProfil }: { profil: ProfilFormateur; setPro
                   <p className="text-sm text-[rgb(var(--muted-foreground))] mt-2">
                     {projet.description}
                   </p>
-                  {projet.client && (
-                    <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
-                      Client : {projet.client}
-                    </p>
-                  )}
                 </div>
                 <button
                   onClick={() => supprimerProjet(projet.id)}
@@ -1395,48 +1365,20 @@ function EtapePortfolio({ profil, setProfil }: { profil: ProfilFormateur; setPro
           </div>
 
           {/* Type, Année et Client */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Type *
-              </label>
-              <select
-                value={nouveauProjet.type}
-                onChange={(e) => setNouveauProjet({ ...nouveauProjet, type: e.target.value })}
-                className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
-                required
-              >
-                {TYPES_PROJET.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Année *
-              </label>
-              <input
-                type="number"
-                value={nouveauProjet.annee}
-                onChange={(e) => setNouveauProjet({ ...nouveauProjet, annee: e.target.value })}
-                min="1950"
-                max={new Date().getFullYear()}
-                className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Client (optionnel)
-              </label>
-              <input
-                type="text"
-                value={nouveauProjet.client}
-                onChange={(e) => setNouveauProjet({ ...nouveauProjet, client: e.target.value })}
-                placeholder="Ex: Cartier"
-                className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
-              />
-            </div>
+          {/* Année */}
+          <div>
+            <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
+              Année *
+            </label>
+            <input
+              type="number"
+              value={nouveauProjet.annee}
+              onChange={(e) => setNouveauProjet({ ...nouveauProjet, annee: e.target.value })}
+              min="1950"
+              max={new Date().getFullYear()}
+              className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
+              required
+            />
           </div>
 
           {/* Image */}
@@ -1495,10 +1437,9 @@ function EtapePortfolio({ profil, setProfil }: { profil: ProfilFormateur; setPro
 function EtapeCompetences({ profil, setProfil }: { profil: ProfilFormateur; setProfil: (p: ProfilFormateur) => void }) {
   const [nouvelleCompetence, setNouvelleCompetence] = useState({
     domaine: '',
-    competence: '',
+    technique: '',
     niveau: 'Intermédiaire',
-    anneesExperience: '',
-    documentUrl: ''
+    anneesPratique: 0
   })
   const [modeAjout, setModeAjout] = useState(false)
 
@@ -1524,16 +1465,16 @@ function EtapeCompetences({ profil, setProfil }: { profil: ProfilFormateur; setP
   ]
 
   const ajouterCompetence = () => {
-    if (nouvelleCompetence.domaine && nouvelleCompetence.competence) {
+    if (nouvelleCompetence.domaine && nouvelleCompetence.technique) {
       setProfil({
         ...profil,
         competences: [...profil.competences, { ...nouvelleCompetence, id: Date.now() }]
       })
       setNouvelleCompetence({
         domaine: '',
-        competence: '',
+        technique: '',
         niveau: 'Intermédiaire',
-        anneesExperience: ''
+        anneesPratique: 0
       })
       setModeAjout(false)
     }
@@ -1586,7 +1527,7 @@ function EtapeCompetences({ profil, setProfil }: { profil: ProfilFormateur; setP
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-medium text-[rgb(var(--foreground))]">
-                      {comp.competence}
+                      {comp.technique}
                     </h4>
                     <span className="px-2 py-0.5 rounded text-xs font-medium bg-[rgba(var(--accent),0.2)] text-[rgb(var(--accent))]">
                       {comp.domaine}
@@ -1594,9 +1535,9 @@ function EtapeCompetences({ profil, setProfil }: { profil: ProfilFormateur; setP
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${getNiveauColor(comp.niveau)}`}>
                       {comp.niveau}
                     </span>
-                    {comp.anneesExperience && (
+                    {comp.anneesPratique > 0 && (
                       <span className="px-2 py-0.5 rounded text-xs font-medium bg-[rgba(var(--success),0.2)] text-[rgb(var(--success))]">
-                        {comp.anneesExperience} ans d'exp.
+                        {comp.anneesPratique} ans de pratique
                       </span>
                     )}
                   </div>
@@ -1646,22 +1587,22 @@ function EtapeCompetences({ profil, setProfil }: { profil: ProfilFormateur; setP
             </select>
           </div>
 
-          {/* Compétence */}
+          {/* Technique */}
           <div>
             <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-              Compétence spécifique *
+              Technique spécifique *
             </label>
             <input
               type="text"
-              value={nouvelleCompetence.competence}
-              onChange={(e) => setNouvelleCompetence({ ...nouvelleCompetence, competence: e.target.value })}
+              value={nouvelleCompetence.technique}
+              onChange={(e) => setNouvelleCompetence({ ...nouvelleCompetence, technique: e.target.value })}
               placeholder="Ex: Serti griffe 4 griffes, Polissage miroir..."
               className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
               required
             />
           </div>
 
-          {/* Niveau et Années d'expérience */}
+          {/* Niveau et Années de pratique */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
@@ -1680,56 +1621,18 @@ function EtapeCompetences({ profil, setProfil }: { profil: ProfilFormateur; setP
             </div>
             <div>
               <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Années d'expérience (optionnel)
+                Années de pratique *
               </label>
               <input
                 type="number"
-                value={nouvelleCompetence.anneesExperience}
-                onChange={(e) => setNouvelleCompetence({ ...nouvelleCompetence, anneesExperience: e.target.value })}
+                value={nouvelleCompetence.anneesPratique}
+                onChange={(e) => setNouvelleCompetence({ ...nouvelleCompetence, anneesPratique: parseInt(e.target.value) || 0 })}
                 placeholder="Ex: 5"
                 min="0"
                 max="60"
                 className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:outline-none focus:border-[rgb(var(--accent))]"
+                required
               />
-            </div>
-          </div>
-
-          {/* Justificatif */}
-          <div>
-            <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-              Justificatif (PDF, JPG, PNG - max 5 Mo)
-            </label>
-            <div className="space-y-2">
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    if (file.size > 5 * 1024 * 1024) {
-                      alert('Le fichier ne doit pas dépasser 5 Mo')
-                      e.target.value = ''
-                      return
-                    }
-                    // TODO: Upload vers S3 et récupérer l'URL
-                    // Pour l'instant on stocke juste le nom du fichier localement
-                    setNouvelleCompetence({ ...nouvelleCompetence, documentUrl: file.name })
-                  }
-                }}
-                className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[rgba(var(--accent),0.1)] file:text-[rgb(var(--accent))] hover:file:bg-[rgba(var(--accent),0.2)] cursor-pointer"
-              />
-              {nouvelleCompetence.documentUrl && (
-                <div className="flex items-center gap-2 p-2 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)]">
-                  <FileText className="w-4 h-4 text-[rgb(var(--success))]" />
-                  <span className="text-sm text-[rgb(var(--success))] flex-1">{nouvelleCompetence.documentUrl}</span>
-                  <button
-                    onClick={() => setNouvelleCompetence({ ...nouvelleCompetence, documentUrl: '' })}
-                    className="p-1 hover:bg-[rgba(var(--error),0.1)] rounded transition-colors"
-                  >
-                    <X className="w-3 h-3 text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--error))]" />
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1996,7 +1899,7 @@ function EtapeFormationsContinues({ profil, setProfil }: { profil: ProfilFormate
     dureeHeures: '',
     domaine: 'Technique métier',
     statut: 'TERMINE',
-    documentUrl: ''
+    certificatUrl: ''
   })
   const [modeAjout, setModeAjout] = useState(false)
 
@@ -2031,7 +1934,7 @@ function EtapeFormationsContinues({ profil, setProfil }: { profil: ProfilFormate
         dureeHeures: '',
         domaine: 'Technique métier',
         statut: 'TERMINE',
-        documentUrl: ''
+        certificatUrl: ''
       })
       setModeAjout(false)
     }
@@ -2265,17 +2168,17 @@ function EtapeFormationsContinues({ profil, setProfil }: { profil: ProfilFormate
                     }
                     // TODO: Upload vers S3 et récupérer l'URL
                     // Pour l'instant on stocke juste le nom du fichier localement
-                    setNouvelleFormation({ ...nouvelleFormation, documentUrl: file.name })
+                    setNouvelleFormation({ ...nouvelleFormation, certificatUrl: file.name })
                   }
                 }}
                 className="w-full px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[rgba(var(--accent),0.1)] file:text-[rgb(var(--accent))] hover:file:bg-[rgba(var(--accent),0.2)] cursor-pointer"
               />
-              {nouvelleFormation.documentUrl && (
+              {nouvelleFormation.certificatUrl && (
                 <div className="flex items-center gap-2 p-2 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)]">
                   <FileText className="w-4 h-4 text-[rgb(var(--success))]" />
-                  <span className="text-sm text-[rgb(var(--success))] flex-1">{nouvelleFormation.documentUrl}</span>
+                  <span className="text-sm text-[rgb(var(--success))] flex-1">{nouvelleFormation.certificatUrl}</span>
                   <button
-                    onClick={() => setNouvelleFormation({ ...nouvelleFormation, documentUrl: '' })}
+                    onClick={() => setNouvelleFormation({ ...nouvelleFormation, certificatUrl: '' })}
                     className="p-1 hover:bg-[rgba(var(--error),0.1)] rounded transition-colors"
                   >
                     <X className="w-3 h-3 text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--error))]" />
