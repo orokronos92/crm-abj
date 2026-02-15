@@ -6,6 +6,7 @@ import { ProfilStepper } from '@/components/formateur/profil/ProfilStepper'
 import { ProfilProgressBar } from '@/components/formateur/profil/ProfilProgressBar'
 import { ProfilContent } from '@/components/formateur/profil/ProfilContent'
 import { ProfilActions } from '@/components/formateur/profil/ProfilActions'
+import { ETAPES_PROFIL_FORMATEUR } from '@/config/formateur/profil.config'
 
 /**
  * Page de gestion du profil formateur - Version refactorée
@@ -49,16 +50,16 @@ export default function ProfilFormateurPage() {
           </div>
 
           {/* Barre de progression */}
-          <ProfilProgressBar />
+          <ProfilProgressBar totalEtapes={ETAPES_PROFIL_FORMATEUR.length} />
 
           {/* Stepper de navigation */}
-          <ProfilStepper />
+          <ProfilStepper etapes={ETAPES_PROFIL_FORMATEUR} />
 
           {/* Contenu de l'étape actuelle */}
           <ProfilContent />
 
           {/* Actions (Précédent/Suivant/Sauvegarder) */}
-          <ProfilActions />
+          <ProfilActions totalEtapes={ETAPES_PROFIL_FORMATEUR.length} />
         </div>
       </ProfilFormateurProvider>
     </DashboardLayout>
