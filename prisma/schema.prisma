@@ -485,9 +485,9 @@ model Formateur {
   outilsSupports        String[] @default([]) @map("outils_supports")
   competencesTechniques String[] @default([]) @map("competences_techniques")
 
-  // Champs portfolio et réalisations
-  portfolio            Json? // {travaux: [{titre, description, imageUrl, date}]}
+  // Champs publications et langues
   publicationsArticles String[] @default([]) @map("publications_articles")
+  languesParlees       String[] @default([]) @map("langues_parlees")
 
   // Champs statistiques et feedback
   satisfactionMoyenne Decimal? @map("satisfaction_moyenne") @db.Decimal(3, 2) // Note sur 5
@@ -495,21 +495,23 @@ model Formateur {
   nombreElevesFormes  Int?     @default(0) @map("nombre_eleves_formes")
   temoignagesEleves   Json?    @map("temoignages_eleves") // [{nom, texte, date, note}]
 
-  // Champs formations et certifications
-  formationsContinues Json?    @map("formations_continues") // [{titre, organisme, date, duree}]
-  certifications      Json? // [{nom, organisme, dateObtention, dateExpiration}]
-  languesParlees      String[] @default([]) @map("langues_parlees")
-
   creeLe    DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 
   // Relations
-  utilisateur         Utilisateur              @relation(fields: [idUtilisateur], references: [idUtilisateur])
-  disponibilites      DisponibiliteFormateur[]
-  interventions       InterventionFormateur[]
-  evaluations         Evaluation[]
-  sessionsPrincipales Session[]
-  documents           DocumentFormateur[]
+  utilisateur              Utilisateur                        @relation(fields: [idUtilisateur], references: [idUtilisateur])
+  disponibilites           DisponibiliteFormateur[]
+  interventions            InterventionFormateur[]
+  evaluations              Evaluation[]
+  sessionsPrincipales      Session[]
+  documents                DocumentFormateur[]
+  diplomes                 FormateurDiplome[]
+  certificationsPro        FormateurCertification[]
+  formationsPedagogiques   FormateurFormationPedagogique[]
+  portfolioRealisations    FormateurPortfolio[]
+  competencesTech          FormateurCompetenceTechnique[]
+  formationsCont           FormateurFormationContinue[]
+  veillePro                FormateurVeilleProfessionnelle[]
 
   @@map("formateurs")
 }
@@ -902,4 +904,192 @@ model Evenement {
   @@index([salle]) // Vérification disponibilité salle
   @@index([date, salle]) // Composite pour check conflits
   @@map("evenements")
+}
+
+// ============================================================================
+// TABLES PARCOURS PROFESSIONNEL FORMATEUR (Indicateurs Qualiopi 21 & 22)
+// ============================================================================
+
+/// Diplômes et titres métier du formateur
+model FormateurDiplome {
+  idDiplome       Int      @id @default(autoincrement()) @map("id_diplome")
+  idFormateur     Int      @map("id_formateur")
+
+  // Informations diplôme
+  nomDiplome      String   @map("nom_diplome")
+  typeFormation   String   @map("type_formation") // CAP, BMA, Licence, Master, Doctorat, etc.
+  specialite      String?
+  dateObtention   DateTime @map("date_obtention") @db.Date
+  etablissement   String
+  ville           String?
+
+  // Justificatif document
+  documentUrl     String?  @map("document_url")
+  statut          String   @default("EN_ATTENTE") // VALIDE | EN_ATTENTE | REFUSE
+
+  // Traçabilité
+  creeLe          DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe       DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+
+  @@index([idFormateur])
+  @@index([statut])
+  @@map("formateur_diplomes")
+}
+
+/// Certifications professionnelles du formateur
+model FormateurCertification {
+  idCertification Int       @id @default(autoincrement()) @map("id_certification")
+  idFormateur     Int       @map("id_formateur")
+
+  // Informations certification
+  nomCertification String    @map("nom_certification")
+  organisme        String
+  dateObtention    DateTime  @map("date_obtention") @db.Date
+  dateExpiration   DateTime? @map("date_expiration") @db.Date
+
+  // Justificatif document
+  documentUrl      String?   @map("document_url")
+  statut           String    @default("VALIDE") // VALIDE | EXPIRE | EN_COURS_RENOUVELLEMENT
+
+  // Traçabilité
+  creeLe           DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe        DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+
+  @@index([idFormateur])
+  @@index([statut])
+  @@index([dateExpiration])
+  @@map("formateur_certifications")
+}
+
+/// Formations pédagogiques du formateur (FPA, etc.)
+model FormateurFormationPedagogique {
+  idFormation   Int      @id @default(autoincrement()) @map("id_formation")
+  idFormateur   Int      @map("id_formateur")
+
+  // Informations formation
+  intitule      String
+  organisme     String
+  dateFormation DateTime @map("date_formation") @db.Date
+  dureeHeures   Int      @map("duree_heures")
+
+  // Justificatif document
+  certificatUrl String?  @map("certificat_url")
+  statut        String   @default("VALIDE") // VALIDE | EN_ATTENTE
+
+  // Traçabilité
+  creeLe        DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe     DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+
+  @@index([idFormateur])
+  @@map("formateur_formations_pedagogiques")
+}
+
+/// Portfolio des réalisations du formateur
+model FormateurPortfolio {
+  idPortfolio Int     @id @default(autoincrement()) @map("id_portfolio")
+  idFormateur Int     @map("id_formateur")
+
+  // Informations réalisation
+  titre       String
+  description String? @db.Text
+  annee       String  // Format "2024" ou "2023-2024"
+  imageUrl    String? @map("image_url")
+
+  // Traçabilité
+  creeLe      DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe   DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+
+  @@index([idFormateur])
+  @@map("formateur_portfolio")
+}
+
+/// Compétences techniques métier du formateur
+model FormateurCompetenceTechnique {
+  idCompetence   Int    @id @default(autoincrement()) @map("id_competence")
+  idFormateur    Int    @map("id_formateur")
+
+  // Informations compétence
+  domaine        String // Sertissage, Bijouterie, Polissage, Joaillerie, CAO/DAO, etc.
+  technique      String // Serti griffe, Brasage, Micro-pavage, MatrixGold, etc.
+  niveau         String // Débutant, Intermédiaire, Avancé, Expert
+  anneesPratique Int    @map("annees_pratique")
+
+  // Traçabilité
+  creeLe         DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe      DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+
+  @@index([idFormateur])
+  @@index([domaine])
+  @@map("formateur_competences_techniques")
+}
+
+/// Formations continues du formateur (maintien des compétences)
+model FormateurFormationContinue {
+  idFormation Int      @id @default(autoincrement()) @map("id_formation")
+  idFormateur Int      @map("id_formateur")
+
+  // Informations formation
+  intitule    String
+  organisme   String
+  dateDebut   DateTime @map("date_debut") @db.Date
+  dateFin     DateTime? @map("date_fin") @db.Date
+  dureeHeures Int      @map("duree_heures")
+  domaine     String   // Technique métier, Pédagogie, Sécurité, Numérique, etc.
+
+  // Justificatif document
+  certificatUrl String? @map("certificat_url")
+  statut        String  @default("TERMINE") // PLANIFIE | EN_COURS | TERMINE | ANNULE
+
+  // Traçabilité
+  creeLe        DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe     DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+
+  @@index([idFormateur])
+  @@index([statut])
+  @@index([domaine])
+  @@map("formateur_formations_continues")
+}
+
+/// Veille professionnelle du formateur (salons, conférences, lectures, etc.)
+model FormateurVeilleProfessionnelle {
+  idVeille     Int      @id @default(autoincrement()) @map("id_veille")
+  idFormateur  Int      @map("id_formateur")
+
+  // Informations veille
+  type         String   // Salon, Conférence, Webinaire, Formation, Lecture, Réseau professionnel
+  nomActivite  String   @map("nom_activite")
+  organisme    String?
+  dateActivite DateTime @map("date_activite") @db.Date
+  duree        Int?     // Durée en heures ou jours
+  uniteDuree   String   @default("heures") @map("unite_duree") // heures | jours
+
+  // Traçabilité
+  creeLe       DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe    DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+
+  @@index([idFormateur])
+  @@index([type])
+  @@index([dateActivite])
+  @@map("formateur_veille_professionnelle")
 }
