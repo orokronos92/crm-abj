@@ -44,7 +44,10 @@
       "Bash(powershell -Command \"Stop-Process -Id 11692 -Force\")",
       "Bash(dir /b /o-d \"C:\\crm_abj\\docs\\resume_*.md\")",
       "Bash(timeout 15 npx wait-on:*)",
-      "Bash(cmd /c \"taskkill /F /PID 3176\")"
+      "Bash(cmd /c \"taskkill /F /PID 3176\")",
+      "Bash(cmd /c \"taskkill /F /PID 22720 & del C:\\crm_abj\\.next\\dev\\lock 2>nul\")",
+      "Bash(dir:*)",
+      "Bash(del \"C:\\crm_abj\\src\\app\\formateur\\profil-test\" /s /q)"
     ],
     "deny": [],
     "ask": []
