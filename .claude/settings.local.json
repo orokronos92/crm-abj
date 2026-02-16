@@ -55,7 +55,10 @@
       "Bash(cmd /c \"del C:\\crm_abj\\nul 2>nul\")",
       "Bash(.gitignore)",
       "Bash(cmd /c \"type nul > C:\\crm_abj\\src\\services\\formateur.service.ts\")",
-      "Bash($null)"
+      "Bash($null)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cmd /c \"taskkill /F /PID 22228 2>nul & del C:\\crm_abj\\.next\\dev\\lock 2>nul\")"
     ],
     "deny": [],
     "ask": []

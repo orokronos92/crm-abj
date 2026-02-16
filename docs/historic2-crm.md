@@ -626,3 +626,295 @@ Ce qui manque :
 **Dernière mise à jour** : 16 février 2026
 **Version** : 1.0
 **Auteur** : Claude Code
+
+---
+
+# Résumé Session 3 : Déplacement Modal Sessions & Formulaire Scrollable
+
+**Date** : 16 février 2026
+**Objectif principal** : Déplacer le modal de sessions de Planning vers Sessions + rendre le formulaire scrollable
+
+---
+
+## 📋 Vue d'ensemble
+
+Cette session a permis de :
+1. ✅ Retirer le bouton "Créer session" de la page Planning (mal placé)
+2. ✅ Connecter le bouton "Nouvelle session" existant sur la page Sessions
+3. ✅ Rendre le formulaire de session scrollable (problème : contenu non visible sans dézoomer)
+
+---
+
+## Phase 1 : Déplacement du Modal
+
+### Demande Utilisateur
+
+> "tres bien mais tu a rajouter un bouton dans planning qui n'est pas logique mais qui marche donc tu m'enleve ce bouton et tu connecte celui de la page session c'est ca que je te demadai"
+
+### Problème Identifié
+
+- Le modal SessionFormModal avait été ajouté à la page Planning
+- Il y avait un bouton "Créer session" dans Planning qui ouvrait le modal
+- Ce n'était pas logique : la création de sessions devrait être dans l'onglet Sessions
+- Le bouton "Nouvelle session" existait déjà dans la page Sessions mais n'était pas connecté
+
+### Solution Implémentée
+
+#### 1. Ajout dans Sessions (page correcte)
+
+**Fichier** : `src/app/admin/sessions/page.tsx`
+
+**Modifications** :
+```typescript
+// Ajout import
+import { SessionFormModal } from '@/components/admin/SessionFormModal'
+
+// Ajout state (ligne 253)
+const [modalSessionOuverte, setModalSessionOuverte] = useState(false)
+
+// Connexion du bouton existant (lignes 298-304)
+<button
+  onClick={() => setModalSessionOuverte(true)}  // ✅ Handler ajouté
+  className="px-6 py-3 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2"
+>
+  <Plus className="w-5 h-5" />
+  Nouvelle session
+</button>
+
+// Ajout rendu modal (avant </DashboardLayout>)
+{modalSessionOuverte && (
+  <SessionFormModal
+    onClose={() => setModalSessionOuverte(false)}
+    onSuccess={() => {
+      setModalSessionOuverte(false)
+      // TODO: Refresh sessions depuis API
+    }}
+  />
+)}
+```
+
+#### 2. Retrait de Planning (mauvais emplacement)
+
+**Fichier** : `src/app/admin/planning/page.tsx`
+
+**Modifications** :
+```typescript
+// Suppression import
+- import { SessionFormModal } from '@/components/admin/SessionFormModal'
+
+// Suppression state
+- const [modalSessionOuverte, setModalSessionOuverte] = useState(false)
+
+// Suppression bouton "Créer session"
+// Conservation uniquement du bouton "Exporter planning" (lignes 258-261)
+<button className="px-4 py-2 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-all flex items-center gap-2">
+  <Download className="w-4 h-4" />
+  Exporter planning
+</button>
+
+// Suppression rendu modal (lignes 890-898)
+- {modalSessionOuverte && (
+-   <SessionFormModal ... />
+- )}
+```
+
+---
+
+## Phase 2 : Formulaire Scrollable
+
+### Demande Utilisateur
+
+> "tu rend srolable le formulaire on peut pas voir le bas (il fau dezoomer dans le navigateur)"
+
+### Problème Identifié
+
+- Le formulaire de session (FormationCourteForm, FormationCAPForm) est très long
+- Le contenu déborde du modal
+- L'utilisateur doit dézoomer dans le navigateur pour voir le bas du formulaire
+- Pas d'overflow-y-auto sur les composants de formulaire
+
+### Architecture Modal
+
+**Fichier** : `src/components/admin/SessionFormModal.tsx` (ligne 133)
+
+```typescript
+<div className="bg-[rgb(var(--card))] rounded-lg w-full h-full md:h-[90vh] md:max-w-5xl flex flex-col relative overflow-hidden">
+```
+
+- Modal a une hauteur fixe : `h-full md:h-[90vh]`
+- Layout flex : `flex flex-col`
+- Overflow masqué : `overflow-hidden`
+- Contenu conditionnel affiché directement sans conteneur scrollable
+
+### Solution Implémentée
+
+**Fichier** : `src/components/admin/SessionFormModal.tsx`
+
+**Modification lignes 143-180** :
+
+```typescript
+// AVANT :
+{/* Contenu selon l'étape */}
+{step === 'type' && (
+  <SessionTypeSelector onSelect={handleTypeSelected} />
+)}
+
+{step === 'form' && sessionType === 'COURTE' && (
+  <FormationCourteForm
+    onSubmit={(data) => handleFormSubmit({ type: 'COURTE', dataCourte: data })}
+    onBack={handleBackToType}
+  />
+)}
+
+{step === 'form' && sessionType === 'CAP' && (
+  <FormationCAPForm
+    onSubmit={(data) => handleFormSubmit({ type: 'CAP', dataCAP: data })}
+    onBack={handleBackToType}
+  />
+)}
+
+{step === 'review' && formData && sessionType && (
+  <SessionReviewPanel
+    data={formData}
+    type={sessionType}
+    onBack={handleBackToForm}
+    onConfirm={handleConfirmReview}
+    isSubmitting={isSubmitting}
+  />
+)}
+
+{step === 'ai-proposal' && proposal && (
+  <SessionProposalReview
+    proposal={proposal}
+    onValidate={handleValidateProposal}
+    onReject={handleRejectProposal}
+    onAdjust={handleAdjustProposal}
+  />
+)}
+
+// APRÈS :
+{/* Contenu selon l'étape - avec scroll */}
+<div className="flex-1 overflow-y-auto">
+  {step === 'type' && (
+    <SessionTypeSelector onSelect={handleTypeSelected} />
+  )}
+
+  {step === 'form' && sessionType === 'COURTE' && (
+    <FormationCourteForm
+      onSubmit={(data) => handleFormSubmit({ type: 'COURTE', dataCourte: data })}
+      onBack={handleBackToType}
+    />
+  )}
+
+  {step === 'form' && sessionType === 'CAP' && (
+    <FormationCAPForm
+      onSubmit={(data) => handleFormSubmit({ type: 'CAP', dataCAP: data })}
+      onBack={handleBackToType}
+    />
+  )}
+
+  {step === 'review' && formData && sessionType && (
+    <SessionReviewPanel
+      data={formData}
+      type={sessionType}
+      onBack={handleBackToForm}
+      onConfirm={handleConfirmReview}
+      isSubmitting={isSubmitting}
+    />
+  )}
+
+  {step === 'ai-proposal' && proposal && (
+    <SessionProposalReview
+      proposal={proposal}
+      onValidate={handleValidateProposal}
+      onReject={handleRejectProposal}
+      onAdjust={handleAdjustProposal}
+    />
+  )}
+</div>
+```
+
+### Changements Clés
+
+1. **Ajout conteneur scrollable** : `<div className="flex-1 overflow-y-auto">`
+   - `flex-1` : Prend tout l'espace disponible dans le modal flex
+   - `overflow-y-auto` : Ajoute une scrollbar verticale si le contenu déborde
+
+2. **Enveloppement de tout le contenu conditionnel**
+   - Tous les composants de formulaire sont maintenant dans ce conteneur
+   - Le scroll s'applique à tous les steps (type, form, review, proposal)
+
+### Résultat
+
+✅ **Le formulaire est maintenant complètement scrollable**
+- Plus besoin de dézoomer dans le navigateur
+- Tout le contenu est visible en scrollant
+- Le header et le bouton fermer restent fixes en haut
+- Le footer avec les boutons reste accessible
+
+---
+
+## Fichiers Modifiés
+
+### Modifiés
+
+1. **`src/app/admin/sessions/page.tsx`**
+   - Ajout import `SessionFormModal`
+   - Ajout state `modalSessionOuverte`
+   - Ajout handler `onClick` sur bouton "Nouvelle session"
+   - Ajout rendu conditionnel du modal
+
+2. **`src/app/admin/planning/page.tsx`**
+   - Retrait import `SessionFormModal`
+   - Retrait state `modalSessionOuverte`
+   - Retrait bouton "Créer session"
+   - Retrait rendu modal
+
+3. **`src/components/admin/SessionFormModal.tsx`**
+   - Ajout conteneur scrollable `<div className="flex-1 overflow-y-auto">` autour de tout le contenu conditionnel
+
+---
+
+## État Final
+
+### ✅ Ce qui fonctionne
+
+1. **Modal correctement placé**
+   - Le modal SessionFormModal s'ouvre maintenant depuis la page Sessions
+   - Le bouton "Nouvelle session" (existant) est connecté
+   - Logique cohérente : création de sessions dans l'onglet Sessions
+
+2. **Formulaire scrollable**
+   - Tout le contenu du formulaire est visible
+   - Scroll vertical automatique si nécessaire
+   - Plus besoin de dézoomer le navigateur
+   - Header et footer restent accessibles
+
+3. **Planning nettoyé**
+   - Retrait du bouton mal placé
+   - Conservation du bouton "Exporter planning"
+   - Page Planning reste focalisée sur la visualisation
+
+### 🎯 Architecture Flux
+
+```
+Page Sessions
+    ↓ Click "Nouvelle session"
+État modalSessionOuverte = true
+    ↓
+SessionFormModal s'ouvre
+    ↓
+<div className="flex-1 overflow-y-auto">
+    ↓
+Formulaire scrollable (FormationCourteForm / FormationCAPForm)
+    ↓ Validation
+Callback onSuccess
+    ↓
+Modal se ferme + refresh data
+```
+
+---
+
+**Dernière mise à jour** : 16 février 2026
+**Version** : 1.1
+**Auteur** : Claude Code

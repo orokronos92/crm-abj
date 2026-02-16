@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { SessionFormModal } from '@/components/admin/SessionFormModal'
 import {
   BookOpen,
   Search,
@@ -250,6 +251,7 @@ export default function SessionsPage() {
   const [activeFilter, setActiveFilter] = useState<StatutFilter>('TOUS')
   const [selectedSession, setSelectedSession] = useState<typeof MOCK_SESSIONS[0] | null>(null)
   const [activeTab, setActiveTab] = useState('synthese')
+  const [modalSessionOuverte, setModalSessionOuverte] = useState(false)
 
   const filteredSessions = MOCK_SESSIONS.filter(session => {
     const matchesSearch = session.nom_session.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -295,7 +297,10 @@ export default function SessionsPage() {
               Gestion des sessions en cours, inscriptions et planification
             </p>
           </div>
-          <button className="px-6 py-3 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2">
+          <button
+            onClick={() => setModalSessionOuverte(true)}
+            className="px-6 py-3 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2"
+          >
             <Plus className="w-5 h-5" />
             Nouvelle session
           </button>
@@ -876,6 +881,17 @@ export default function SessionsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal création session */}
+      {modalSessionOuverte && (
+        <SessionFormModal
+          onClose={() => setModalSessionOuverte(false)}
+          onSuccess={() => {
+            setModalSessionOuverte(false)
+            // TODO: Refresh sessions depuis API
+          }}
+        />
       )}
     </DashboardLayout>
   )
