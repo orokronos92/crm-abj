@@ -92,7 +92,6 @@ export function ProfilFormateurProvider({ children }: ProfilFormateurProviderPro
   const chargerProfil = useCallback(async () => {
     setChargement(true)
     try {
-      // TODO: Implémenter l'appel API réel
       const response = await fetch('/api/formateur/profil')
       if (response.ok) {
         const data = await response.json()
@@ -109,7 +108,6 @@ export function ProfilFormateurProvider({ children }: ProfilFormateurProviderPro
   const sauvegarderProfil = useCallback(async () => {
     setSauvegarde(true)
     try {
-      // TODO: Implémenter l'appel API réel
       const response = await fetch('/api/formateur/profil', {
         method: 'PUT',
         headers: {
@@ -119,7 +117,6 @@ export function ProfilFormateurProvider({ children }: ProfilFormateurProviderPro
       })
 
       if (response.ok) {
-        // Afficher un message de succès
         console.log('Profil sauvegardé avec succès')
       }
     } catch (error) {

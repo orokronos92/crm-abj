@@ -53,7 +53,9 @@
       "Bash(cmd /c \"taskkill /F /PID 29080\")",
       "Bash(powershell -Command:*)",
       "Bash(cmd /c \"del C:\\crm_abj\\nul 2>nul\")",
-      "Bash(.gitignore)"
+      "Bash(.gitignore)",
+      "Bash(cmd /c \"type nul > C:\\crm_abj\\src\\services\\formateur.service.ts\")",
+      "Bash($null)"
     ],
     "deny": [],
     "ask": []
