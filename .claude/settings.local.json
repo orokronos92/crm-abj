@@ -47,7 +47,13 @@
       "Bash(cmd /c \"taskkill /F /PID 3176\")",
       "Bash(cmd /c \"taskkill /F /PID 22720 & del C:\\crm_abj\\.next\\dev\\lock 2>nul\")",
       "Bash(dir:*)",
-      "Bash(del \"C:\\crm_abj\\src\\app\\formateur\\profil-test\" /s /q)"
+      "Bash(del \"C:\\crm_abj\\src\\app\\formateur\\profil-test\" /s /q)",
+      "Bash(del C:crm_abj.nextdevlock 2)",
+      "Bash(cmd /c \"del C:\\crm_abj\\.next\\dev\\lock 2>nul\")",
+      "Bash(cmd /c \"taskkill /F /PID 29080\")",
+      "Bash(powershell -Command:*)",
+      "Bash(cmd /c \"del C:\\crm_abj\\nul 2>nul\")",
+      "Bash(.gitignore)"
     ],
     "deny": [],
     "ask": []

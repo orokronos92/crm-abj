@@ -99,7 +99,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     role: getRoleFromPath() // Passer le rôle pour filtrage approprié
   })
 
-  const userRole = session?.user?.role || 'admin'
+  // Utiliser getRoleFromPath de manière cohérente pour éviter le mélange
+  const userRole = getRoleFromPath()
   const userName = `${session?.user?.prenom || ''} ${session?.user?.nom || ''}`.trim()
 
   const notificationsNonLues = counts.nonLues

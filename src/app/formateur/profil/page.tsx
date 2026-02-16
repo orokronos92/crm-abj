@@ -5,7 +5,7 @@ import { ProfilFormateurProvider } from '@/contexts/ProfilFormateurContext'
 import { ProfilStepper } from '@/components/formateur/profil/ProfilStepper'
 import { ProfilProgressBar } from '@/components/formateur/profil/ProfilProgressBar'
 import { ProfilContent } from '@/components/formateur/profil/ProfilContent'
-import { ProfilActions } from '@/components/formateur/profil/ProfilActions'
+import { ProfilNavigationButtons } from '@/components/formateur/profil/ProfilNavigationButtons'
 import { ETAPES_PROFIL_FORMATEUR } from '@/config/formateur/profil.config'
 
 /**
@@ -16,10 +16,9 @@ import { ETAPES_PROFIL_FORMATEUR } from '@/config/formateur/profil.config'
  *
  * Architecture :
  * - ProfilFormateurProvider : Context global pour l'état du formulaire
- * - ProfilStepper : Navigation entre les étapes
- * - ProfilProgressBar : Indicateur de progression
- * - ProfilContent : Contenu de chaque étape
- * - ProfilActions : Boutons d'action (Précédent/Suivant/Sauvegarder)
+ * - Header sticky : Titre + Progression + Stepper + Navigation
+ * - ProfilContent : Contenu scrollable de chaque étape
+ * - Navigation : Le bouton "Valider" de la dernière étape sauvegarde et redirige
  *
  * Chaque étape est dans son propre composant dans :
  * src/components/formateur/profil/steps/
@@ -28,28 +27,33 @@ export default function ProfilFormateurPage() {
   return (
     <DashboardLayout>
       <ProfilFormateurProvider>
-        <div className="space-y-6 pb-20">
-          {/* En-tête */}
-          <div>
-            <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">
-              Votre profil Qualiopi
-            </h1>
-            <p className="text-[rgb(var(--muted-foreground))] mt-2">
-              Complétez votre profil pour être conforme aux exigences Qualiopi. Les indicateurs 9, 11, 13, 21 et 22 concernent directement les formateurs.
-            </p>
+        {/* Header sticky avec titre + progression + stepper + navigation */}
+        <div className="sticky top-0 z-30 bg-[rgb(var(--background))] border-b border-[rgba(var(--border),0.5)] shadow-sm pb-6 mb-6">
+          <div className="space-y-4">
+            {/* En-tête */}
+            <div>
+              <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">
+                Votre profil Qualiopi
+              </h1>
+              <p className="text-[rgb(var(--muted-foreground))] mt-2">
+                Complétez votre profil pour être conforme aux exigences Qualiopi. Les indicateurs 9, 11, 13, 21 et 22 concernent directement les formateurs.
+              </p>
+            </div>
+
+            {/* Barre de progression */}
+            <ProfilProgressBar totalEtapes={ETAPES_PROFIL_FORMATEUR.length} />
+
+            {/* Stepper de navigation */}
+            <ProfilStepper etapes={ETAPES_PROFIL_FORMATEUR} />
+
+            {/* Boutons de navigation (Précédent/Suivant/Valider) */}
+            <ProfilNavigationButtons totalEtapes={ETAPES_PROFIL_FORMATEUR.length} />
           </div>
+        </div>
 
-          {/* Barre de progression */}
-          <ProfilProgressBar totalEtapes={ETAPES_PROFIL_FORMATEUR.length} />
-
-          {/* Stepper de navigation */}
-          <ProfilStepper etapes={ETAPES_PROFIL_FORMATEUR} />
-
-          {/* Contenu de l'étape actuelle */}
+        {/* Contenu de l'étape actuelle (scrollable) */}
+        <div className="pb-8">
           <ProfilContent />
-
-          {/* Actions (Précédent/Suivant/Sauvegarder) */}
-          <ProfilActions totalEtapes={ETAPES_PROFIL_FORMATEUR.length} />
         </div>
       </ProfilFormateurProvider>
     </DashboardLayout>
