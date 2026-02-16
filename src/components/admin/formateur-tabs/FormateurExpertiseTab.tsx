@@ -1,6 +1,6 @@
 'use client'
 
-import { GraduationCap, Target, BookOpen, Lightbulb, Users } from 'lucide-react'
+import { GraduationCap, Target, BookOpen, Lightbulb, Users, Award, CheckCircle, X, Eye } from 'lucide-react'
 
 interface FormateurExpertiseTabProps {
   formateur: any
@@ -85,6 +85,71 @@ export function FormateurExpertiseTab({ formateur }: FormateurExpertiseTabProps)
           </div>
         ) : (
           <p className="text-[rgb(var(--muted-foreground))]">Aucune session en cours</p>
+        )}
+      </div>
+
+      {/* Portfolio et réalisations */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Award className="w-5 h-5 text-[rgb(var(--accent))]" />
+            Portfolio et réalisations
+          </h3>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-lg" style={{
+            backgroundColor: formateur.portfolio?.length > 0 ? 'rgba(var(--success), 0.1)' : 'rgba(var(--warning), 0.1)'
+          }}>
+            {formateur.portfolio?.length > 0 ? (
+              <>
+                <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
+                <span className="text-sm font-medium text-[rgb(var(--success))]">Renseigné ({formateur.portfolio.length})</span>
+              </>
+            ) : (
+              <>
+                <X className="w-4 h-4 text-[rgb(var(--warning))]" />
+                <span className="text-sm font-medium text-[rgb(var(--warning))]">Non renseigné</span>
+              </>
+            )}
+          </div>
+        </div>
+        {formateur.portfolio?.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4">
+            {formateur.portfolio.map((realisation: any) => (
+              <div key={realisation.id} className="bg-[rgb(var(--secondary))] rounded-lg p-4 border border-[rgba(var(--border),0.3)]">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <p className="font-medium text-[rgb(var(--foreground))]">{realisation.titre}</p>
+                    {realisation.description && (
+                      <p className="text-sm text-[rgb(var(--muted-foreground))] mt-2 line-clamp-2">
+                        {realisation.description}
+                      </p>
+                    )}
+                    {realisation.annee && (
+                      <p className="text-xs text-[rgb(var(--text-tertiary))] mt-2">
+                        Année : {realisation.annee}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {realisation.imageUrl && (
+                  <a
+                    href={realisation.imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[rgb(var(--accent))] hover:underline flex items-center gap-1 mt-2"
+                  >
+                    <Eye className="w-3 h-3" />
+                    Voir l'image
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-[rgba(var(--warning),0.05)] border border-[rgba(var(--warning),0.2)] rounded-lg p-4">
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              Aucune réalisation renseignée. Le formateur peut compléter son profil via l'interface formateur.
+            </p>
+          </div>
         )}
       </div>
 

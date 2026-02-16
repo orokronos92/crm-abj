@@ -153,6 +153,27 @@ export class FormateurRepository {
             }
           },
           orderBy: { date: 'asc' }
+        },
+        diplomes: {
+          orderBy: { dateObtention: 'desc' }
+        },
+        certificationsPro: {
+          orderBy: { dateObtention: 'desc' }
+        },
+        formationsPedagogiques: {
+          orderBy: { dateFormation: 'desc' }
+        },
+        portfolioRealisations: {
+          orderBy: { annee: 'desc' }
+        },
+        competencesTech: {
+          orderBy: { creeLe: 'desc' }
+        },
+        formationsCont: {
+          orderBy: { dateDebut: 'desc' }
+        },
+        veillePro: {
+          orderBy: { dateActivite: 'desc' }
         }
       }
     })

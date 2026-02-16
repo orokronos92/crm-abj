@@ -276,7 +276,7 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
 
         {/* Contenu des onglets avec hauteur fixe */}
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'profil' && <FormateurProfilTab formateur={formateur} />}
+          {activeTab === 'profil' && <FormateurProfilTab formateur={formateur} onRefresh={fetchFormateurDetail} />}
           {activeTab === 'competences' && <FormateurCompetencesTab formateur={formateur} />}
           {activeTab === 'expertise' && <FormateurExpertiseTab formateur={formateur} />}
           {activeTab === 'maintien' && <FormateurMaintienTab formateur={formateur} />}

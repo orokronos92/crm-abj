@@ -72,6 +72,69 @@ interface FormateurDetail extends FormateurListItem {
     count: number
     details: string[]
   }>
+  diplomes: Array<{
+    id: number
+    nomDiplome: string
+    typeFormation: string
+    specialite: string | null
+    dateObtention: string | null
+    etablissement: string | null
+    ville: string | null
+    documentUrl: string | null
+    statut: string
+  }>
+  certifications: Array<{
+    id: number
+    nomCertification: string
+    organisme: string | null
+    dateObtention: string | null
+    dateExpiration: string | null
+    documentUrl: string | null
+    statut: string
+  }>
+  formationsPedagogiques: Array<{
+    id: number
+    intitule: string
+    organisme: string | null
+    dateFormation: string | null
+    dureeHeures: number | null
+    certificatUrl: string | null
+    statut: string
+  }>
+  portfolio: Array<{
+    id: number
+    titre: string
+    description: string | null
+    annee: number | null
+    imageUrl: string | null
+  }>
+  competencesTechniques: Array<{
+    id: number
+    domaine: string
+    technique: string
+    niveau: string
+    anneesPratique: number | null
+  }>
+  formationsContinues: Array<{
+    id: number
+    intitule: string
+    organisme: string | null
+    dateDebut: string | null
+    dateFin: string | null
+    dureeHeures: number | null
+    domaine: string | null
+    certificatUrl: string | null
+    statut: string
+  }>
+  veilleProfessionnelle: Array<{
+    id: number
+    type: string
+    nomActivite: string
+    organisme: string | null
+    dateActivite: string | null
+    duree: number | null
+    uniteDuree: string | null
+  }>
   stats: {
     totalEleves: number
     heuresMois: number
@@ -250,6 +313,83 @@ export class FormateurService {
       disponible: dispo.disponible
     }))
 
+    const diplomes = (formateur.diplomes || []).map(diplome => ({
+      id: diplome.idDiplome,
+      nomDiplome: diplome.nomDiplome,
+      typeFormation: diplome.typeFormation,
+      specialite: diplome.specialite,
+      dateObtention: diplome.dateObtention ?
+        new Date(diplome.dateObtention).toLocaleDateString('fr-FR') : null,
+      etablissement: diplome.etablissement,
+      ville: diplome.ville,
+      documentUrl: diplome.documentUrl,
+      statut: diplome.statut
+    }))
+
+    const certifications = (formateur.certificationsPro || []).map(cert => ({
+      id: cert.idCertification,
+      nomCertification: cert.nomCertification,
+      organisme: cert.organisme,
+      dateObtention: cert.dateObtention ?
+        new Date(cert.dateObtention).toLocaleDateString('fr-FR') : null,
+      dateExpiration: cert.dateExpiration ?
+        new Date(cert.dateExpiration).toLocaleDateString('fr-FR') : null,
+      documentUrl: cert.documentUrl,
+      statut: cert.statut
+    }))
+
+    const formationsPedagogiques = (formateur.formationsPedagogiques || []).map(form => ({
+      id: form.idFormation,
+      intitule: form.intitule,
+      organisme: form.organisme,
+      dateFormation: form.dateFormation ?
+        new Date(form.dateFormation).toLocaleDateString('fr-FR') : null,
+      dureeHeures: form.dureeHeures ? Number(form.dureeHeures) : null,
+      certificatUrl: form.certificatUrl,
+      statut: form.statut
+    }))
+
+    const portfolio = (formateur.portfolioRealisations || []).map(item => ({
+      id: item.idPortfolio,
+      titre: item.titre,
+      description: item.description,
+      annee: item.annee,
+      imageUrl: item.imageUrl
+    }))
+
+    const competencesTechniques = (formateur.competencesTech || []).map(comp => ({
+      id: comp.idCompetence,
+      domaine: comp.domaine,
+      technique: comp.technique,
+      niveau: comp.niveau,
+      anneesPratique: comp.anneesPratique
+    }))
+
+    const formationsContinues = (formateur.formationsCont || []).map(form => ({
+      id: form.idFormation,
+      intitule: form.intitule,
+      organisme: form.organisme,
+      dateDebut: form.dateDebut ?
+        new Date(form.dateDebut).toLocaleDateString('fr-FR') : null,
+      dateFin: form.dateFin ?
+        new Date(form.dateFin).toLocaleDateString('fr-FR') : null,
+      dureeHeures: form.dureeHeures ? Number(form.dureeHeures) : null,
+      domaine: form.domaine,
+      certificatUrl: form.certificatUrl,
+      statut: form.statut
+    }))
+
+    const veilleProfessionnelle = (formateur.veillePro || []).map(veille => ({
+      id: veille.idVeille,
+      type: veille.type,
+      nomActivite: veille.nomActivite,
+      organisme: veille.organisme,
+      dateActivite: veille.dateActivite ?
+        new Date(veille.dateActivite).toLocaleDateString('fr-FR') : null,
+      duree: veille.duree,
+      uniteDuree: veille.uniteDuree
+    }))
+
     return {
       id: formateur.idFormateur,
       nom: formateur.nom,
@@ -278,6 +418,13 @@ export class FormateurService {
       documents,
       disponibilites,
       issuesQualiopi: qualiopi?.issues || [],
+      diplomes,
+      certifications,
+      formationsPedagogiques,
+      portfolio,
+      competencesTechniques,
+      formationsContinues,
+      veilleProfessionnelle,
       stats
     }
   }
