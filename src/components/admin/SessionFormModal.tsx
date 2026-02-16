@@ -74,6 +74,7 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
       }
 
       const proposalData: SessionProposal = await response.json()
+      console.log('📦 SessionFormModal - Données reçues de l\'API:', proposalData)
       setProposal(proposalData)
       setStep('ai-proposal')
     } catch (err) {
@@ -85,35 +86,13 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
   }
 
   // Validation finale de la proposition IA
-  const handleValidateProposal = async () => {
-    if (!proposal) return
-
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          proposal
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Erreur lors de la création de la session')
-      }
-
-      // Succès
-      onSuccess()
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue')
-      console.error('Erreur création session:', err)
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleValidateProposal = () => {
+    // NOTE: La session a déjà été créée en base avec statut EN_ANALYSE
+    // lors de l'appel à /api/sessions/validate (ligne 62-84)
+    // Pas besoin de faire un autre appel API, on ferme juste le modal
+    // et on rafraîchit la liste pour voir la nouvelle session
+    onSuccess()
+    onClose()
   }
 
   // Rejet de la proposition

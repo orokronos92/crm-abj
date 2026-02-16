@@ -28,6 +28,10 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
     dureeMois: 10,
     nbParticipants: 12,
     joursActifs: ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI'],
+    plageHoraire: {
+      matin: { debut: '09:00', fin: '12:00' },
+      apresMidi: { debut: '13:00', fin: '17:00' }
+    },
     periodesInterdites: [],
     programme: [],
     formateurs: [],
@@ -141,13 +145,8 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
       newErrors.push(`Total heures programme hors limites (${totalHeures}h, attendu 720-880h)`)
     }
 
-    if (!formData.formateursPlanifierPlusTard && formData.formateurs.length === 0) {
-      newErrors.push('Aucun formateur sélectionné (ou cochez "Planifier sans formateurs")')
-    }
-
-    if (!formData.sallesPlanifierPlusTard && formData.salles.length === 0) {
-      newErrors.push('Aucune salle sélectionnée (ou cochez "Planifier sans salles")')
-    }
+    // Validation des vœux par matière (optionnel car Marjorie peut planifier sans vœux)
+    // Les vœux sont maintenant dans chaque matière : salleVoeux[] et formateurVoeux[]
 
     if (newErrors.length > 0) {
       setErrors(newErrors)
@@ -269,11 +268,131 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
         </div>
       </div>
 
-      {/* Section 2: Rythme et Contraintes */}
+      {/* Section 2: Plage Horaire de la Session */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] border-b border-[rgba(var(--border),0.3)] pb-2">
-          2. Rythme et Contraintes
+          2. Plage Horaire de la Session
         </h3>
+
+        <div className="p-4 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
+          <div className="flex items-start gap-2 mb-4">
+            <Clock className="w-5 h-5 text-[rgb(var(--accent))] flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                Définissez les créneaux horaires quotidiens pour toute la session
+              </p>
+              <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
+                Ex: CAP Sertissage 2026 → 9h-12h et 13h-17h tous les jours de formation
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            {/* Créneau Matin */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
+                Matin
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-[rgb(var(--muted-foreground))] mb-1">
+                    Début
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.plageHoraire.matin.debut}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      plageHoraire: {
+                        ...formData.plageHoraire,
+                        matin: { ...formData.plageHoraire.matin, debut: e.target.value }
+                      }
+                    })}
+                    className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                    min="08:00"
+                    max="21:00"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[rgb(var(--muted-foreground))] mb-1">
+                    Fin
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.plageHoraire.matin.fin}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      plageHoraire: {
+                        ...formData.plageHoraire,
+                        matin: { ...formData.plageHoraire.matin, fin: e.target.value }
+                      }
+                    })}
+                    className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                    min="08:00"
+                    max="21:00"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Créneau Après-midi */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
+                Après-midi
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-[rgb(var(--muted-foreground))] mb-1">
+                    Début
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.plageHoraire.apresMidi.debut}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      plageHoraire: {
+                        ...formData.plageHoraire,
+                        apresMidi: { ...formData.plageHoraire.apresMidi, debut: e.target.value }
+                      }
+                    })}
+                    className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                    min="08:00"
+                    max="21:00"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[rgb(var(--muted-foreground))] mb-1">
+                    Fin
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.plageHoraire.apresMidi.fin}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      plageHoraire: {
+                        ...formData.plageHoraire,
+                        apresMidi: { ...formData.plageHoraire.apresMidi, fin: e.target.value }
+                      }
+                    })}
+                    className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                    min="08:00"
+                    max="21:00"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 bg-[rgba(var(--warning),0.1)] border border-[rgba(var(--warning),0.3)] rounded-lg">
+            <p className="text-xs text-[rgb(var(--foreground))]">
+              💡 <strong>Ces horaires s'appliquent à toute la session</strong> (ex: du 01/03/2026 au 31/12/2026)
+            </p>
+          </div>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
@@ -298,20 +417,6 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
           <p className="text-xs text-[rgb(var(--muted-foreground))] mt-2">
             Par défaut : Lundi-Vendredi. Cochez Samedi/Dimanche pour formations intensives week-end
           </p>
-        </div>
-
-        <div className="p-4 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
-          <div className="flex items-start gap-2">
-            <Clock className="w-5 h-5 text-[rgb(var(--accent))] flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                ⏰ Amplitude : 08h00-21h00 tous les jours actifs (créneaux 30min)
-              </p>
-              <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
-                💡 Marjorie optimisera l'utilisation des salles sur ces plages horaires
-              </p>
-            </div>
-          </div>
         </div>
 
         <div>
@@ -373,155 +478,45 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
         <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] border-b border-[rgba(var(--border),0.3)] pb-2">
           3. Programme de Matières
         </h3>
+        <p className="text-sm text-[rgb(var(--muted-foreground))]">
+          Pour chaque matière, vous pouvez définir vos vœux de salle et de formateur. Marjorie résoudra le puzzle selon les disponibilités.
+        </p>
         <ProgrammeMatieresEditor
           matieres={formData.programme}
           onChange={(matieres) => setFormData({ ...formData, programme: matieres })}
+          sallesDisponibles={sallesDisponibles}
+          formateursDisponibles={formateursDisponibles}
         />
       </div>
 
-      {/* Section 4: Ressources */}
+      {/* Section 4: Récapitulatif et Notes */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] border-b border-[rgba(var(--border),0.3)] pb-2">
-          4. Ressources (Formateurs et Salles)
+          4. Notes Complémentaires pour Marjorie
         </h3>
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-[rgb(var(--foreground))]">
-              <User className="w-4 h-4 inline mr-1" />
-              Formateurs disponibles
-            </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={formData.formateursPlanifierPlusTard}
-                onChange={(e) => setFormData({ ...formData, formateursPlanifierPlusTard: e.target.checked })}
-                className="rounded"
-              />
-              ⏳ Planifier sans formateurs (à assigner plus tard)
-            </label>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {formateursDisponibles.map(f => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => handleFormateurToggle(f)}
-                disabled={formData.formateursPlanifierPlusTard}
-                className={`p-3 rounded-lg border-2 text-left transition-all disabled:opacity-50 ${
-                  formData.formateurs.find(fm => fm.id === f.id)
-                    ? 'bg-[rgba(var(--accent),0.1)] border-[rgb(var(--accent))]'
-                    : 'bg-[rgb(var(--secondary))] border-[rgba(var(--border),0.5)] hover:border-[rgb(var(--accent))]'
-                }`}
-              >
-                <p className="font-medium text-sm">{f.nom}</p>
-                <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                  {f.matieres.join(', ')}
-                </p>
-              </button>
-            ))}
-          </div>
-          <label className="flex items-center gap-2 text-xs mt-2">
-            <input
-              type="checkbox"
-              checked={formData.formateurMultiMatieresAutorise}
-              onChange={(e) => setFormData({ ...formData, formateurMultiMatieresAutorise: e.target.checked })}
-              className="rounded"
-            />
-            Autoriser un formateur à enseigner plusieurs matières
-          </label>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-[rgb(var(--foreground))]">
-              <MapPin className="w-4 h-4 inline mr-1" />
-              Salles disponibles
-            </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={formData.sallesPlanifierPlusTard}
-                onChange={(e) => setFormData({ ...formData, sallesPlanifierPlusTard: e.target.checked })}
-                className="rounded"
-              />
-              ⏳ Planifier sans salles (à assigner plus tard)
-            </label>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {sallesDisponibles.map(s => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => handleSalleToggle(s)}
-                disabled={formData.sallesPlanifierPlusTard}
-                className={`p-3 rounded-lg border-2 text-left transition-all disabled:opacity-50 ${
-                  formData.salles.find(sl => sl.id === s.id)
-                    ? 'bg-[rgba(var(--accent),0.1)] border-[rgb(var(--accent))]'
-                    : 'bg-[rgb(var(--secondary))] border-[rgba(var(--border),0.5)] hover:border-[rgb(var(--accent))]'
-                }`}
-              >
-                <p className="font-medium text-sm">{s.nom}</p>
-                <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                  {s.capacite} places
-                </p>
-              </button>
-            ))}
-          </div>
-          <label className="flex items-center gap-2 text-xs mt-2">
-            <input
-              type="checkbox"
-              checked={formData.salleMultiMatieresAutorise}
-              onChange={(e) => setFormData({ ...formData, salleMultiMatieresAutorise: e.target.checked })}
-              className="rounded"
-            />
-            Une salle peut accueillir plusieurs matières
-          </label>
-        </div>
-      </div>
-
-      {/* Section 5: Contraintes Pédagogiques */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] border-b border-[rgba(var(--border),0.3)] pb-2">
-          5. Contraintes Pédagogiques (Optionnel)
-        </h3>
-
-        <div>
-          <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-            Matières en parallèle autorisées ?
-          </label>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={formData.matieresEnParallele === true}
-                onChange={() => setFormData({ ...formData, matieresEnParallele: true })}
-                className="rounded-full"
-              />
-              <span className="text-sm">Oui (ex: Théorie matin, Pratique après-midi)</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={formData.matieresEnParallele === false}
-                onChange={() => setFormData({ ...formData, matieresEnParallele: false })}
-                className="rounded-full"
-              />
-              <span className="text-sm">Non (une matière à la fois)</span>
-            </label>
-          </div>
+        <div className="p-4 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
+          <p className="text-sm text-[rgb(var(--foreground))] mb-3">
+            💡 Cette demande sera analysée par Marjorie qui optimisera le planning selon :
+          </p>
+          <ul className="text-sm text-[rgb(var(--muted-foreground))] space-y-1 ml-4">
+            <li>• Les vœux de salle et formateur par matière</li>
+            <li>• Les disponibilités réelles des formateurs</li>
+            <li>• Les créneaux horaires définis (matin/après-midi)</li>
+            <li>• Les périodes interdites éventuelles</li>
+          </ul>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-            Notes complémentaires pour l'IA
+            Notes complémentaires (optionnel)
           </label>
           <textarea
             value={formData.notesComplementaires}
             onChange={(e) => setFormData({ ...formData, notesComplementaires: e.target.value })}
             className="w-full px-4 py-2.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none resize-none"
-            rows={3}
-            placeholder="Ex: Privilégier sertissage en début de formation, éviter CAO/DAO le vendredi..."
+            rows={4}
+            placeholder="Ex: Privilégier sertissage en début de formation, éviter CAO/DAO le vendredi, un formateur peut enseigner plusieurs matières..."
           />
         </div>
       </div>

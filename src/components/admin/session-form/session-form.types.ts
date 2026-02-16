@@ -20,6 +20,19 @@ export interface Matiere {
   heuresConsecutivesMax: number
   ordre?: number
   prerequis?: string[]
+  salleVoeux: number[] // IDs des salles souhaitées (vœux pour cette matière)
+  formateurVoeux: number[] // IDs des formateurs souhaités (vœux pour cette matière)
+}
+
+export interface PlageHoraire {
+  matin: {
+    debut: string
+    fin: string
+  }
+  apresMidi: {
+    debut: string
+    fin: string
+  }
 }
 
 export interface FormationCourteData {
@@ -39,9 +52,10 @@ export interface FormationCAPData {
   dateDebutGlobale: string
   dureeMois: number
   nbParticipants: number
+  plageHoraire: PlageHoraire // Créneau fixe pour toute la session
   joursActifs: JourSemaine[]
   periodesInterdites: PeriodeInterdite[]
-  programme: Matiere[]
+  programme: Matiere[] // Contient maintenant les vœux salle/formateur par matière
   formateurs: FormateurSelectionne[]
   salles: SalleSelectionnee[]
   formateurMultiMatieresAutorise: boolean
@@ -77,6 +91,7 @@ export interface SessionFormData {
 }
 
 export interface SessionAIPayload {
+  sourceForm: 'creation_session' // Tag pour routage n8n
   type: SessionType
   demandePar: string
   dateCreation: string
@@ -88,17 +103,13 @@ export interface SessionAIPayload {
     dureeMois?: number
     nbParticipants: number
   }
+  plageHoraire?: PlageHoraire // Créneau quotidien fixe
   rythmeEtContraintes: {
     joursActifs: JourSemaine[]
     weekendAutorise: boolean
-    amplitudeHoraire: {
-      debut: string
-      fin: string
-      granularite: string
-    }
     periodesInterdites?: PeriodeInterdite[]
   }
-  programme?: Matiere[]
+  programme?: Matiere[] // Contient les vœux salle/formateur par matière
   totalHeuresProgramme?: number
   ressources: {
     formateurs?: FormateurSelectionne[]
@@ -130,9 +141,23 @@ export interface Seance {
 export interface SessionProposal {
   idSession: number
   statut: StatutSession
+  // Métadonnées de la session (pour afficher la synthèse complète)
+  type?: SessionType
+  nomSession?: string
+  dateDebutGlobale?: string
+  dateFin?: string
+  dureeMois?: number
+  joursActifs?: JourSemaine[]
+  plageHoraire?: PlageHoraire
+  programme?: Matiere[] // Programme détaillé pour CAP
+  formateurs?: FormateurSelectionne[]
+  salles?: SalleSelectionnee[]
+  // Planning généré par Marjorie
   planningGenere: {
     seances: Seance[]
-    statsOccupation: {
+    total_heures_formation?: number // Heures totales de la formation (ex: 800h pour CAP)
+    nb_participants?: number // Nombre de participants
+    statsOccupation?: {
       salles: { nom: string, tauxOccupation: number }[]
       formateurs: { nom: string, heuresTotal: number }[]
     }

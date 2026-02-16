@@ -404,7 +404,17 @@ model Session {
   dateFin       DateTime @map("date_fin") @db.Date
   capaciteMax   Int?     @map("capacite_max")
   nbInscrits    Int      @default(0) @map("nb_inscrits")
-  statutSession String?  @map("statut_session") // PREVUE | CONFIRMEE | EN_COURS | TERMINEE | ANNULEE
+  statutSession String?  @map("statut_session") // PREVUE | CONFIRMEE | EN_COURS | TERMINEE | ANNULEE | EN_ATTENTE_VALIDATION | VALIDE_MARJORIE | DIFFUSEE
+
+  // === WORKFLOW VALIDATION MARJORIE ===
+  statutValidation String?  @default("EN_ATTENTE") @map("statut_validation") // EN_ATTENTE | EN_ANALYSE | VALIDE | REFUSE | DIFFUSEE
+  planningIA       Json?    @map("planning_ia") // Planning généré par Marjorie (format JSON)
+  rapportIA        String?  @map("rapport_ia") @db.Text // Rapport d'analyse Marjorie
+  dateValidationIA DateTime? @map("date_validation_ia") @db.Timestamptz(6)
+  dateRefusIA      DateTime? @map("date_refus_ia") @db.Timestamptz(6)
+  motifRefus       String?  @map("motif_refus") @db.Text
+  dateDiffusion    DateTime? @map("date_diffusion") @db.Timestamptz(6)
+  diffuseePar      Int?     @map("diffusee_par") // ID utilisateur admin qui diffuse
 
   // === SALLE (dual approach pour migration progressive) ===
   sallePrincipale String? @map("salle_principale") // Conservé pour compatibilité (nom texte)

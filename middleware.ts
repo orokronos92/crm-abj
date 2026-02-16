@@ -15,6 +15,7 @@ const publicRoutes = [
   '/api/salles', // API salles (temporaire pour tests)
   '/api/evenements', // API événements (temporaire pour tests)
   '/api/formateurs', // API formateurs (création rapide sans auth)
+  '/api/sessions', // API sessions (temporaire pour tests)
   '/_next',
   '/favicon.ico'
 ]

@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { SessionFormModal } from '@/components/admin/SessionFormModal'
 import {
@@ -235,6 +235,10 @@ const STATUT_COLORS: Record<string, string> = {
   'INSCRIPTIONS_OUVERTES': 'bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] border border-[rgba(var(--accent),0.3)]',
   'A_VENIR': 'bg-[rgba(var(--info),0.1)] text-[rgb(var(--info))] border border-[rgba(var(--info),0.3)]',
   'TERMINEE': 'bg-[rgba(var(--muted),0.1)] text-[rgb(var(--muted-foreground))] border border-[rgba(var(--border),0.3)]',
+  'EN_ANALYSE': 'bg-[rgba(var(--warning),0.1)] text-[rgb(var(--warning))] border border-[rgba(var(--warning),0.3)]',
+  'VALIDE': 'bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))] border border-[rgba(var(--success),0.3)]',
+  'REFUSE': 'bg-[rgba(var(--error),0.1)] text-[rgb(var(--error))] border border-[rgba(var(--error),0.3)]',
+  'DIFFUSEE': 'bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] border border-[rgba(var(--accent),0.3)]',
 }
 
 const STATUT_LABELS: Record<string, string> = {
@@ -242,18 +246,69 @@ const STATUT_LABELS: Record<string, string> = {
   'INSCRIPTIONS_OUVERTES': 'Inscriptions ouvertes',
   'A_VENIR': 'À venir',
   'TERMINEE': 'Terminée',
+  'EN_ANALYSE': 'En analyse',
+  'VALIDE': 'Validé',
+  'REFUSE': 'Refusé',
+  'DIFFUSEE': 'Diffusée',
 }
 
-type StatutFilter = 'TOUS' | 'EN_COURS' | 'INSCRIPTIONS_OUVERTES' | 'A_VENIR' | 'TERMINEE'
+type StatutFilter = 'TOUS' | 'EN_COURS' | 'INSCRIPTIONS_OUVERTES' | 'A_VENIR' | 'TERMINEE' | 'EN_ANALYSE' | 'VALIDE' | 'REFUSE' | 'DIFFUSEE'
+
+interface Session {
+  id: number
+  formation: string
+  code_formation: string
+  nom_session: string
+  formateur_principal: string
+  salle: string
+  capacite: number
+  inscrits: number
+  date_debut: string
+  date_fin: string
+  statut: string
+  statut_session: string
+  planning_ia?: any
+  rapport_ia?: string | null
+  notes?: string | null
+  duree_jours: number
+  duree_heures: number
+  formateurs_secondaires: string[]
+}
 
 export default function SessionsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilter, setActiveFilter] = useState<StatutFilter>('TOUS')
-  const [selectedSession, setSelectedSession] = useState<typeof MOCK_SESSIONS[0] | null>(null)
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   const [activeTab, setActiveTab] = useState('synthese')
   const [modalSessionOuverte, setModalSessionOuverte] = useState(false)
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filteredSessions = MOCK_SESSIONS.filter(session => {
+  // Charger les sessions depuis l'API
+  const loadSessions = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/sessions')
+      const data = await response.json()
+
+      if (data.success) {
+        setSessions(data.sessions)
+      } else {
+        console.error('Erreur chargement sessions:', data.error)
+      }
+    } catch (error) {
+      console.error('Erreur fetch sessions:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Charger les sessions au montage du composant
+  useEffect(() => {
+    loadSessions()
+  }, [])
+
+  const filteredSessions = sessions.filter(session => {
     const matchesSearch = session.nom_session.toLowerCase().includes(searchTerm.toLowerCase()) ||
       session.formation.toLowerCase().includes(searchTerm.toLowerCase()) ||
       session.formateur_principal.toLowerCase().includes(searchTerm.toLowerCase())
@@ -269,21 +324,21 @@ export default function SessionsPage() {
     return 'text-[rgb(var(--warning))]'
   }
 
-  const getTauxRemplissage = (session: typeof MOCK_SESSIONS[0]) => {
-    return Math.round((session.places_prises / session.capacite_max) * 100)
-  }
-
-  const getProgressionHeures = (session: typeof MOCK_SESSIONS[0]) => {
-    return Math.round((session.heures_effectuees / session.duree_heures) * 100)
+  const getTauxRemplissage = (session: Session) => {
+    return Math.round((session.inscrits / session.capacite) * 100)
   }
 
   // Stats par filtre
   const statsParStatut = {
-    TOUS: MOCK_SESSIONS.length,
-    EN_COURS: MOCK_SESSIONS.filter(s => s.statut === 'EN_COURS').length,
-    INSCRIPTIONS_OUVERTES: MOCK_SESSIONS.filter(s => s.statut === 'INSCRIPTIONS_OUVERTES').length,
-    A_VENIR: MOCK_SESSIONS.filter(s => s.statut === 'A_VENIR').length,
-    TERMINEE: MOCK_SESSIONS.filter(s => s.statut === 'TERMINEE').length,
+    TOUS: sessions.length,
+    EN_COURS: sessions.filter(s => s.statut === 'EN_COURS').length,
+    INSCRIPTIONS_OUVERTES: sessions.filter(s => s.statut === 'INSCRIPTIONS_OUVERTES').length,
+    A_VENIR: sessions.filter(s => s.statut === 'A_VENIR').length,
+    TERMINEE: sessions.filter(s => s.statut === 'TERMINEE').length,
+    EN_ANALYSE: sessions.filter(s => s.statut === 'EN_ANALYSE').length,
+    VALIDE: sessions.filter(s => s.statut === 'VALIDE').length,
+    REFUSE: sessions.filter(s => s.statut === 'REFUSE').length,
+    DIFFUSEE: sessions.filter(s => s.statut === 'DIFFUSEE').length,
   }
 
   return (
@@ -313,7 +368,7 @@ export default function SessionsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Total sessions</p>
                 <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {MOCK_SESSIONS.length}
+                  {sessions.length}
                 </p>
               </div>
               <BookOpen className="w-8 h-8 text-[rgb(var(--accent))]" />
@@ -335,12 +390,12 @@ export default function SessionsPage() {
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Inscriptions ouvertes</p>
-                <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
-                  {statsParStatut.INSCRIPTIONS_OUVERTES}
+                <p className="text-sm text-[rgb(var(--muted-foreground))]">En analyse</p>
+                <p className="text-3xl font-bold text-[rgb(var(--warning))] mt-1">
+                  {statsParStatut.EN_ANALYSE}
                 </p>
               </div>
-              <UserPlus className="w-8 h-8 text-[rgb(var(--accent))]" />
+              <Clock className="w-8 h-8 text-[rgb(var(--warning))]" />
             </div>
           </div>
 
@@ -349,7 +404,7 @@ export default function SessionsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Élèves total</p>
                 <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {MOCK_SESSIONS.reduce((sum, s) => sum + s.places_prises, 0)}
+                  {sessions.reduce((sum, s) => sum + s.inscrits, 0)}
                 </p>
               </div>
               <Users className="w-8 h-8 text-[rgb(var(--foreground))]" />
@@ -361,7 +416,7 @@ export default function SessionsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Places disponibles</p>
                 <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
-                  {MOCK_SESSIONS.reduce((sum, s) => sum + (s.capacite_max - s.places_prises), 0)}
+                  {sessions.reduce((sum, s) => sum + (s.capacite - s.inscrits), 0)}
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-[rgb(var(--accent))]" />
@@ -746,7 +801,7 @@ export default function SessionsPage() {
                   </div>
 
                   {/* Formateurs secondaires */}
-                  {selectedSession.formateurs_secondaires.length > 0 && (
+                  {selectedSession.formateurs_secondaires && selectedSession.formateurs_secondaires.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-3">Formateurs secondaires</h3>
                       <div className="space-y-2">
@@ -889,7 +944,7 @@ export default function SessionsPage() {
           onClose={() => setModalSessionOuverte(false)}
           onSuccess={() => {
             setModalSessionOuverte(false)
-            // TODO: Refresh sessions depuis API
+            loadSessions() // Rafraîchir la liste des sessions
           }}
         />
       )}
