@@ -198,8 +198,7 @@ export class EleveRepository {
         where: { idEleve },
         select: {
           note: true,
-          noteSur: true,
-          coefficient: true
+          noteSur: true
         }
       }),
       prisma.presence.groupBy({

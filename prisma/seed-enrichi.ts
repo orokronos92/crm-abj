@@ -746,19 +746,21 @@ async function main() {
   console.log('📅 Création des disponibilités formateurs...')
 
   const disponibilites = []
+  const creneaux = ['MATIN', 'APRES_MIDI', 'JOURNEE']
+
   for (let i = 0; i < formateurs.length; i++) {
     const formateur = formateurs[i]
 
-    // 2-3 disponibilités futures par formateur
-    const nbDispo = 2 + (i % 2)
+    // 10-15 disponibilités futures par formateur (jours variés)
+    const nbDispo = 10 + (i % 6)
     for (let j = 0; j < nbDispo; j++) {
       const dispo = await prisma.disponibiliteFormateur.create({
         data: {
           idFormateur: formateur.idFormateur,
-          dateDebut: new Date(2025, 3 + j, 1 + i * 5),
-          dateFin: new Date(2025, 3 + j, 5 + i * 5),
-          typeDisponibilite: j === 0 ? 'CONFIRME' : 'DISPONIBLE',
-          formationConcernee: formateur.specialites[0]
+          date: new Date(2026, 2 + Math.floor(j / 3), 1 + (j * 3) + i), // Dates variées sur 4 mois
+          creneauJournee: creneaux[j % 3], // Alterner MATIN/APRES_MIDI/JOURNEE
+          typeDisponibilite: j === 0 ? 'CONFIRME' : (j % 3 === 0 ? 'RESERVE' : 'DISPONIBLE'),
+          formationConcernee: formateur.specialites[j % formateur.specialites.length]
         }
       })
       disponibilites.push(dispo)

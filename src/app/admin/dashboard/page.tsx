@@ -60,18 +60,21 @@ export default async function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      {/* Header de page */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-2">
-          Tableau de bord
-        </h1>
-        <p className="text-[rgb(var(--muted-foreground))]">
-          Vue d'ensemble de l'activité du CRM
-        </p>
-      </div>
+      <div className="flex flex-col h-[calc(100vh-8rem)]">
+        {/* Header/Stats - partie fixe (ne scroll jamais) */}
+        <div className="flex-shrink-0 space-y-6 pb-6 border-b border-[rgba(var(--border),0.2)]">
+          {/* Header de page */}
+          <div>
+            <h1 className="text-3xl font-bold text-[rgb(var(--foreground))] mb-2">
+              Tableau de bord
+            </h1>
+            <p className="text-[rgb(var(--muted-foreground))]">
+              Vue d'ensemble de l'activité du CRM
+            </p>
+          </div>
 
-      {/* Statistiques principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          {/* Statistiques principales */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Prospects */}
         <div className="stat-card group">
           <div className="flex items-center justify-between mb-2">
@@ -172,9 +175,12 @@ export default async function AdminDashboard() {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* CA et graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    {/* Contenu scrollable */}
+    <div className="flex-1 overflow-y-auto pt-6">
+        {/* CA et graphiques */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* CA financier */}
         <div className="lg:col-span-1">
           <div className="card-hover bg-[rgb(var(--card))] rounded-xl p-6 border border-[rgba(var(--border),0.5)]">
@@ -334,6 +340,8 @@ export default async function AdminDashboard() {
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
     </DashboardLayout>
   )

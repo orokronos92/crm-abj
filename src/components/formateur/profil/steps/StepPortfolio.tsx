@@ -7,13 +7,20 @@ import { useProfilFormateur } from '@/contexts/ProfilFormateurContext'
 export function StepPortfolio() {
   const { profil, updateProfil } = useProfilFormateur()
   const [modeAjout, setModeAjout] = useState(false)
-  const [nouvelleRealisation, setNouvelleRealisation] = useState({
+  const [nouvelleRealisation, setNouvelleRealisation] = useState<{
+    titre: string
+    description: string
+    date: string
+    imageUrl: string
+    lienUrl: string
+    type: 'realisation' | 'projet' | 'publication'
+  }>({
     titre: '',
     description: '',
     date: '',
-    lienImage: '',
-    lienVideo: '',
-    techniques: ''
+    imageUrl: '',
+    lienUrl: '',
+    type: 'realisation'
   })
 
   const ajouterRealisation = () => {
@@ -27,9 +34,9 @@ export function StepPortfolio() {
         titre: '',
         description: '',
         date: '',
-        lienImage: '',
-        lienVideo: '',
-        techniques: ''
+        imageUrl: '',
+        lienUrl: '',
+        type: 'realisation'
       })
       setModeAjout(false)
     }
@@ -63,7 +70,7 @@ export function StepPortfolio() {
               key={realisation.id}
               className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg overflow-hidden"
             >
-              {realisation.lienImage && (
+              {realisation.imageUrl && (
                 <div className="aspect-video bg-[rgba(var(--secondary),0.5)] flex items-center justify-center">
                   <Image className="w-12 h-12 text-[rgb(var(--muted-foreground))]" />
                 </div>
@@ -84,11 +91,6 @@ export function StepPortfolio() {
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">
                   {realisation.description}
                 </p>
-                {realisation.techniques && (
-                  <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                    Techniques : {realisation.techniques}
-                  </p>
-                )}
                 <div className="flex items-center gap-4 text-xs text-[rgb(var(--muted-foreground))]">
                   {realisation.date && (
                     <span className="flex items-center gap-1">
@@ -96,10 +98,10 @@ export function StepPortfolio() {
                       {realisation.date}
                     </span>
                   )}
-                  {realisation.lienVideo && (
+                  {realisation.lienUrl && (
                     <span className="flex items-center gap-1">
                       <Link className="w-3 h-3" />
-                      Vidéo disponible
+                      Lien disponible
                     </span>
                   )}
                 </div>
@@ -151,14 +153,16 @@ export function StepPortfolio() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Techniques utilisées</label>
-            <input
-              type="text"
-              value={nouvelleRealisation.techniques}
-              onChange={(e) => setNouvelleRealisation({...nouvelleRealisation, techniques: e.target.value})}
-              placeholder="Ex: Sertissage griffe, gravure main, fonte à cire perdue..."
+            <label className="block text-sm font-medium mb-2">Type *</label>
+            <select
+              value={nouvelleRealisation.type}
+              onChange={(e) => setNouvelleRealisation({...nouvelleRealisation, type: e.target.value as 'realisation' | 'projet' | 'publication'})}
               className="w-full px-3 py-2 bg-[rgb(var(--card))] border rounded-lg"
-            />
+            >
+              <option value="realisation">Réalisation</option>
+              <option value="projet">Projet</option>
+              <option value="publication">Publication</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -166,19 +170,19 @@ export function StepPortfolio() {
               <label className="block text-sm font-medium mb-2">Lien image</label>
               <input
                 type="url"
-                value={nouvelleRealisation.lienImage}
-                onChange={(e) => setNouvelleRealisation({...nouvelleRealisation, lienImage: e.target.value})}
+                value={nouvelleRealisation.imageUrl}
+                onChange={(e) => setNouvelleRealisation({...nouvelleRealisation, imageUrl: e.target.value})}
                 placeholder="https://..."
                 className="w-full px-3 py-2 bg-[rgb(var(--card))] border rounded-lg"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Lien vidéo</label>
+              <label className="block text-sm font-medium mb-2">Lien URL</label>
               <input
                 type="url"
-                value={nouvelleRealisation.lienVideo}
-                onChange={(e) => setNouvelleRealisation({...nouvelleRealisation, lienVideo: e.target.value})}
+                value={nouvelleRealisation.lienUrl}
+                onChange={(e) => setNouvelleRealisation({...nouvelleRealisation, lienUrl: e.target.value})}
                 placeholder="https://..."
                 className="w-full px-3 py-2 bg-[rgb(var(--card))] border rounded-lg"
               />

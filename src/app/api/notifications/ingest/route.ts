@@ -150,7 +150,7 @@ async function createNotification(payload: NotificationPayload) {
     actionRequise: payload.actionRequise || false,
     typeAction: payload.typeAction || null,
 
-    metadonnees: payload.metadonnees || null,
+    metadonnees: payload.metadonnees || undefined,
     expirationDate: payload.expirationDate ? new Date(payload.expirationDate) : null,
   }
 

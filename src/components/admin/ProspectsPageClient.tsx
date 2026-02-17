@@ -7,11 +7,7 @@
 
 import { useState } from 'react'
 import { ProspectDetailPanel } from './ProspectDetailPanel'
-import { ProspectsFilters } from './ProspectsFilters'
-import {
-  Search,
-  MessageSquare,
-} from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 
 interface Prospect {
   id: string
@@ -53,31 +49,13 @@ const STATUT_COLORS: Record<string, string> = {
 
 export function ProspectsPageClient({ prospects, total }: ProspectsPageClientProps) {
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
 
   return (
-    <div className="flex h-[calc(100vh-6rem)]">
+    <div className="flex">
       {/* Liste principale */}
       <div className={`flex-1 flex flex-col ${selectedProspectId ? 'pr-96' : ''}`}>
-        {/* Barre de recherche et filtres */}
-        <div className="mb-4">
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-              <input
-                type="text"
-                placeholder="Rechercher par nom, email, téléphone..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.1)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-1 focus:ring-[rgba(var(--accent),0.2)]"
-              />
-            </div>
-            <ProspectsFilters />
-          </div>
-        </div>
-
         {/* Tableau */}
-        <div className="flex-1 overflow-auto">
+        <div>
           <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl">
             <table className="w-full">
               <thead>

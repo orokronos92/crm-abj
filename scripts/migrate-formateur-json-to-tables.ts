@@ -5,34 +5,34 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🔄 Migration des données JSON formateurs vers tables relationnelles\n')
 
-  // 1. Extraire les données JSON existantes
-  console.log('📥 Extraction des données JSON...')
+  // 1. Extraire les données relationnelles existantes
+  console.log('📥 Extraction des données relationnelles...')
   const formateurs = await prisma.formateur.findMany({
     select: {
       idFormateur: true,
       nom: true,
       prenom: true,
-      portfolio: true,
-      certifications: true,
-      formationsContinues: true
+      portfolioRealisations: true,
+      certificationsPro: true,
+      formationsCont: true
     }
   })
 
   const formateursAvecDonnees = formateurs.filter(
-    f => f.portfolio || f.certifications || f.formationsContinues
+    f => f.portfolioRealisations.length > 0 || f.certificationsPro.length > 0 || f.formationsCont.length > 0
   )
 
   console.log(`✓ ${formateursAvecDonnees.length} formateurs avec données à migrer\n`)
 
-  // Sauvegarder les données JSON
+  // Sauvegarder les données relationnelles
   const jsonBackup: any = {}
 
   for (const formateur of formateursAvecDonnees) {
     jsonBackup[formateur.idFormateur] = {
       nom: `${formateur.prenom} ${formateur.nom}`,
-      portfolio: formateur.portfolio,
-      certifications: formateur.certifications,
-      formationsContinues: formateur.formationsContinues
+      portfolioRealisations: formateur.portfolioRealisations,
+      certificationsPro: formateur.certificationsPro,
+      formationsCont: formateur.formationsCont
     }
   }
 

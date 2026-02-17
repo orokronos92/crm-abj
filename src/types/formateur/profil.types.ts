@@ -45,9 +45,10 @@ export interface PortfolioItem {
 export interface Competence {
   id: string
   nom: string
-  niveau: 'debutant' | 'intermediaire' | 'avance' | 'expert'
-  anneesExperience: number
-  certifie: boolean
+  categorie?: string
+  niveau: 'debutant' | 'intermediaire' | 'avance' | 'expert' | number
+  anneesExperience: number | string
+  certifie?: boolean
 }
 
 // Type pour une formation continue
@@ -57,7 +58,8 @@ export interface FormationContinue {
   organisme: string
   date: string
   dureeHeures: number
-  type: 'presentiel' | 'distanciel' | 'mixte'
+  type: 'presentiel' | 'distanciel' | 'mixte' | 'technique' | 'pedagogique'
+  objectifs?: string
   competencesAcquises?: string[]
 }
 

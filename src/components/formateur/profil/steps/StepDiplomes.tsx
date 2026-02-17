@@ -23,7 +23,8 @@ export function StepDiplomes() {
   const ajouterDiplome = () => {
     if (nouveauDiplome.nomDiplome && nouveauDiplome.etablissement && nouveauDiplome.dateObtention) {
       const diplome = {
-        id: Date.now(),
+        id: Date.now().toString(),
+        titre: nouveauDiplome.nomDiplome,
         ...nouveauDiplome
       }
       updateProfil('diplomes', [...(profil.diplomes || []), diplome])
@@ -39,7 +40,7 @@ export function StepDiplomes() {
     }
   }
 
-  const supprimerDiplome = (id: number) => {
+  const supprimerDiplome = (id: string) => {
     updateProfil('diplomes', (profil.diplomes || []).filter(d => d.id !== id))
   }
 

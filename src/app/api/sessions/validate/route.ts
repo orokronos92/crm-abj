@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       const data = formData.dataCAP
 
       // Calculer le total des heures du programme
-      const totalHeuresProgramme = data.programme.reduce((sum, m) => sum + m.heures, 0)
+      const totalHeuresProgramme = data.programme.reduce((sum: number, m: any) => sum + m.heures, 0)
 
       // Préparer les métadonnées complètes pour la session
       const metadonnees = {
@@ -222,12 +222,12 @@ export async function POST(request: NextRequest) {
         const heuresParFormateur = new Map<number, number>()
 
         // Initialiser avec 0 heures pour chaque formateur
-        data.formateurs.forEach(f => heuresParFormateur.set(f.id, 0))
+        data.formateurs.forEach((f: any) => heuresParFormateur.set(f.id, 0))
 
         // Calculer les heures pour chaque formateur
-        data.programme.forEach(matiere => {
+        data.programme.forEach((matiere: any) => {
           // Trouver les formateurs qui enseignent cette matière
-          data.formateurs.forEach(formateur => {
+          data.formateurs.forEach((formateur: any) => {
             if (formateur.matieres.includes(matiere.nom)) {
               const heuresActuelles = heuresParFormateur.get(formateur.id) || 0
               heuresParFormateur.set(formateur.id, heuresActuelles + matiere.heures)

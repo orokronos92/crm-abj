@@ -286,20 +286,6 @@ export function StepVeilleProfessionnelle() {
         </div>
       )}
 
-      {/* Publications et articles */}
-      <div>
-        <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-          Publications et articles (optionnel)
-        </label>
-        <textarea
-          value={profil.publicationsArticles || ''}
-          onChange={(e) => handleChange('publicationsArticles', e.target.value)}
-          placeholder="Listez vos publications, articles, contributions à des revues professionnelles..."
-          rows={4}
-          className="w-full px-4 py-3 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:outline-none focus:border-[rgb(var(--accent))] resize-none"
-        />
-      </div>
-
       {/* Message si aucune veille */}
       {(!profil.veilleProfessionnelle || profil.veilleProfessionnelle.length === 0) && !modeAjout && (
         <div className="text-center py-8 text-[rgb(var(--muted-foreground))]">

@@ -65,7 +65,8 @@ interface FormateurDetail extends FormateurListItem {
   }>
   disponibilites: Array<{
     date: string
-    disponible: boolean
+    creneau: string
+    type: string
   }>
   issuesQualiopi: Array<{
     type: string
@@ -105,7 +106,7 @@ interface FormateurDetail extends FormateurListItem {
     id: number
     titre: string
     description: string | null
-    annee: number | null
+    annee: string
     imageUrl: string | null
   }>
   competencesTechniques: Array<{
@@ -205,7 +206,7 @@ export class FormateurService {
 
         // Sessions actives
         const sessionsActives = formateur.sessionsPrincipales?.filter(
-          s => ['EN_COURS', 'CONFIRMEE'].includes(s.statutSession)
+          s => s.statutSession && ['EN_COURS', 'CONFIRMEE'].includes(s.statutSession)
         ).length || 0
 
         // Heures hebdomadaires (estimation basée sur interventions du dernier mois)
@@ -270,12 +271,12 @@ export class FormateurService {
     // Transformation des données
     const sessions = (formateur.sessionsPrincipales || []).map(session => ({
       id: session.idSession,
-      nomSession: session.nomSession,
+      nomSession: session.nomSession || 'Session sans nom',
       formation: session.formation?.nom || 'Non définie',
       dateDebut: session.dateDebut ? new Date(session.dateDebut).toLocaleDateString('fr-FR') : '',
       dateFin: session.dateFin ? new Date(session.dateFin).toLocaleDateString('fr-FR') : '',
       nbEleves: session.inscriptionsSessions?.length || 0,
-      statut: session.statutSession
+      statut: session.statutSession || 'NON_DEFINI'
     }))
 
     const eleves = this.extractElevesFromSessions(formateur.sessionsPrincipales || [])
@@ -310,7 +311,8 @@ export class FormateurService {
 
     const disponibilites = (formateur.disponibilites || []).map(dispo => ({
       date: new Date(dispo.date).toLocaleDateString('fr-FR'),
-      disponible: dispo.disponible
+      creneau: dispo.creneauJournee,
+      type: dispo.typeDisponibilite
     }))
 
     const diplomes = (formateur.diplomes || []).map(diplome => ({
@@ -405,7 +407,7 @@ export class FormateurService {
         new Date(formateur.dateValidationQualiopi).toLocaleDateString('fr-FR') : null,
       dossierComplet: formateur.dossierComplet,
       elevesActifs: stats.totalEleves,
-      sessionsActives: sessions.filter(s => ['EN_COURS', 'CONFIRMEE'].includes(s.statut)).length,
+      sessionsActives: sessions.filter(s => s.statut && ['EN_COURS', 'CONFIRMEE'].includes(s.statut)).length,
       heuresHebdo: this.calculateHeuresHebdo(formateur.interventions || []),
       tauxHoraire: Number(formateur.tarifJournalier || 0) / 7,
       conformeQualiopi: qualiopi?.conforme || false,

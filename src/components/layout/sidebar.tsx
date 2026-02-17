@@ -102,11 +102,10 @@ export function Sidebar({ role, userName }: SidebarProps) {
         {/* Header avec logo */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-[rgba(var(--accent),0.1)]">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
-            <DiamondLogo className="text-[rgb(var(--accent))] animate-pulse-gold" size={32} />
+            <DiamondLogo className="text-[rgb(var(--accent))] animate-pulse-gold" size={64} />
             {!isCollapsed && (
               <div>
-                <div className="text-sm font-bold text-[rgb(var(--foreground))]">ABJ CRM</div>
-                <div className="text-[9px] text-[rgb(var(--accent))] font-semibold uppercase tracking-wider">Joaillerie</div>
+                <div className="text-2xl font-bold text-[rgb(var(--foreground))] whitespace-nowrap">ABJ-CRM</div>
               </div>
             )}
           </div>

@@ -325,138 +325,143 @@ export default function NotificationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">Notifications</h1>
-            <p className="text-[rgb(var(--muted-foreground))] mt-1">
-              Historique complet des retours et alertes de Marjorie
-              {sseConnected && (
-                <span className="ml-2 text-xs text-[rgb(var(--success))]">
-                  ● Temps réel activé
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={marquerToutLu}
-              className="px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] hover:bg-[rgba(var(--accent),0.1)] transition-all flex items-center gap-2"
-            >
-              <CheckCheck className="w-4 h-4" />
-              Tout marquer lu
-            </button>
-            <button
-              onClick={supprimerLues}
-              className="px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--error))] hover:bg-[rgba(var(--error),0.1)] transition-all flex items-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              Supprimer lues
-            </button>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-5 gap-4">
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Total</p>
-                <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {counts.total}
-                </p>
-              </div>
-              <Bell className="w-8 h-8 text-[rgb(var(--accent))]" />
+      <div className="flex flex-col h-[calc(100vh-8rem)]">
+        {/* Header/Stats/Filtres - partie fixe (ne scroll jamais) */}
+        <div className="flex-shrink-0 space-y-4 pb-6 border-b border-[rgba(var(--border),0.2)]">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">Notifications</h1>
+              <p className="text-[rgb(var(--muted-foreground))] mt-1">
+                Historique complet des retours et alertes de Marjorie
+                {sseConnected && (
+                  <span className="ml-2 text-xs text-[rgb(var(--success))]">
+                    ● Temps réel activé
+                  </span>
+                )}
+              </p>
             </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Non lues</p>
-                <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
-                  {counts.nonLues}
-                </p>
-              </div>
-              <Sparkles className="w-8 h-8 text-[rgb(var(--accent))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Urgentes</p>
-                <p className="text-3xl font-bold text-[rgb(var(--error))] mt-1">
-                  {counts.urgentes}
-                </p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-[rgb(var(--error))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Actions requises</p>
-                <p className="text-3xl font-bold text-[rgb(var(--warning))] mt-1">
-                  {counts.actionsRequises}
-                </p>
-              </div>
-              <Target className="w-8 h-8 text-[rgb(var(--warning))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Connexion SSE</p>
-                <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">
-                  {sseConnected ? 'Actif' : 'Inactif'}
-                </p>
-              </div>
-              {sseConnected ? (
-                <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
-              ) : (
-                <XCircle className="w-8 h-8 text-[rgb(var(--error))]" />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Filtres */}
-        <div className="card p-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-              <input
-                type="text"
-                placeholder="Rechercher dans les notifications..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value as NotifFilter)}
-                className="px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+            <div className="flex items-center gap-3">
+              <button
+                onClick={marquerToutLu}
+                className="px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] hover:bg-[rgba(var(--accent),0.1)] transition-all flex items-center gap-2"
               >
-                <option value="TOUTES">Toutes</option>
-                <option value="NON_LUES">Non lues</option>
-                <option value="URGENTE">Urgentes</option>
-                <option value="HAUTE">Haute priorité</option>
-                <option value="NORMALE">Normale</option>
-                <option value="BASSE">Basse priorité</option>
-              </select>
+                <CheckCheck className="w-4 h-4" />
+                Tout marquer lu
+              </button>
+              <button
+                onClick={supprimerLues}
+                className="px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--error))] hover:bg-[rgba(var(--error),0.1)] transition-all flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Supprimer lues
+              </button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-5 gap-4">
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Total</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
+                    {counts.total}
+                  </p>
+                </div>
+                <Bell className="w-8 h-8 text-[rgb(var(--accent))]" />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Non lues</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
+                    {counts.nonLues}
+                  </p>
+                </div>
+                <Sparkles className="w-8 h-8 text-[rgb(var(--accent))]" />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Urgentes</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--error))] mt-1">
+                    {counts.urgentes}
+                  </p>
+                </div>
+                <AlertTriangle className="w-8 h-8 text-[rgb(var(--error))]" />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Actions requises</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--warning))] mt-1">
+                    {counts.actionsRequises}
+                  </p>
+                </div>
+                <Target className="w-8 h-8 text-[rgb(var(--warning))]" />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Connexion SSE</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">
+                    {sseConnected ? 'Actif' : 'Inactif'}
+                  </p>
+                </div>
+                {sseConnected ? (
+                  <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
+                ) : (
+                  <XCircle className="w-8 h-8 text-[rgb(var(--error))]" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Filtres */}
+          <div className="card p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+                <input
+                  type="text"
+                  placeholder="Rechercher dans les notifications..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value as NotifFilter)}
+                  className="px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                >
+                  <option value="TOUTES">Toutes</option>
+                  <option value="NON_LUES">Non lues</option>
+                  <option value="URGENTE">Urgentes</option>
+                  <option value="HAUTE">Haute priorité</option>
+                  <option value="NORMALE">Normale</option>
+                  <option value="BASSE">Basse priorité</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Liste notifications */}
-        <div className="space-y-3">
+        {/* Contenu scrollable */}
+        <div className="flex-1 overflow-y-auto pt-6">
+          {/* Liste notifications */}
+          <div className="space-y-3">
           {loading && notifications.length === 0 ? (
             <div className="card p-12 text-center">
               <div className="w-16 h-16 border-4 border-[rgb(var(--accent))] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -560,6 +565,7 @@ export default function NotificationsPage() {
               </p>
             </div>
           )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

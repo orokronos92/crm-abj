@@ -224,7 +224,7 @@ export default function CompetencesPage() {
                   {/* Affichage des domaines depuis les compétences techniques */}
                   {profileData.competences && profileData.competences.length > 0 ? (
                     // Extraire les domaines uniques des compétences
-                    [...new Set(profileData.competences.map((c: any) => c.domaine || 'Général'))].map((domaine, index) => (
+                    [...new Set(profileData.competences.map((c: any) => c.domaine || 'Général'))].map((domaine: any, index) => (
                       <span
                         key={index}
                         className="px-4 py-2 bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] rounded-lg text-sm font-medium border border-[rgba(var(--accent),0.2)]"

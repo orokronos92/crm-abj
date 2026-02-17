@@ -17,7 +17,11 @@ export function StepCertifications() {
 
   const ajouterCertification = () => {
     if (nouvelleCertif.nomCertification && nouvelleCertif.organisme && nouvelleCertif.dateObtention) {
-      updateProfil('certifications', [...(profil.certifications || []), { ...nouvelleCertif, id: Date.now() }])
+      updateProfil('certifications', [...(profil.certifications || []), {
+        ...nouvelleCertif,
+        id: Date.now().toString(),
+        nom: nouvelleCertif.nomCertification
+      }])
       setNouvelleCertif({
         nomCertification: '',
         organisme: '',
@@ -29,7 +33,7 @@ export function StepCertifications() {
     }
   }
 
-  const supprimerCertification = (id: number) => {
+  const supprimerCertification = (id: string) => {
     updateProfil('certifications', (profil.certifications || []).filter(c => c.id !== id))
   }
 

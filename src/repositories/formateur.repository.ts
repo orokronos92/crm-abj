@@ -441,12 +441,12 @@ export class FormateurRepository {
     const issues = []
 
     // Documents expirés (tous, obligatoires ou non)
-    const documentsExpires = formateur.documents.filter(d =>
+    const documentsExpires = formateur.documents.filter((d: any) =>
       d.dateExpiration && new Date(d.dateExpiration) < new Date()
     )
 
     // Documents manquants - SEULEMENT les obligatoires avec statut ATTENDU
-    const documentsManquants = formateur.documents.filter(d =>
+    const documentsManquants = formateur.documents.filter((d: any) =>
       d.statut === 'ATTENDU' && d.typeDocument && d.typeDocument.obligatoire === true
     )
 
@@ -454,7 +454,7 @@ export class FormateurRepository {
       issues.push({
         type: 'DOCUMENTS_EXPIRES',
         count: documentsExpires.length,
-        details: documentsExpires.map(d => d.typeDocument ? d.typeDocument.libelle : 'Document')
+        details: documentsExpires.map((d: any) => d.typeDocument ? d.typeDocument.libelle : 'Document')
       })
     }
 
@@ -462,12 +462,12 @@ export class FormateurRepository {
       issues.push({
         type: 'DOCUMENTS_MANQUANTS',
         count: documentsManquants.length,
-        details: documentsManquants.map(d => d.typeDocument ? d.typeDocument.libelle : 'Document')
+        details: documentsManquants.map((d: any) => d.typeDocument ? d.typeDocument.libelle : 'Document')
       })
     }
 
     // CV manquant seulement si le CV n'est pas dans les documents ou si cvUrl est vide
-    const cvDocument = formateur.documents.find(d => d.codeTypeDocument === 'CV')
+    const cvDocument = formateur.documents.find((d: any) => d.codeTypeDocument === 'CV')
     const cvManquant = !formateur.cvUrl && (!cvDocument || cvDocument.statut === 'ATTENDU')
 
     if (cvManquant) {

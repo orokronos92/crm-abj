@@ -45,9 +45,9 @@ const MOCK_SESSIONS = [
     duree_heures: 840,
 
     // Places
-    capacite_max: 12,
-    places_prises: 11,
-    liste_attente: 3,
+    capaciteMax: 12,
+    nbInscrits: 11,
+    listeAttente: 3,
 
     // Formateurs
     formateur_principal: 'Michel Laurent',
@@ -85,9 +85,9 @@ const MOCK_SESSIONS = [
     duree_jours: 60,
     duree_heures: 420,
 
-    capacite_max: 6,
-    places_prises: 5,
-    liste_attente: 0,
+    capaciteMax: 6,
+    nbInscrits: 5,
+    listeAttente: 0,
 
     formateur_principal: 'Michel Laurent',
     formateurs_secondaires: [],
@@ -118,9 +118,9 @@ const MOCK_SESSIONS = [
     duree_jours: 45,
     duree_heures: 315,
 
-    capacite_max: 8,
-    places_prises: 4,
-    liste_attente: 0,
+    capaciteMax: 8,
+    nbInscrits: 4,
+    listeAttente: 0,
 
     formateur_principal: 'Sophie Petit',
     formateurs_secondaires: [],
@@ -148,9 +148,9 @@ const MOCK_SESSIONS = [
     duree_jours: 100,
     duree_heures: 700,
 
-    capacite_max: 10,
-    places_prises: 6,
-    liste_attente: 2,
+    capaciteMax: 10,
+    nbInscrits: 6,
+    listeAttente: 2,
 
     formateur_principal: 'Michel Laurent',
     formateurs_secondaires: ['Antoine Dubois'],
@@ -178,9 +178,9 @@ const MOCK_SESSIONS = [
     duree_jours: 50,
     duree_heures: 350,
 
-    capacite_max: 8,
-    places_prises: 0,
-    liste_attente: 0,
+    capaciteMax: 8,
+    nbInscrits: 0,
+    listeAttente: 0,
 
     formateur_principal: 'Michel Laurent',
     formateurs_secondaires: [],
@@ -208,9 +208,9 @@ const MOCK_SESSIONS = [
     duree_jours: 120,
     duree_heures: 840,
 
-    capacite_max: 12,
-    places_prises: 12,
-    liste_attente: 0,
+    capaciteMax: 12,
+    nbInscrits: 12,
+    listeAttente: 0,
 
     formateur_principal: 'Michel Laurent',
     formateurs_secondaires: ['Sophie Petit'],
@@ -261,8 +261,9 @@ interface Session {
   nom_session: string
   formateur_principal: string
   salle: string
-  capacite: number
-  inscrits: number
+  capaciteMax: number
+  nbInscrits: number
+  listeAttente?: number
   date_debut: string
   date_fin: string
   statut: string
@@ -272,7 +273,13 @@ interface Session {
   notes?: string | null
   duree_jours: number
   duree_heures: number
+  heures_effectuees?: number
   formateurs_secondaires: string[]
+  moyenne_session?: number
+  taux_assiduite?: number
+  nb_abandons?: number
+  prochaine_eval?: string
+  eleves?: Array<{ id: number; nom: string; prenom: string; moyenne: number; absences: number }>
 }
 
 export default function SessionsPage() {
@@ -325,7 +332,12 @@ export default function SessionsPage() {
   }
 
   const getTauxRemplissage = (session: Session) => {
-    return Math.round((session.inscrits / session.capacite) * 100)
+    return Math.round((session.nbInscrits / session.capaciteMax) * 100)
+  }
+
+  const getProgressionHeures = (session: Session) => {
+    if (!session.heures_effectuees || !session.duree_heures) return 0
+    return Math.round((session.heures_effectuees / session.duree_heures) * 100)
   }
 
   // Stats par filtre
@@ -343,26 +355,28 @@ export default function SessionsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">Sessions de formation</h1>
-            <p className="text-[rgb(var(--muted-foreground))] mt-1">
-              Gestion des sessions en cours, inscriptions et planification
-            </p>
+      <div className="flex flex-col h-[calc(100vh-8rem)]">
+        {/* Header/Stats/Filtres/Recherche - partie fixe (ne scroll jamais) */}
+        <div className="flex-shrink-0 space-y-4 pb-6 border-b border-[rgba(var(--border),0.2)]">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">Sessions de formation</h1>
+              <p className="text-[rgb(var(--muted-foreground))] mt-1">
+                Gestion des sessions en cours, inscriptions et planification
+              </p>
+            </div>
+            <button
+              onClick={() => setModalSessionOuverte(true)}
+              className="px-6 py-3 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Nouvelle session
+            </button>
           </div>
-          <button
-            onClick={() => setModalSessionOuverte(true)}
-            className="px-6 py-3 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Nouvelle session
-          </button>
-        </div>
 
-        {/* Statistiques globales */}
-        <div className="grid grid-cols-5 gap-4">
+          {/* Statistiques globales */}
+          <div className="grid grid-cols-5 gap-4">
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -404,7 +418,7 @@ export default function SessionsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Élèves total</p>
                 <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {sessions.reduce((sum, s) => sum + s.inscrits, 0)}
+                  {sessions.reduce((sum, s) => sum + s.nbInscrits, 0)}
                 </p>
               </div>
               <Users className="w-8 h-8 text-[rgb(var(--foreground))]" />
@@ -416,7 +430,7 @@ export default function SessionsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Places disponibles</p>
                 <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
-                  {sessions.reduce((sum, s) => sum + (s.capacite - s.inscrits), 0)}
+                  {sessions.reduce((sum, s) => sum + (s.capaciteMax - s.nbInscrits), 0)}
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-[rgb(var(--accent))]" />
@@ -452,24 +466,27 @@ export default function SessionsPage() {
           </div>
         </div>
 
-        {/* Recherche */}
-        <div className="card p-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-              <input
-                type="text"
-                placeholder="Rechercher une session, formation ou formateur..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
-              />
+          {/* Recherche */}
+          <div className="card p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+                <input
+                  type="text"
+                  placeholder="Rechercher une session, formation ou formateur..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Grille sessions */}
-        <div className="grid grid-cols-1 gap-4">
+        {/* Contenu scrollable */}
+        <div className="flex-1 overflow-y-auto pt-6">
+          {/* Grille sessions */}
+          <div className="grid grid-cols-1 gap-4">
           {filteredSessions.map((session) => (
             <div
               key={session.id}
@@ -538,10 +555,10 @@ export default function SessionsPage() {
                           <div>
                             <p className="text-xs text-[rgb(var(--muted-foreground))]">Places</p>
                             <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.places_prises}/{session.capacite_max}
-                              {session.liste_attente > 0 && (
+                              {session.nbInscrits}/{session.capaciteMax}
+                              {session.listeAttente && session.listeAttente > 0 && (
                                 <span className="ml-1 text-xs text-[rgb(var(--warning))]">
-                                  (+{session.liste_attente} attente)
+                                  (+{session.listeAttente} attente)
                                 </span>
                               )}
                             </p>
@@ -609,6 +626,7 @@ export default function SessionsPage() {
               </p>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -654,7 +672,7 @@ export default function SessionsPage() {
               <div className="grid grid-cols-5 gap-4 mt-6">
                 <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                   <p className="text-3xl font-bold text-[rgb(var(--accent))]">
-                    {selectedSession.places_prises}/{selectedSession.capacite_max}
+                    {selectedSession.nbInscrits}/{selectedSession.capaciteMax}
                   </p>
                   <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Places prises</p>
                 </div>
@@ -680,8 +698,8 @@ export default function SessionsPage() {
                       <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Assiduité</p>
                     </div>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
-                      <p className={`text-3xl font-bold ${selectedSession.nb_abandons > 0 ? 'text-[rgb(var(--error))]' : 'text-[rgb(var(--foreground))]'}`}>
-                        {selectedSession.nb_abandons}
+                      <p className={`text-3xl font-bold ${(selectedSession.nb_abandons ?? 0) > 0 ? 'text-[rgb(var(--error))]' : 'text-[rgb(var(--foreground))]'}`}>
+                        {selectedSession.nb_abandons ?? 0}
                       </p>
                       <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Abandons</p>
                     </div>
@@ -698,13 +716,13 @@ export default function SessionsPage() {
                     </div>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                       <p className="text-3xl font-bold text-[rgb(var(--accent))]">
-                        {selectedSession.capacite_max - selectedSession.places_prises}
+                        {selectedSession.capaciteMax - selectedSession.nbInscrits}
                       </p>
                       <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Places restantes</p>
                     </div>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                       <p className="text-3xl font-bold text-[rgb(var(--warning))]">
-                        {selectedSession.liste_attente}
+                        {selectedSession.listeAttente ?? 0}
                       </p>
                       <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Liste d'attente</p>
                     </div>
@@ -722,7 +740,7 @@ export default function SessionsPage() {
               <div className="flex gap-1 pt-4">
                 {[
                   { key: 'synthese', label: 'Synthèse', icon: FileText },
-                  { key: 'eleves', label: `Élèves (${selectedSession.places_prises})`, icon: Users },
+                  { key: 'eleves', label: `Élèves (${selectedSession.nbInscrits})`, icon: Users },
                   { key: 'planning', label: 'Planning', icon: Calendar }
                 ].map((tab) => {
                   const Icon = tab.icon
@@ -847,7 +865,7 @@ export default function SessionsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-                      Élèves inscrits ({selectedSession.places_prises}/{selectedSession.capacite_max})
+                      Élèves inscrits ({selectedSession.nbInscrits}/{selectedSession.capaciteMax})
                     </h3>
                     {selectedSession.statut === 'INSCRIPTIONS_OUVERTES' && (
                       <button className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2">
@@ -857,7 +875,7 @@ export default function SessionsPage() {
                     )}
                   </div>
 
-                  {selectedSession.eleves.length > 0 ? (
+                  {selectedSession.eleves && selectedSession.eleves.length > 0 ? (
                     <div className="space-y-2">
                       {selectedSession.eleves.map((eleve) => (
                         <div

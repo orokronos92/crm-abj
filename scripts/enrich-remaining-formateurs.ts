@@ -125,11 +125,10 @@ async function enrichRemainingFormateurs() {
           tauxReussite: updateData.tauxReussite,
           nombreElevesFormes: updateData.nombreElevesFormes,
           languesParlees: updateData.languesParlees,
-          portfolio: updateData.portfolio,
-          certifications: updateData.certifications,
-          formationsContinues: updateData.formationsContinues,
+          // Note: portfolio, certifications, formationsContinues sont stockés dans des tables séparées
+          // (FormateurPortfolio, FormateurCertification, FormateurFormationContinue)
           cvUrl: `https://drive.google.com/file/formateur_${id}_cv.pdf`,
-          qualificationsResume: `${updateData.certifications.length} certifications, ${updateData.anneesExperience} ans d'expérience`,
+          qualificationsResume: `Formateur expérimenté avec ${updateData.anneesExperience} ans d'expérience`,
           dateValidationQualiopi: new Date('2023-01-15'),
           dossierComplet: true
         }

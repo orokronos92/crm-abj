@@ -8,7 +8,7 @@ export function StepFormationsPedagogiques() {
   const { profil, updateProfil } = useProfilFormateur()
   const [modeAjout, setModeAjout] = useState(false)
   const [nouvelleFormation, setNouvelleFormation] = useState({
-    titre: '',
+    intitule: '',
     organisme: '',
     duree: '',
     date: '',
@@ -16,14 +16,15 @@ export function StepFormationsPedagogiques() {
   })
 
   const ajouterFormation = () => {
-    if (nouvelleFormation.titre && nouvelleFormation.organisme && nouvelleFormation.date) {
+    if (nouvelleFormation.intitule && nouvelleFormation.organisme && nouvelleFormation.date) {
       const formation = {
         id: Date.now().toString(),
-        ...nouvelleFormation
+        ...nouvelleFormation,
+        competencesAcquises: nouvelleFormation.competencesAcquises ? nouvelleFormation.competencesAcquises.split(',').map(c => c.trim()) : []
       }
       updateProfil('formationsPedagogiques', [...(profil.formationsPedagogiques || []), formation])
       setNouvelleFormation({
-        titre: '',
+        intitule: '',
         organisme: '',
         duree: '',
         date: '',
@@ -64,7 +65,7 @@ export function StepFormationsPedagogiques() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">
                   <h4 className="font-medium text-[rgb(var(--foreground))]">
-                    {formation.titre}
+                    {formation.intitule}
                   </h4>
                   <p className="text-sm text-[rgb(var(--muted-foreground))]">
                     {formation.organisme}
@@ -81,9 +82,9 @@ export function StepFormationsPedagogiques() {
                       </span>
                     )}
                   </div>
-                  {formation.competencesAcquises && (
+                  {formation.competencesAcquises && formation.competencesAcquises.length > 0 && (
                     <p className="text-sm text-[rgb(var(--muted-foreground))]">
-                      Compétences acquises : {formation.competencesAcquises}
+                      Compétences acquises : {formation.competencesAcquises.join(', ')}
                     </p>
                   )}
                 </div>
@@ -112,8 +113,8 @@ export function StepFormationsPedagogiques() {
               <label className="block text-sm font-medium mb-2">Titre de la formation *</label>
               <input
                 type="text"
-                value={nouvelleFormation.titre}
-                onChange={(e) => setNouvelleFormation({...nouvelleFormation, titre: e.target.value})}
+                value={nouvelleFormation.intitule}
+                onChange={(e) => setNouvelleFormation({...nouvelleFormation, intitule: e.target.value})}
                 placeholder="Ex: Formation de formateur niveau 1"
                 className="w-full px-3 py-2 bg-[rgb(var(--card))] border rounded-lg"
               />

@@ -112,8 +112,8 @@ export class EleveService {
 
         // Statistiques
         progression: stats.progression,
-        heures_effectuees: eleve.heuresEffectuees || 0,
-        heures_totales: eleve.heuresPrevues || 500,
+        heures_effectuees: 0, // TODO: Calculer depuis les présences
+        heures_totales: 500, // TODO: Récupérer depuis la formation
         moyenne: stats.moyenne,
         absences: stats.absences,
         absences_non_justifiees: stats.absencesNonJustifiees,
@@ -163,10 +163,8 @@ export class EleveService {
       id: evaluation.idEvaluation,
       date: evaluation.dateEvaluation ? new Date(evaluation.dateEvaluation).toLocaleDateString('fr-FR') : '',
       type: evaluation.typeEvaluation,
-      matiere: evaluation.matiere || 'Non spécifiée',
       note: Number(evaluation.note || 0),
       note_sur: Number(evaluation.noteSur || 20),
-      coefficient: evaluation.coefficient || 1,
       appreciation: evaluation.appreciation || '',
       commentaire: evaluation.commentaire || '',
       formateur: evaluation.formateur ? `${evaluation.formateur.prenom} ${evaluation.formateur.nom}` : '',
@@ -177,8 +175,7 @@ export class EleveService {
     // Formatage des présences
     const presences = eleve.presences?.map(presence => ({
       date: presence.dateCours ? new Date(presence.dateCours).toLocaleDateString('fr-FR') : '',
-      matin: presence.creneauMatin || 'PRESENT',
-      apres_midi: presence.creneauApresMidi || 'PRESENT',
+      demi_journee: presence.demiJournee || 'JOURNEE_COMPLETE',
       statut: presence.statutPresence || 'PRESENT',
       justificatif: presence.justificatifFourni,
       motif: presence.motifAbsence || ''
@@ -227,8 +224,8 @@ export class EleveService {
 
       // Statistiques
       progression: stats.progression,
-      heures_effectuees: eleve.heuresEffectuees || 0,
-      heures_totales: eleve.heuresPrevues || 500,
+      heures_effectuees: 0, // TODO: Calculer depuis les présences
+      heures_totales: 500, // TODO: Récupérer depuis la formation
       moyenne: stats.moyenne,
       moyenne_ponderee: stats.moyennePonderee,
       absences: stats.absences,

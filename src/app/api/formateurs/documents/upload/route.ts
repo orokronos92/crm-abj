@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         data: {
           urlFichier,
           nomFichier: file.name,
-          taileFichier: file.size,
+          tailleFichier: file.size,
           dateDocument: new Date(),
           statut: 'EN_ATTENTE',
           modifieLe: new Date()
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
           libelle,
           urlFichier,
           nomFichier: file.name,
-          taileFichier: file.size,
+          tailleFichier: file.size,
           dateDocument: new Date(),
           statut: 'EN_ATTENTE',
           creeLe: new Date(),

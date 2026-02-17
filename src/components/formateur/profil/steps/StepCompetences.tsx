@@ -38,7 +38,7 @@ export function StepCompetences() {
         id: Date.now().toString(),
         ...nouvelleCompetence
       }
-      updateProfil('competencesTechniques', [...(profil.competencesTechniques || []), competence])
+      updateProfil('competences', [...(profil.competences || []), competence])
       setNouvelleCompetence({
         nom: '',
         categorie: 'Techniques traditionnelles',
@@ -50,16 +50,16 @@ export function StepCompetences() {
   }
 
   const supprimerCompetence = (id: string) => {
-    updateProfil('competencesTechniques', profil.competencesTechniques?.filter(c => c.id !== id) || [])
+    updateProfil('competences', profil.competences?.filter(c => c.id !== id) || [])
   }
 
   // Grouper les compétences par catégorie
-  const competencesParCategorie = profil.competencesTechniques?.reduce((acc, comp) => {
+  const competencesParCategorie = profil.competences?.reduce((acc, comp) => {
     const cat = comp.categorie || 'Autre'
     if (!acc[cat]) acc[cat] = []
     acc[cat].push(comp)
     return acc
-  }, {} as Record<string, typeof profil.competencesTechniques>) || {}
+  }, {} as Record<string, typeof profil.competences>) || {}
 
   return (
     <div className="space-y-6">
@@ -100,7 +100,7 @@ export function StepCompetences() {
                               <Star
                                 key={i}
                                 className={`w-3 h-3 ${
-                                  i < competence.niveau
+                                  i < Number(competence.niveau)
                                     ? 'fill-[rgb(var(--accent))] text-[rgb(var(--accent))]'
                                     : 'text-[rgb(var(--muted-foreground))]'
                                 }`}
@@ -108,7 +108,7 @@ export function StepCompetences() {
                             ))}
                           </div>
                           <span className="text-xs text-[rgb(var(--muted-foreground))]">
-                            {NIVEAUX.find(n => n.value === competence.niveau)?.label}
+                            {NIVEAUX.find(n => n.value === Number(competence.niveau))?.label}
                           </span>
                         </div>
                         {competence.anneesExperience && (

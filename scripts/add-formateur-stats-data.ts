@@ -147,16 +147,11 @@ async function addFormateurStatsData() {
       const totalAbsences = eleve.presences.filter(p => p.statutPresence === 'ABSENT').length
       const totalRetards = eleve.presences.filter(p => p.statutPresence === 'RETARD').length
 
-      await prisma.eleve.update({
-        where: { idEleve: eleve.idEleve },
-        data: {
-          notesMoyennes: moyenneNotes,
-          absences: totalAbsences,
-          retards: totalRetards
-        }
-      })
+      // Note: Les stats (notesMoyennes, absences, retards) sont calculées dynamiquement
+      // depuis les relations evaluations et presences par les services.
+      // Pas besoin de les stocker dans la table eleves.
 
-      console.log(`  ✅ Stats mises à jour pour ${eleve.idEleve}: moyenne ${moyenneNotes.toFixed(1)}, ${totalAbsences} absences`)
+      console.log(`  ✅ Stats calculées pour élève ${eleve.idEleve}: moyenne ${moyenneNotes.toFixed(1)}, ${totalAbsences} absences, ${totalRetards} retards`)
     }
 
     // Afficher un résumé

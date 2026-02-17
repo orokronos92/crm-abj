@@ -7,11 +7,18 @@ import { useProfilFormateur } from '@/contexts/ProfilFormateurContext'
 export function StepFormationsContinues() {
   const { profil, updateProfil } = useProfilFormateur()
   const [modeAjout, setModeAjout] = useState(false)
-  const [nouvelleFormation, setNouvelleFormation] = useState({
+  const [nouvelleFormation, setNouvelleFormation] = useState<{
+    titre: string
+    organisme: string
+    date: string
+    dureeHeures: number
+    objectifs: string
+    type: 'technique' | 'pedagogique'
+  }>({
     titre: '',
     organisme: '',
     date: '',
-    duree: '',
+    dureeHeures: 0,
     objectifs: '',
     type: 'technique'
   })
@@ -27,9 +34,9 @@ export function StepFormationsContinues() {
         titre: '',
         organisme: '',
         date: '',
-        duree: '',
+        dureeHeures: 0,
         objectifs: '',
-        type: 'technique'
+        type: 'technique' as 'technique' | 'pedagogique'
       })
       setModeAjout(false)
     }
@@ -41,7 +48,7 @@ export function StepFormationsContinues() {
 
   // Calculer le total d'heures de formation continue
   const totalHeures = profil.formationsContinues?.reduce((total, formation) => {
-    const heures = parseInt(formation.duree) || 0
+    const heures = formation.dureeHeures || 0
     return total + heures
   }, 0) || 0
 
@@ -129,8 +136,8 @@ export function StepFormationsContinues() {
                       <Calendar className="w-3 h-3" />
                       {formation.date}
                     </span>
-                    {formation.duree && (
-                      <span>{formation.duree} heures</span>
+                    {formation.dureeHeures && (
+                      <span>{formation.dureeHeures} heures</span>
                     )}
                   </div>
                   {formation.objectifs && (
@@ -176,7 +183,7 @@ export function StepFormationsContinues() {
               <label className="block text-sm font-medium mb-2">Type de formation *</label>
               <select
                 value={nouvelleFormation.type}
-                onChange={(e) => setNouvelleFormation({...nouvelleFormation, type: e.target.value})}
+                onChange={(e) => setNouvelleFormation({...nouvelleFormation, type: e.target.value as 'technique' | 'pedagogique'})}
                 className="w-full px-3 py-2 bg-[rgb(var(--card))] border rounded-lg"
               >
                 <option value="technique">Formation technique</option>
@@ -209,8 +216,8 @@ export function StepFormationsContinues() {
               <label className="block text-sm font-medium mb-2">Durée (en heures)</label>
               <input
                 type="number"
-                value={nouvelleFormation.duree}
-                onChange={(e) => setNouvelleFormation({...nouvelleFormation, duree: e.target.value})}
+                value={nouvelleFormation.dureeHeures}
+                onChange={(e) => setNouvelleFormation({...nouvelleFormation, dureeHeures: parseInt(e.target.value) || 0})}
                 placeholder="Ex: 35"
                 className="w-full px-3 py-2 bg-[rgb(var(--card))] border rounded-lg"
               />

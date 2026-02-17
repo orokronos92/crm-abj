@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { Sidebar } from './sidebar'
-import { Bell, Search, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp, Palette, Moon, Sun, RefreshCw } from 'lucide-react'
+import { Bell, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp, Palette, Moon, Sun, RefreshCw } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useNotifications } from '@/hooks/use-notifications'
 import { NotificationSkeleton } from '@/components/ui/notification-skeleton'
@@ -218,21 +218,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex-1 lg:ml-64">
           {/* Header */}
           <header className="sticky top-0 z-30 h-16 bg-[rgb(var(--card))]/80 backdrop-blur-xl border-b border-[rgba(var(--accent),0.1)]">
-            <div className="flex h-full items-center justify-between px-6">
-              {/* Barre de recherche */}
-              <div className="flex-1 max-w-xl">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher..."
-                    className="w-full pl-10 pr-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.1)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-1 focus:ring-[rgba(var(--accent),0.2)] transition-all"
-                  />
-                </div>
-              </div>
-
+            <div className="flex h-full items-center justify-end px-6">
               {/* Actions header */}
-              <div className="flex items-center gap-4 ml-4">
+              <div className="flex items-center gap-4">
                 {/* Notifications */}
                 <div className="relative">
                   <button

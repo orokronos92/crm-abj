@@ -231,7 +231,7 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                 <div className="flex items-center gap-2">
                   {getStatutBadge(doc.statut)}
                   <input
-                    ref={(el) => (fileInputRefs.current[doc.codeTypeDocument] = el)}
+                    ref={(el) => { fileInputRefs.current[doc.codeTypeDocument] = el }}
                     type="file"
                     className="hidden"
                     accept=".pdf,.jpg,.jpeg,.png"
@@ -317,7 +317,7 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                 <div className="flex items-center gap-2">
                   {getStatutBadge(doc.statut)}
                   <input
-                    ref={(el) => (fileInputRefs.current[doc.codeTypeDocument] = el)}
+                    ref={(el) => { fileInputRefs.current[doc.codeTypeDocument] = el }}
                     type="file"
                     className="hidden"
                     accept=".pdf,.jpg,.jpeg,.png"
@@ -400,7 +400,7 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                 <div className="flex items-center gap-2">
                   {getStatutBadge(doc.statut)}
                   <input
-                    ref={(el) => (fileInputRefs.current[doc.codeTypeDocument] = el)}
+                    ref={(el) => { fileInputRefs.current[doc.codeTypeDocument] = el }}
                     type="file"
                     className="hidden"
                     accept=".pdf,.jpg,.jpeg,.png"
@@ -484,7 +484,7 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                 <div className="flex items-center gap-2">
                   {getStatutBadge(doc.statut)}
                   <input
-                    ref={(el) => (fileInputRefs.current[doc.codeTypeDocument] = el)}
+                    ref={(el) => { fileInputRefs.current[doc.codeTypeDocument] = el }}
                     type="file"
                     className="hidden"
                     accept=".pdf,.jpg,.jpeg,.png"

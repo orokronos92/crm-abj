@@ -133,8 +133,8 @@ export async function GET(request: NextRequest) {
         date_fin: session.dateFin.toISOString().split('T')[0],
         statut: session.statutValidation,
         statut_session: session.statutSession,
-        planning_ia: session.planningIa,
-        rapport_ia: session.rapportIa,
+        planning_ia: session.planningIA,
+        rapport_ia: session.rapportIA,
         notes: session.notes,
         // Champs supplémentaires pour le modal de détail
         duree_jours: dureeJours,

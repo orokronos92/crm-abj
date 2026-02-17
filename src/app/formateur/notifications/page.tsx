@@ -130,7 +130,7 @@ export default function NotificationsFormateurPage() {
               <NotificationCard
                 key={notif.idNotification}
                 notification={notif}
-                isHighlighted={highlightId && parseInt(highlightId) === notif.idNotification}
+                isHighlighted={!!(highlightId && parseInt(highlightId) === notif.idNotification)}
                 onToggleRead={toggleLu}
                 onExecuteAction={executeAction}
               />

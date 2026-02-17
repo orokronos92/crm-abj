@@ -168,6 +168,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    const userId = session.user.id || 1
+
     const body = await request.json()
     const { notificationId, action } = body
 

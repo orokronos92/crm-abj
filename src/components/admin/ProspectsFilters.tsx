@@ -1,26 +1,41 @@
 /**
  * ProspectsFilters
  * Composant client pour gérer les filtres avec URL params
+ * Filtres toujours visibles à côté de la barre de recherche (comme Candidats)
  */
 
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Filter } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useState } from 'react'
 
 export function ProspectsFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [showFilters, setShowFilters] = useState(false)
+
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
 
   const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
 
-    if (value === '') {
+    if (value === '' || value === 'TOUS') {
       params.delete(key)
     } else {
       params.set(key, value)
+    }
+
+    router.push(`/admin/prospects?${params.toString()}`)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (value === '') {
+      params.delete('search')
+    } else {
+      params.set('search', value)
     }
 
     router.push(`/admin/prospects?${params.toString()}`)
@@ -31,68 +46,61 @@ export function ProspectsFilters() {
   const currentFinancement = searchParams.get('financement') || ''
 
   return (
-    <>
-      <button
-        onClick={() => setShowFilters(!showFilters)}
-        className={`px-4 py-2.5 rounded-lg border ${
-          showFilters
-            ? 'bg-[rgb(var(--accent))] text-[rgb(var(--primary))] border-[rgb(var(--accent))]'
-            : 'bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border-[rgba(var(--border),0.5)]'
-        } transition-all flex items-center gap-2`}
+    <div className="flex gap-4">
+      {/* Barre de recherche */}
+      <div className="flex-1 relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+        <input
+          type="text"
+          placeholder="Rechercher un prospect (nom, email, téléphone)..."
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.1)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
+        />
+      </div>
+
+      {/* Filtre Statut */}
+      <select
+        value={currentStatut}
+        onChange={(e) => handleFilterChange('statut', e.target.value)}
+        className="px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.1)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
       >
-        <Filter className="w-5 h-5" />
-        Filtres
-      </button>
+        <option value="">Disponibles (hors actifs)</option>
+        <option value="NOUVEAU">Nouveau</option>
+        <option value="EN_ATTENTE_DOSSIER">En attente dossier</option>
+        <option value="ANCIEN_CANDIDAT">Ancien candidat</option>
+        <option value="ANCIEN_ELEVE">Ancien élève</option>
+        <option value="CANDIDAT">Candidat (actif)</option>
+        <option value="ELEVE">Élève (en formation)</option>
+        <option value="TOUS">Tous les statuts</option>
+      </select>
 
-      {/* Filtres détaillés */}
-      {showFilters && (
-        <div className="mt-4 p-4 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg animate-fadeIn">
-          <div className="grid grid-cols-3 gap-4">
-            {/* Filtre Statut */}
-            <select
-              value={currentStatut}
-              onChange={(e) => handleFilterChange('statut', e.target.value)}
-              className="px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))]"
-            >
-              <option value="">Disponibles (hors actifs)</option>
-              <option value="NOUVEAU">Nouveau</option>
-              <option value="EN_ATTENTE_DOSSIER">En attente dossier</option>
-              <option value="ANCIEN_CANDIDAT">Ancien candidat</option>
-              <option value="ANCIEN_ELEVE">Ancien élève</option>
-              <option value="CANDIDAT">Candidat (actif)</option>
-              <option value="ELEVE">Élève (en formation)</option>
-              <option value="TOUS">Tous les statuts</option>
-            </select>
+      {/* Filtre Formation */}
+      <select
+        value={currentFormation}
+        onChange={(e) => handleFilterChange('formation', e.target.value)}
+        className="px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.1)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
+      >
+        <option value="">Toutes les formations</option>
+        <option value="CAP_BJ">CAP Bijouterie-Joaillerie</option>
+        <option value="INIT_BJ">Initiation Bijouterie</option>
+        <option value="PERF_SERTI">Perfectionnement Sertissage</option>
+        <option value="CAO_DAO">CAO/DAO Bijouterie</option>
+        <option value="GEMMO">Gemmologie</option>
+      </select>
 
-            {/* Filtre Formation */}
-            <select
-              value={currentFormation}
-              onChange={(e) => handleFilterChange('formation', e.target.value)}
-              className="px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))]"
-            >
-              <option value="">Toutes les formations</option>
-              <option value="CAP_BJ">CAP Bijouterie-Joaillerie</option>
-              <option value="INIT_BJ">Initiation Bijouterie</option>
-              <option value="PERF_SERTI">Perfectionnement Sertissage</option>
-              <option value="CAO_DAO">CAO/DAO Bijouterie</option>
-              <option value="GEMMO">Gemmologie</option>
-            </select>
-
-            {/* Filtre Financement */}
-            <select
-              value={currentFinancement}
-              onChange={(e) => handleFilterChange('financement', e.target.value)}
-              className="px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))]"
-            >
-              <option value="">Tous les financements</option>
-              <option value="CPF">CPF</option>
-              <option value="OPCO">OPCO</option>
-              <option value="France Travail">France Travail</option>
-              <option value="Personnel">Personnel</option>
-            </select>
-          </div>
-        </div>
-      )}
-    </>
+      {/* Filtre Financement */}
+      <select
+        value={currentFinancement}
+        onChange={(e) => handleFilterChange('financement', e.target.value)}
+        className="px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.1)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
+      >
+        <option value="">Tous les financements</option>
+        <option value="CPF">CPF</option>
+        <option value="OPCO">OPCO</option>
+        <option value="France Travail">France Travail</option>
+        <option value="Personnel">Personnel</option>
+      </select>
+    </div>
   )
 }

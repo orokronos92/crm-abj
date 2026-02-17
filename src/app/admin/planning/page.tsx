@@ -877,7 +877,7 @@ export default function PlanningPage() {
       {/* Modal événement */}
       {modalEvenementOuvert && (
         <EvenementFormModal
-          evenement={evenementEnEdition}
+          evenement={evenementEnEdition ?? undefined}
           onClose={() => {
             setModalEvenementOuvert(false)
             setEvenementEnEdition(null)
