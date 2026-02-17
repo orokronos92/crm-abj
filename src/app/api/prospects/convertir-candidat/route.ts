@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { prospectWebhooks } from '@/lib/webhook-client'
-import { sseManager } from '@/lib/sse-manager'
 
+/**
+ * API Endpoint: Convertir un prospect en candidat
+ *
+ * Pattern: Fire-and-Forget (202 Accepted)
+ * - Vérifie si conversion déjà en cours (lock database)
+ * - Crée un verrouillage dans conversions_en_cours
+ * - Lance le webhook n8n de manière asynchrone (sans attendre)
+ * - Retourne 202 immédiatement
+ * - n8n fera toutes les modifications (statut, Drive, emails, notification)
+ * - n8n déverrouillera via callback /api/prospects/conversion-complete
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -35,117 +45,111 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Log de l'action
-    console.log(`[API] Conversion candidat - Prospect: ${idProspect}, Formation: ${formationRetenue}`)
+    // ===== LOCK : Vérifier si conversion déjà en cours =====
+    const conversionExistante = await prisma.conversionEnCours.findFirst({
+      where: {
+        idProspect,
+        typeAction: 'CONVERTIR_CANDIDAT',
+        statutAction: 'EN_COURS'
+      }
+    })
 
-    // Appel webhook n8n pour créer le dossier candidat
-    const webhookResult = await prospectWebhooks.convertirEnCandidat({
+    if (conversionExistante) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Conversion déjà en cours',
+          message: `Une conversion est déjà en cours de traitement pour ${prospect.prenom} ${prospect.nom}. Vous serez notifié lorsqu'elle sera terminée.`,
+          enCours: true
+        },
+        { status: 409 } // 409 Conflict
+      )
+    }
+
+    // ===== LOCK : Créer le verrouillage =====
+    const conversion = await prisma.conversionEnCours.create({
+      data: {
+        idProspect,
+        typeAction: 'CONVERTIR_CANDIDAT',
+        statutAction: 'EN_COURS',
+        formationRetenue,
+        sessionVisee,
+        dateDebutSouhaitee: dateDebutSouhaitee ? new Date(dateDebutSouhaitee) : null
+      }
+    })
+
+    console.log(`[API] 🔒 Conversion verrouillée - ID: ${conversion.idConversion}, Prospect: ${idProspect}`)
+
+    // ===== FIRE-AND-FORGET : Lancer webhook n8n de manière asynchrone =====
+    // On n'attend PAS la réponse, on lance en background
+    prospectWebhooks.convertirEnCandidat({
       idProspect,
       formationRetenue,
       sessionVisee,
-      dateDebutSouhaitee
+      dateDebutSouhaitee,
+      idConversion: conversion.idConversion // Pour que n8n puisse déverrouiller
+    }).then(webhookResult => {
+      // Si succès, n8n appellera /api/prospects/conversion-complete
+      // Si erreur, on log et on déverrouille immédiatement
+      if (!webhookResult.success) {
+        console.error(`[API] ❌ Webhook échoué pour conversion ${conversion.idConversion}:`, webhookResult.error)
+        prisma.conversionEnCours.update({
+          where: { idConversion: conversion.idConversion },
+          data: {
+            statutAction: 'ERREUR',
+            messageErreur: webhookResult.error || 'Erreur inconnue',
+            dateFin: new Date(),
+            dureeMs: Date.now() - conversion.dateDebut.getTime()
+          }
+        }).catch(err => console.error('[API] Erreur update conversion:', err))
+      } else {
+        console.log(`[API] ✅ Webhook lancé avec succès pour conversion ${conversion.idConversion}`)
+      }
+    }).catch(error => {
+      // Erreur critique lors du lancement du webhook
+      console.error(`[API] ❌ Erreur critique lancement webhook conversion ${conversion.idConversion}:`, error)
+      prisma.conversionEnCours.update({
+        where: { idConversion: conversion.idConversion },
+        data: {
+          statutAction: 'ERREUR',
+          messageErreur: error instanceof Error ? error.message : 'Erreur critique',
+          dateFin: new Date(),
+          dureeMs: Date.now() - conversion.dateDebut.getTime()
+        }
+      }).catch(err => console.error('[API] Erreur update conversion:', err))
     })
 
-    if (!webhookResult.success) {
-      // Le webhook a échoué, mais on continue quand même pour mettre à jour le statut
-      console.error('[API] Webhook conversion candidat échoué:', webhookResult.error)
-
-      // On met quand même à jour le statut en local
-      await prisma.prospect.update({
-        where: { idProspect },
-        data: {
-          statutProspect: 'CANDIDAT',
-          formationPrincipale: formationRetenue,
-          modifieLe: new Date()
-        }
-      })
-
-      // Notification SSE pour avertir l'admin de l'échec partiel
-      // Note: On ne peut pas créer de notification sans idNotification via broadcast
-      // Il faut d'abord créer la notification en BDD puis broadcaster
-      const notification = await prisma.notification.create({
-        data: {
-          sourceAgent: 'system',
-          categorie: 'PROSPECT',
-          type: 'CONVERSION_PARTIELLE',
-          priorite: 'HAUTE',
-          titre: '⚠️ Conversion partielle',
-          message: `${prospect.prenom} ${prospect.nom} converti en candidat, mais la création du dossier Google Drive a échoué. Action manuelle requise.`,
-          audience: 'ADMIN',
-          lienAction: `/admin/prospects?search=${idProspect}`,
-          actionRequise: true,
-          typeAction: 'VERIFIER'
-        }
-      })
-
-      sseManager.broadcast(notification)
-
-      return NextResponse.json({
+    // ===== RETOUR IMMÉDIAT 202 ACCEPTED =====
+    return NextResponse.json(
+      {
         success: true,
-        partial: true,
-        warning: 'Statut mis à jour mais dossier Drive non créé',
+        message: 'Demande de conversion envoyée à Marjorie. Vous serez notifié lorsque le traitement sera terminé.',
         data: {
           idProspect,
-          statutProspect: 'CANDIDAT',
-          needsManualDriveCreation: true
+          idConversion: conversion.idConversion,
+          enCours: true
         }
-      })
-    }
-
-    // Succès complet : webhook OK, mise à jour statut
-    await prisma.prospect.update({
-      where: { idProspect },
-      data: {
-        statutProspect: 'CANDIDAT',
-        formationPrincipale: formationRetenue,
-        modifieLe: new Date()
-      }
-    })
-
-    // Notification SSE de succès
-    const notification = await prisma.notification.create({
-      data: {
-        sourceAgent: 'system',
-        categorie: 'CANDIDAT',
-        type: 'NOUVEAU_DOSSIER',
-        priorite: 'NORMALE',
-        titre: '✅ Nouveau candidat',
-        message: `${prospect.prenom} ${prospect.nom} a été converti en candidat pour ${formationRetenue}`,
-        audience: 'ADMIN',
-        lienAction: `/admin/candidats?search=${webhookResult.data?.numeroDossier || ''}`,
-        actionRequise: false
-      }
-    })
-
-    sseManager.broadcast(notification)
-
-    console.log('[API] ✅ Conversion candidat réussie:', webhookResult.data)
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        idProspect,
-        statutProspect: 'CANDIDAT',
-        numeroDossier: webhookResult.data?.numeroDossier,
-        lienDossierDrive: webhookResult.data?.lienDossierDrive,
-        workflowId: webhookResult.workflowId,
-        executionId: webhookResult.executionId
-      }
-    })
+      },
+      { status: 202 } // 202 Accepted (traitement asynchrone)
+    )
 
   } catch (error) {
     console.error('[API] Erreur conversion candidat:', error)
 
     // Log en BDD
-    await prisma.journalErreur.create({
-      data: {
-        nomWorkflow: 'api-convertir-candidat',
-        nomNoeud: 'POST-handler',
-        messageErreur: error instanceof Error ? error.message : 'Erreur inconnue',
-        donneesEntree: { body: await request.json().catch(() => ({})) },
-        resolu: false
-      }
-    })
+    try {
+      await prisma.journalErreur.create({
+        data: {
+          nomWorkflow: 'api-convertir-candidat',
+          nomNoeud: 'POST-handler',
+          messageErreur: error instanceof Error ? error.message : 'Erreur inconnue',
+          donneesEntree: {},
+          resolu: false
+        }
+      })
+    } catch (logError) {
+      console.error('[API] Erreur log journal:', logError)
+    }
 
     return NextResponse.json(
       {

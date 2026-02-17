@@ -150,6 +150,7 @@ export const prospectWebhooks = {
     formationRetenue: string
     sessionVisee?: string
     dateDebutSouhaitee?: string
+    idConversion?: number
   }): Promise<WebhookResponse> {
     return callWebhook('/prospect/convertir-candidat', data)
   },

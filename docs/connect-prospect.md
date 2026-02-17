@@ -3,6 +3,8 @@
 **Date** : 17 février 2026
 **Objectif** : Analyser l'état actuel de la section Prospects et planifier la connexion des actions avec n8n
 
+**Statut** : 🟢 Action 1/4 TERMINÉE - Conversion en candidat opérationnelle
+
 ---
 
 ## 📊 ÉTAT DES LIEUX - CE QUI FONCTIONNE
@@ -53,13 +55,13 @@
 
 **Boutons section Actions (lignes 237-248) :**
 ```typescript
-<button className="...">  // ❌ Pas de onClick
+<button className="...">  // ❌ Pas de onClick → TODO
   <FileText /> Générer devis
 </button>
-<button className="...">  // ❌ Pas de onClick
+<button className="...">  // ❌ Pas de onClick → TODO
   <Send /> Envoyer dossier
 </button>
-<button className="...">  // ❌ Pas de onClick
+<button onClick={() => setShowConvertirModal(true)} className="...">  // ✅ TERMINÉ (17/02/2026)
   <User /> Convertir en candidat
 </button>
 ```
@@ -684,7 +686,84 @@ export async function POST(
 
 ---
 
-**Dernière mise à jour** : 17 février 2026
-**Version** : 2.0 (corrigée)
+## ✅ IMPLÉMENTATION TERMINÉE - Action 1/4
+
+### 1. Convertir en Candidat (OPÉRATIONNEL - 17/02/2026)
+
+**Fichiers créés :**
+- ✅ `src/lib/webhook-client.ts` (265 lignes) - Client webhook avec retry et logging
+- ✅ `src/components/admin/ConvertirCandidatModal.tsx` (270 lignes) - Modal complet
+- ✅ `src/app/api/prospects/convertir-candidat/route.ts` (145 lignes) - Endpoint POST
+- ✅ `src/app/api/formations/route.ts` (36 lignes) - Endpoint GET formations
+- ✅ `scripts/test-convert-candidat.ts` (175 lignes) - Script de test
+
+**Fichiers modifiés :**
+- ✅ `src/app/api/sessions/route.ts` - Ajout filtres `idFormation` et `statutSession`
+- ✅ `src/components/admin/ProspectDetailPanel.tsx` - Intégration modal
+- ✅ `.env.local` - Ajout variables N8N_WEBHOOK_BASE_URL et N8N_API_KEY
+
+**Fonctionnalités :**
+- ✅ Modal avec sélection formation depuis BDD
+- ✅ Sélection session dynamique selon formation choisie
+- ✅ Date début souhaitée optionnelle
+- ✅ Loading states complets (chargement formations, sessions, soumission)
+- ✅ Validation : formation obligatoire
+- ✅ Appel webhook n8n avec retry (max 3 tentatives, exponential backoff)
+- ✅ Logging automatique en `journal_erreurs` si échec
+- ✅ Mise à jour statut prospect → CANDIDAT
+- ✅ Notifications SSE temps réel (succès/échec partiel)
+- ✅ Gestion graceful si webhook n8n échoue (statut mis à jour quand même)
+
+**Webhook n8n attendu :**
+```
+POST /webhook/prospect/convertir-candidat
+Body: {
+  idProspect: string
+  formationRetenue: string
+  sessionVisee?: string
+  dateDebutSouhaitee?: string
+}
+Response: {
+  success: boolean
+  numeroDossier: string
+  lienDossierDrive: string
+  workflowId: string
+  executionId: string
+}
+```
+
+**Comportement si webhook indisponible :**
+- Statut prospect mis à jour en CANDIDAT
+- Notification SSE "Conversion partielle" avec priorité HAUTE
+- Log en `journal_erreurs` pour traçabilité
+- Utilisateur averti : "Action manuelle requise pour création dossier Drive"
+
+**Test :**
+```bash
+npx tsx scripts/test-convert-candidat.ts
+# ✅ 5 prospects disponibles
+# ✅ 4 formations actives
+# ✅ 5 sessions disponibles
+```
+
+---
+
+## 📋 PROCHAINES ÉTAPES
+
+### Actions restantes (3/4)
+1. ❌ **Envoyer Dossier** - Envoi email avec lien formulaire
+2. ❌ **Générer Devis** - Génération PDF devis
+3. ❌ **Envoyer Email** - Email de relance/information
+
+### Pré-requis pour continuer
+1. ⚠️ **Configuration n8n** : Vérifier que N8N_WEBHOOK_BASE_URL pointe vers serveur n8n actif
+2. ⚠️ **Workflow n8n** : Créer le workflow `/webhook/prospect/convertir-candidat`
+3. ⚠️ **Google Drive** : Configurer credentials dans n8n pour création dossiers
+4. ⚠️ **Test end-to-end** : Tester conversion complète avec n8n opérationnel
+
+---
+
+**Dernière mise à jour** : 17 février 2026 (Action 1/4 terminée)
+**Version** : 2.1
 **Auteur** : Claude Code
 

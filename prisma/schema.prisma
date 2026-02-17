@@ -69,9 +69,10 @@ model Prospect {
   lienFicheCandidat String? @map("lien_fiche_candidat")
 
   // Relations
-  candidats         Candidat[]
-  documentsCandidat DocumentCandidat[]
-  historiqueEmails  HistoriqueEmail[]
+  candidats          Candidat[]
+  documentsCandidat  DocumentCandidat[]
+  historiqueEmails   HistoriqueEmail[]
+  conversionsEnCours ConversionEnCours[]
 
   @@index([emails], type: Gin)
   @@index([telephones], type: Gin)
@@ -817,6 +818,40 @@ model PreferenceNotification {
 
   @@unique([idUtilisateur, categorie])
   @@map("preferences_notifications")
+}
+
+/// Table de verrouillage pour prévenir les conversions multiples
+/// Enregistre les conversions en cours de traitement par n8n
+model ConversionEnCours {
+  idConversion  Int      @id @default(autoincrement()) @map("id_conversion")
+  idProspect    String   @map("id_prospect")
+  typeAction    String   @map("type_action") // CONVERTIR_CANDIDAT | ENVOYER_DEVIS | ENVOYER_DOSSIER | ENVOYER_EMAIL
+  statutAction  String   @default("EN_COURS") @map("statut_action") // EN_COURS | TERMINEE | ERREUR
+
+  // Données de la conversion
+  formationRetenue    String?  @map("formation_retenue")
+  sessionVisee        String?  @map("session_visee")
+  dateDebutSouhaitee  DateTime? @map("date_debut_souhaitee") @db.Date
+
+  // Traçabilité n8n
+  workflowId          String?  @map("workflow_id") // ID du workflow n8n
+  executionId         String?  @map("execution_id") // ID d'exécution n8n
+  messageErreur       String?  @map("message_erreur") @db.Text
+
+  // Métadonnées
+  demandePar          Int?     @map("demande_par") // idUtilisateur qui a demandé
+  dateDebut           DateTime @default(now()) @map("date_debut") @db.Timestamptz(6)
+  dateFin             DateTime? @map("date_fin") @db.Timestamptz(6)
+  dureeMs             Int?     @map("duree_ms") // Durée en millisecondes
+
+  // Relations
+  prospect Prospect @relation(fields: [idProspect], references: [idProspect], onDelete: Cascade)
+
+  // Index pour performances
+  @@index([idProspect, typeAction]) // Recherche rapide par prospect et action
+  @@index([statutAction]) // Filtrage actions en cours
+  @@index([dateDebut]) // Nettoyage des vieilles entrées
+  @@map("conversions_en_cours")
 }
 
 /// Salles de formation et ateliers (table de référence fixe)
