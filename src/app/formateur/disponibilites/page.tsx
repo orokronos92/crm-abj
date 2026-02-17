@@ -28,15 +28,27 @@ export default function DisponibilitesPage() {
     async function fetchData() {
       setLoading(true)
       try {
-        // TODO: Remplacer par vraies API calls
-        // const resDispos = await fetch(`/api/formateur/disponibilites?annee=${anneeSelectionnee}`)
-        // const resSessions = await fetch(`/api/formateur/sessions?annee=${anneeSelectionnee}`)
+        // TODO: Récupérer l'ID du formateur connecté depuis la session
+        // Pour l'instant on utilise formateurId=1 en dur
+        const formateurId = 1
 
-        // Mock data temporaire
-        setDisponibilites([])
-        setSessions([])
+        const response = await fetch(
+          `/api/formateur/disponibilites?formateurId=${formateurId}&annee=${anneeSelectionnee}`
+        )
+        const data = await response.json()
+
+        if (data.success) {
+          setDisponibilites(data.disponibilites || [])
+          setSessions(data.sessions || [])
+        } else {
+          console.error('Erreur chargement disponibilités:', data.error)
+          setDisponibilites([])
+          setSessions([])
+        }
       } catch (error) {
         console.error('Erreur chargement disponibilités:', error)
+        setDisponibilites([])
+        setSessions([])
       } finally {
         setLoading(false)
       }
@@ -49,9 +61,42 @@ export default function DisponibilitesPage() {
   }
 
   const handleSaveDispo = async (date: string, creneau: string, statut: string) => {
-    // TODO: API call POST/PATCH
-    console.log('Sauvegarde dispo:', { date, creneau, statut })
-    // Recharger les données
+    try {
+      // TODO: Récupérer l'ID du formateur connecté depuis la session
+      const formateurId = 1
+
+      const response = await fetch('/api/formateur/disponibilites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formateurId,
+          date,
+          creneauJournee: creneau,
+          typeDisponibilite: statut,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Recharger les données pour mettre à jour l'UI
+        const reloadResponse = await fetch(
+          `/api/formateur/disponibilites?formateurId=${formateurId}&annee=${anneeSelectionnee}`
+        )
+        const reloadData = await reloadResponse.json()
+
+        if (reloadData.success) {
+          setDisponibilites(reloadData.disponibilites || [])
+          setSessions(reloadData.sessions || [])
+        }
+      } else {
+        console.error('Erreur sauvegarde disponibilité:', data.error)
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde disponibilité:', error)
+    }
   }
 
   return (
