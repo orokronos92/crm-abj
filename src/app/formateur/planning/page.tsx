@@ -114,49 +114,114 @@ export default function FormateurPlanning() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* Sessions à venir */}
+        {/* Mes Sessions */}
         <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl">
           <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-                Prochaines sessions
-              </h2>
-              <button className="text-sm text-[rgb(var(--accent))] hover:text-[rgb(var(--accent-light))] flex items-center gap-1">
-                Voir tout
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            <h2 className="text-lg font-semibold text-[rgb(var(--foreground))]">
+              Mes sessions
+            </h2>
+          </div>
+
+          {/* Onglets Sessions */}
+          <div className="p-4 border-b border-[rgba(var(--border),0.3)]">
+            <div className="card p-1">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {/* TODO: filtrer sessions EN_COURS */}}
+                  className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all bg-[rgb(var(--accent))] text-[rgb(var(--primary))]"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <span>Sessions en cours</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-[rgba(var(--primary),0.2)] text-[rgb(var(--primary))]">
+                      2
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {/* TODO: filtrer sessions A_VENIR */}}
+                  className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all text-[rgb(var(--muted-foreground))] hover:bg-[rgb(var(--secondary))]"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <span>Sessions à venir</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))]">
+                      0
+                    </span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Grille sessions (tuiles comme admin) */}
           <div className="p-6 space-y-4">
             {MOCK_SESSIONS.map((session) => (
               <div
                 key={session.id}
-                className="p-4 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-colors"
+                className="card p-6 hover:border-[rgb(var(--accent))] cursor-pointer transition-all"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-medium text-[rgb(var(--foreground))]">
-                      {session.formation}
-                    </h3>
-                    <p className="text-sm text-[rgb(var(--muted-foreground))]">
-                      {session.date} • {session.horaire}
-                    </p>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-7 h-7 text-[rgb(var(--primary))]" />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="text-xl font-bold text-[rgb(var(--foreground))] mb-1">
+                              {session.formation}
+                            </h3>
+                            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+                              {session.date} • {session.horaire}
+                            </p>
+                          </div>
+                          <span className={`px-4 py-1.5 text-sm rounded-full ${
+                            session.statut === 'CONFIRMEE'
+                              ? 'bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))] border border-[rgba(var(--success),0.3)]'
+                              : 'bg-[rgba(var(--warning),0.1)] text-[rgb(var(--warning))] border border-[rgba(var(--warning),0.3)]'
+                          }`}>
+                            {session.statut === 'CONFIRMEE' ? 'Confirmée' : 'En attente'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 mt-4">
+                          {/* Salle */}
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-[rgb(var(--accent))]" />
+                            <div>
+                              <p className="text-xs text-[rgb(var(--muted-foreground))]">Salle</p>
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                {session.salle}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Élèves */}
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-[rgb(var(--accent))]" />
+                            <div>
+                              <p className="text-xs text-[rgb(var(--muted-foreground))]">Élèves</p>
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                {session.nbEleves}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Horaire */}
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-[rgb(var(--accent))]" />
+                            <div>
+                              <p className="text-xs text-[rgb(var(--muted-foreground))]">Horaire</p>
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                {session.horaire}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    session.statut === 'CONFIRMEE' ? 'badge-success' : 'badge-warning'
-                  }`}>
-                    {session.statut}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-[rgb(var(--muted-foreground))]">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {session.nbEleves} élèves
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="w-4 h-4" />
-                    {session.salle}
-                  </span>
                 </div>
               </div>
             ))}
