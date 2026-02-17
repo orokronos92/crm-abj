@@ -322,9 +322,163 @@ Google Drive
 
 ---
 
-## 🎯 ACTION PRIORITAIRE : Convertir en Candidat
+## 🎯 ACTION 1/4 : Convertir en Candidat ✅ TERMINÉE
 
-### Modal de Transformation Requis
+### ✅ Implémentation Complète (17 février 2026)
+
+**Architecture : Fire-and-Forget avec Verrouillage Database**
+
+#### 1. Table de Verrouillage (`conversions_en_cours`)
+
+Prévient les conversions multiples pendant le traitement n8n :
+
+```sql
+CREATE TABLE conversions_en_cours (
+  id_conversion SERIAL PRIMARY KEY,
+  id_prospect TEXT NOT NULL,
+  type_action TEXT NOT NULL,  -- CONVERTIR_CANDIDAT | ENVOYER_DEVIS | etc.
+  statut_action TEXT DEFAULT 'EN_COURS',  -- EN_COURS | TERMINEE | ERREUR
+  formation_retenue TEXT,
+  session_visee TEXT,
+  date_debut_souhaitee DATE,
+  workflow_id TEXT,
+  execution_id TEXT,
+  message_erreur TEXT,
+  date_debut TIMESTAMP DEFAULT now(),
+  date_fin TIMESTAMP,
+  duree_ms INTEGER
+);
+```
+
+#### 2. Endpoints API
+
+**`POST /api/prospects/convertir-candidat`** (148 lignes)
+- Vérifie si conversion déjà en cours (retourne 409 Conflict si oui)
+- Crée verrouillage dans `conversions_en_cours`
+- Lance webhook n8n en mode fire-and-forget (pas d'attente)
+- Retourne **202 Accepted** immédiatement
+- Log toutes les erreurs dans `journal_erreurs`
+
+**`POST /api/prospects/conversion-complete`** (124 lignes)
+- Endpoint de callback pour n8n
+- Sécurisé par API Key (`N8N_API_KEY`)
+- Déverrouille la conversion
+- Envoie notification SSE (succès ou erreur)
+- Log durée de traitement
+
+**`GET /api/prospects/[id]/conversion-status`** (60 lignes)
+- Vérifie si conversion en cours pour un prospect
+- Retourne temps écoulé depuis début
+- Utilisé par le modal avant affichage
+
+#### 3. Modal Interactif (`ConvertirCandidatModal.tsx`)
+
+**Caractéristiques :**
+- ✅ Vérification préalable si conversion déjà en cours
+- ✅ Chargement dynamique formations depuis `/api/formations`
+- ✅ Chargement sessions filtrées par formation
+- ✅ Affiche places restantes par session (ex: "(5 places)" ou "(COMPLET)")
+- ✅ Date de début souhaitée (optionnel)
+- ✅ Message "Demande envoyée" après validation
+- ✅ Auto-fermeture après 3 secondes
+- ✅ Gestion d'erreur 409 si conversion en cours
+
+**États du modal :**
+1. **Loading** : Vérification conversion en cours
+2. **Bloqué** : Conversion déjà en cours → Message d'avertissement
+3. **Formulaire** : Sélection formation + session + date
+4. **Succès** : "Demande envoyée, vous serez averti par les notifications"
+
+#### 4. Workflow n8n (à implémenter côté n8n)
+
+**Entrée webhook :**
+```json
+{
+  "idProspect": "PROS_123",
+  "idConversion": 42,
+  "formationRetenue": "CAP_BJ",
+  "sessionVisee": "Mars 2026",
+  "dateDebutSouhaitee": "2026-03-15"
+}
+```
+
+**Actions n8n :**
+1. Update `prospects.statut_prospect` → 'CANDIDAT'
+2. Générer `numero_dossier` (ex: DUMI15092024)
+3. Insert dans table `candidats`
+4. Créer dossier Google Drive "[DUMI15092024] Marie Dumitru"
+5. Créer sous-dossiers selon formation
+6. Envoyer email confirmation au prospect
+7. **Callback** : `POST /api/prospects/conversion-complete`
+   ```json
+   {
+     "idConversion": 42,
+     "success": true,
+     "numeroDossier": "DUMI15092024",
+     "lienDossierDrive": "https://drive.google.com/...",
+     "workflowId": "workflow-123",
+     "executionId": "exec-456"
+   }
+   ```
+
+#### 5. Flux Complet
+
+```
+Admin clique "Convertir en candidat"
+    ↓
+Modal vérifie `/api/prospects/[id]/conversion-status`
+    ↓
+Si conversion en cours → Message d'avertissement ❌
+Si libre → Affiche formulaire ✅
+    ↓
+Admin sélectionne formation + session + date
+    ↓
+Validation → `POST /api/prospects/convertir-candidat`
+    ↓
+API crée lock dans `conversions_en_cours`
+    ↓
+API lance webhook n8n (fire-and-forget)
+    ↓
+API retourne 202 Accepted immédiatement ⚡
+    ↓
+Modal affiche "Demande envoyée" + auto-close 3s
+    ↓
+n8n fait TOUS les traitements (statut, Drive, emails)
+    ↓
+n8n callback `POST /api/prospects/conversion-complete`
+    ↓
+API déverrouille + envoie notification SSE 🔔
+    ↓
+Admin reçoit notification "✅ Nouveau candidat créé"
+```
+
+#### 6. Sécurité et Robustesse
+
+✅ **Prévention doubles conversions** : Lock database
+✅ **Pas de blocage UI** : Fire-and-forget (202)
+✅ **Traçabilité** : Logs BDD + workflowId + executionId
+✅ **Gestion d'erreurs** : Notification SSE si échec n8n
+✅ **Callback sécurisé** : API Key requise
+✅ **Durée enregistrée** : `duree_ms` pour monitoring
+
+#### 7. Fichiers Créés/Modifiés
+
+**Créés :**
+- `prisma/schema.prisma` - Table `conversions_en_cours`
+- `src/app/api/prospects/[id]/conversion-status/route.ts`
+- `src/app/api/prospects/conversion-complete/route.ts`
+- `scripts/test-convert-candidat.ts` - Script de test infrastructure
+
+**Modifiés :**
+- `src/app/api/prospects/convertir-candidat/route.ts` - Réécriture fire-and-forget
+- `src/components/admin/ConvertirCandidatModal.tsx` - Modal complet
+- `src/components/admin/ProspectDetailPanel.tsx` - Intégration modal
+- `src/lib/webhook-client.ts` - Ajout `idConversion` dans payload
+- `.env.local` - Variables n8n (N8N_WEBHOOK_BASE_URL, N8N_API_KEY)
+
+---
+
+### Modal de Transformation (Spécifications Initiales)
 
 **Spécifications utilisateur :**
 > "Pour transformer en candidat, il faut ouvrir un modal au clic qui reprend les données, permet d'afficher la liste des formations pour pouvoir changer si le prospect le demande, pareil pour la période voulue"
