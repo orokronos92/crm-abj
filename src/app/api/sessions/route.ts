@@ -11,11 +11,29 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const statutFilter = searchParams.get('statut')
+    const idFormationParam = searchParams.get('idFormation')
 
     // Construire le filtre
     const where: any = {}
+
+    // Filtrer par formation si demandé
+    if (idFormationParam) {
+      where.idFormation = parseInt(idFormationParam, 10)
+    }
+
+    // Filtrer par statut de validation
     if (statutFilter && statutFilter !== 'TOUS') {
       where.statutValidation = statutFilter
+    }
+
+    // Filtrer par statut de session (pour modal conversion candidat)
+    // Accepte plusieurs statuts séparés par virgule
+    const statutSessionParam = searchParams.get('statutSession')
+    if (statutSessionParam) {
+      const statuts = statutSessionParam.split(',')
+      where.statutSession = {
+        in: statuts
+      }
     }
 
     // Récupérer les sessions avec leurs relations

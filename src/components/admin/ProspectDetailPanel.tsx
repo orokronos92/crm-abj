@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { HistoriqueEchangesModal } from './HistoriqueEchangesModal'
+import { ConvertirCandidatModal } from './ConvertirCandidatModal'
 import {
   Mail,
   Phone,
@@ -63,6 +64,7 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
   const [prospect, setProspect] = useState<ProspectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [showHistorique, setShowHistorique] = useState(false)
+  const [showConvertirModal, setShowConvertirModal] = useState(false)
 
   useEffect(() => {
     async function fetchProspect() {
@@ -81,6 +83,15 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
 
     fetchProspect()
   }, [prospectId])
+
+  const handleConversionSuccess = async () => {
+    // Recharger les données du prospect après conversion
+    const res = await fetch(`/api/prospects/${prospectId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setProspect(data)
+    }
+  }
 
   if (loading) {
     return (
@@ -242,7 +253,10 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
               <Send className="w-4 h-4" />
               Envoyer dossier
             </button>
-            <button className="w-full px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg text-sm font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center justify-center gap-2">
+            <button
+              onClick={() => setShowConvertirModal(true)}
+              className="w-full px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center justify-center gap-2"
+            >
               <User className="w-4 h-4" />
               Convertir en candidat
             </button>
@@ -257,6 +271,21 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
           prospectName={`${prospect.prenom} ${prospect.nom}`}
           nbEchanges={prospect.nbEchanges}
           onClose={() => setShowHistorique(false)}
+        />
+      )}
+
+      {/* Modal Conversion Candidat */}
+      {showConvertirModal && prospect && (
+        <ConvertirCandidatModal
+          prospect={{
+            idProspect: prospect.id,
+            nom: prospect.nom,
+            prenom: prospect.prenom,
+            email: prospect.email,
+            formationPrincipale: prospect.formationSouhaitee
+          }}
+          onClose={() => setShowConvertirModal(false)}
+          onSuccess={handleConversionSuccess}
         />
       )}
     </div>
