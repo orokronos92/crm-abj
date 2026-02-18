@@ -205,3 +205,21 @@ export const prospectWebhooks = {
     return callWebhook('/prospect/envoyer-email', data)
   }
 }
+
+/**
+ * Webhooks spécifiques pour les actions Candidats
+ */
+export const candidatWebhooks = {
+  /**
+   * Envoyer un message/email personnalisé à un candidat
+   */
+  async envoyerMessage(data: {
+    numeroDossier: string
+    idAction?: number
+    destinataire: string
+    objet: string
+    contenu: string
+  }): Promise<WebhookResponse> {
+    return callWebhook('/candidat/envoyer-message', data)
+  }
+}

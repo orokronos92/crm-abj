@@ -26,6 +26,7 @@ import {
   User
 } from 'lucide-react'
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
+import { EnvoyerMessageCandidatModal } from './EnvoyerMessageCandidatModal'
 
 interface CandidatDetail {
   id: number
@@ -85,6 +86,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   const [candidat, setCandidat] = useState<CandidatDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('general')
+  const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
 
   useEffect(() => {
     async function fetchCandidat() {
@@ -103,6 +105,15 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
 
     fetchCandidat()
   }, [candidatId])
+
+  const handleEnvoyerMessageSuccess = async () => {
+    // Recharger les données du candidat après envoi message
+    const res = await fetch(`/api/candidats/${candidatId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setCandidat(data)
+    }
+  }
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-[rgb(var(--success))]'
@@ -391,7 +402,10 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
         {/* Footer */}
         <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
           <div className="flex items-center justify-between">
-            <button className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center gap-2">
+            <button
+              onClick={() => setShowEnvoyerMessageModal(true)}
+              className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center gap-2"
+            >
               <MessageSquare className="w-4 h-4" />
               Contacter
             </button>
@@ -408,6 +422,23 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
           </div>
         </div>
       </div>
+
+      {/* Modal Envoyer Message */}
+      {showEnvoyerMessageModal && candidat && (
+        <EnvoyerMessageCandidatModal
+          candidat={{
+            idCandidat: candidat.id,
+            numeroDossier: candidat.numero_dossier,
+            nom: candidat.nom,
+            prenom: candidat.prenom,
+            email: candidat.email,
+            telephone: candidat.telephone,
+            formation: candidat.formation
+          }}
+          onClose={() => setShowEnvoyerMessageModal(false)}
+          onSuccess={handleEnvoyerMessageSuccess}
+        />
+      )}
     </div>
   )
 }
