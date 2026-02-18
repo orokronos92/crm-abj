@@ -28,41 +28,7 @@ import {
   BookOpen,
 } from 'lucide-react'
 
-// Mock data - 8 salles
-const SALLES = [
-  { id: 1, nom: 'Atelier A', capacite: 12, equipements: ['Établis bijou', 'Forge', 'Laminoir'] },
-  { id: 2, nom: 'Atelier B', capacite: 8, equipements: ['Postes sertissage', 'Loupes', 'Microscopes'] },
-  { id: 3, nom: 'Atelier C', capacite: 10, equipements: ['Établis joaillerie', 'Polisseuses'] },
-  { id: 4, nom: 'Salle informatique', capacite: 8, equipements: ['PC CAO/DAO', 'Rhino', 'MatrixGold'] },
-  { id: 5, nom: 'Salle théorie', capacite: 20, equipements: ['Projecteur', 'Tableau', 'Chaises'] },
-  { id: 6, nom: 'Atelier polissage', capacite: 6, equipements: ['Polisseuses', 'Tourets', 'Brosses'] },
-  { id: 7, nom: 'Atelier taille', capacite: 6, equipements: ['Tours à tailler', 'Loupes binoculaires'] },
-  { id: 8, nom: 'Salle réunion', capacite: 15, equipements: ['Table', 'Chaises', 'Écran', 'Visio'] },
-]
-
-// Mock sessions pour occupation
-const MOCK_SESSIONS = [
-  { id: 1, nom: 'CAP ATBJ - Mars 2026', formation: 'CAP Bijouterie', salle: 'Atelier A', dateDebut: '2026-03-15', dateFin: '2026-09-15', inscrits: 11, capacite: 12, formateur: 'Michel Laurent' },
-  { id: 2, nom: 'Sertissage N2', formation: 'Sertissage', salle: 'Atelier B', dateDebut: '2026-02-05', dateFin: '2026-05-05', inscrits: 5, capacite: 8, formateur: 'Michel Laurent' },
-  { id: 3, nom: 'CAO/DAO - Avril', formation: 'CAO/DAO', salle: 'Salle informatique', dateDebut: '2026-04-15', dateFin: '2026-07-15', inscrits: 4, capacite: 8, formateur: 'Sophie Petit' },
-  { id: 4, nom: 'CAP ATBJ - Sept 2026', formation: 'CAP Bijouterie', salle: 'Atelier C', dateDebut: '2026-09-01', dateFin: '2027-03-01', inscrits: 8, capacite: 10, formateur: 'Antoine Dubois' },
-  { id: 5, nom: 'Joaillerie - Juin', formation: 'Joaillerie Création', salle: 'Atelier A', dateDebut: '2026-06-01', dateFin: '2026-12-01', inscrits: 10, capacite: 12, formateur: 'Michel Laurent' },
-]
-
-// Mock événements (sera remplacé par les événements réels de l'API)
-const MOCK_EVENEMENTS = [
-  { id: 1, type: 'PORTES_OUVERTES', titre: 'Portes ouvertes printemps', date: '2026-03-10', heureDebut: '10:00', heureFin: '18:00', salle: 'Tous les ateliers', participants: 50 },
-  { id: 2, type: 'STAGE_INITIATION', titre: 'Stage découverte bijouterie', date: '2026-04-20', heureDebut: '09:00', heureFin: '17:00', salle: 'Atelier A', participants: 8 },
-  { id: 3, type: 'REUNION', titre: 'Réunion équipe pédagogique', date: '2026-05-15', heureDebut: '14:00', heureFin: '16:00', salle: 'Salle réunion', participants: 10 },
-  { id: 4, type: 'REMISE_DIPLOME', titre: 'Remise diplômes CAP 2025', date: '2026-06-30', heureDebut: '18:00', heureFin: '21:00', salle: 'Salle théorie', participants: 30 },
-]
-
-// Mock disponibilités formateurs
-const MOCK_DISPONIBILITES = [
-  { formateur: 'Michel Laurent', disponible: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi'], sessions: 2, heuresTotal: 28 },
-  { formateur: 'Sophie Petit', disponible: ['Mardi', 'Mercredi', 'Jeudi', 'Vendredi'], sessions: 1, heuresTotal: 20 },
-  { formateur: 'Antoine Dubois', disponible: ['Lundi', 'Mardi', 'Vendredi'], sessions: 0, heuresTotal: 0 },
-]
+// Types pour les données de l'API
 
 type VueActive = 'salles' | 'formateurs' | 'evenements'
 type TypeEvenement = 'PORTES_OUVERTES' | 'STAGE_INITIATION' | 'REUNION' | 'REMISE_DIPLOME' | 'ENTRETIEN'
@@ -123,6 +89,14 @@ export default function PlanningPage() {
   const [salles, setSalles] = useState<Salle[]>([])
   const [loadingSalles, setLoadingSalles] = useState(false)
 
+  // État sessions (données réelles depuis API)
+  const [sessions, setSessions] = useState<any[]>([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
+
+  // État formateurs (données réelles depuis API)
+  const [formateurs, setFormateurs] = useState<any[]>([])
+  const [loadingFormateurs, setLoadingFormateurs] = useState(false)
+
   // Fetch événements depuis l'API
   useEffect(() => {
     async function fetchEvenements() {
@@ -159,6 +133,44 @@ export default function PlanningPage() {
       }
     }
     fetchSalles()
+  }, [])
+
+  // Fetch sessions depuis l'API
+  useEffect(() => {
+    async function fetchSessions() {
+      setLoadingSessions(true)
+      try {
+        const res = await fetch(`/api/sessions?annee=${anneeSelectionnee}`)
+        const data = await res.json()
+        if (data.success) {
+          setSessions(data.sessions)
+        }
+      } catch (error) {
+        console.error('Erreur chargement sessions:', error)
+      } finally {
+        setLoadingSessions(false)
+      }
+    }
+    fetchSessions()
+  }, [anneeSelectionnee])
+
+  // Fetch formateurs depuis l'API
+  useEffect(() => {
+    async function fetchFormateurs() {
+      setLoadingFormateurs(true)
+      try {
+        const res = await fetch('/api/formateurs')
+        const data = await res.json()
+        if (data.success) {
+          setFormateurs(data.formateurs)
+        }
+      } catch (error) {
+        console.error('Erreur chargement formateurs:', error)
+      } finally {
+        setLoadingFormateurs(false)
+      }
+    }
+    fetchFormateurs()
   }, [])
 
   // Refresh événements après création/modification
@@ -213,13 +225,13 @@ export default function PlanningPage() {
     }
   }
 
-  // Calcul occupation par salle
+  // Calcul occupation par salle (plus utilisé, mais gardé pour compatibilité)
   const getOccupationSalle = (salleNom: string) => {
-    const sessions = MOCK_SESSIONS.filter(s => s.salle === salleNom)
-    if (sessions.length === 0) return 0
-    const totalInscrits = sessions.reduce((sum, s) => sum + s.inscrits, 0)
-    const salle = SALLES.find(s => s.nom === salleNom)
-    return Math.round((totalInscrits / (salle?.capacite || 1) / sessions.length) * 100)
+    const sessionsSalle = sessions.filter(s => s.salle === salleNom)
+    if (sessionsSalle.length === 0) return 0
+    const totalInscrits = sessionsSalle.reduce((sum, s) => sum + (s.nbInscrits || 0), 0)
+    const salle = salles.find(s => s.nom === salleNom)
+    return Math.round((totalInscrits / (salle?.capaciteMax || 1) / sessionsSalle.length) * 100)
   }
 
   // Navigation mois
@@ -256,7 +268,7 @@ export default function PlanningPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Salles disponibles</p>
-                <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">{SALLES.length}</p>
+                <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">{salles.length}</p>
               </div>
               <MapPin className="w-8 h-8 text-[rgb(var(--accent))]" />
             </div>
@@ -266,7 +278,7 @@ export default function PlanningPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Sessions actives</p>
-                <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">{MOCK_SESSIONS.length}</p>
+                <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">{sessions.length}</p>
               </div>
               <BookOpen className="w-8 h-8 text-[rgb(var(--success))]" />
             </div>
@@ -276,7 +288,7 @@ export default function PlanningPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Formateurs actifs</p>
-                <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">{MOCK_DISPONIBILITES.length}</p>
+                <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">{formateurs.length}</p>
               </div>
               <Users className="w-8 h-8 text-[rgb(var(--foreground))]" />
             </div>
@@ -404,7 +416,7 @@ export default function PlanningPage() {
                             const debutMois = new Date(anneeSelectionnee, moisIdx, 1)
                             const finMois = new Date(anneeSelectionnee, moisIdx + 1, 0)
 
-                            const sessionsCeMois = MOCK_SESSIONS.filter(session => {
+                            const sessionsCeMois = sessions.filter(session => {
                               if (session.salle !== salle.nom) return false
                               const sessionDebut = new Date(session.dateDebut)
                               const sessionFin = new Date(session.dateFin)
@@ -600,23 +612,32 @@ export default function PlanningPage() {
 
               {/* Grille des formateurs */}
               <div className="space-y-2">
-                {MOCK_DISPONIBILITES.map((formateur, idx) => {
-                  const sessionsFormateur = MOCK_SESSIONS.filter(s => s.formateur === formateur.formateur)
+                {loadingFormateurs ? (
+                  <div className="text-center py-8 text-[rgb(var(--muted-foreground))]">
+                    Chargement des formateurs...
+                  </div>
+                ) : formateurs.length === 0 ? (
+                  <div className="text-center py-8 text-[rgb(var(--muted-foreground))]">
+                    Aucun formateur disponible
+                  </div>
+                ) : (
+                  formateurs.map((formateur) => {
+                    const sessionsFormateur = sessions.filter(s => s.idFormateur === formateur.idFormateur)
 
-                  return (
-                    <div key={idx} className="flex items-center group hover:bg-[rgba(var(--accent),0.02)] rounded-lg p-2 transition-all">
-                      {/* Nom du formateur */}
-                      <div className="w-48 flex-shrink-0">
-                        <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 rounded-lg border-2 border-dashed border-[rgba(var(--accent),0.4)] bg-[rgba(var(--accent),0.05)] flex items-center justify-center">
-                            <Users className="w-5 h-5 text-[rgba(var(--accent),0.6)]" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">{formateur.formateur}</p>
-                            <p className="text-xs text-[rgb(var(--muted-foreground))]">{formateur.sessions} session(s)</p>
+                    return (
+                      <div key={formateur.idFormateur} className="flex items-center group hover:bg-[rgba(var(--accent),0.02)] rounded-lg p-2 transition-all">
+                        {/* Nom du formateur */}
+                        <div className="w-48 flex-shrink-0">
+                          <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-lg border-2 border-dashed border-[rgba(var(--accent),0.4)] bg-[rgba(var(--accent),0.05)] flex items-center justify-center">
+                              <Users className="w-5 h-5 text-[rgba(var(--accent),0.6)]" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">{formateur.nom} {formateur.prenom}</p>
+                              <p className="text-xs text-[rgb(var(--muted-foreground))]">{sessionsFormateur.length} session(s)</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
                       {/* Timeline 12 mois */}
                       <div className="flex-1 grid grid-cols-12 gap-1 relative">
@@ -626,11 +647,13 @@ export default function PlanningPage() {
                             const debut = new Date(session.dateDebut)
                             const fin = new Date(session.dateFin)
                             const moisCourant = new Date(anneeSelectionnee, moisIdx, 1)
-                            return debut <= moisCourant && fin >= moisCourant
+                            const finMois = new Date(anneeSelectionnee, moisIdx + 1, 0)
+                            // Session active si elle chevauche le mois
+                            return debut <= finMois && fin >= moisCourant
                           })
 
-                          // Simuler disponibilité de base (formateur peut avoir des jours dispos même en session)
-                          const disponible = formateur.disponible.length > 0
+                          // Pour l'instant, considérer tous les formateurs comme disponibles si pas de session
+                          const disponible = !sessionCeMois
 
                           return (
                             <div
@@ -668,10 +691,11 @@ export default function PlanningPage() {
                             </div>
                           )
                         })}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                )}
               </div>
 
               {/* Compteur global par mois */}
@@ -683,13 +707,14 @@ export default function PlanningPage() {
                 <div className="grid grid-cols-12 gap-1">
                   {Array.from({ length: 12 }).map((_, moisIdx) => {
                     // Compter les formateurs dispo ce mois (ceux qui n'ont pas de session)
-                    const formateursDispo = MOCK_DISPONIBILITES.filter(f => {
-                      const sessionsFormateur = MOCK_SESSIONS.filter(s => s.formateur === f.formateur)
+                    const formateursDispo = formateurs.filter(f => {
+                      const sessionsFormateur = sessions.filter(s => s.idFormateur === f.idFormateur)
                       const aSessionCeMois = sessionsFormateur.some(session => {
                         const debut = new Date(session.dateDebut)
                         const fin = new Date(session.dateFin)
-                        const moisCourant = new Date(2024, moisIdx, 1)
-                        return debut <= moisCourant && fin >= moisCourant
+                        const moisCourant = new Date(anneeSelectionnee, moisIdx, 1)
+                        const finMois = new Date(anneeSelectionnee, moisIdx + 1, 0)
+                        return debut <= finMois && fin >= moisCourant
                       })
                       return !aSessionCeMois
                     }).length
@@ -861,7 +886,7 @@ export default function PlanningPage() {
           mois={modalMoisOuvert.mois}
           annee={anneeSelectionnee}
           onClose={() => setModalMoisOuvert(null)}
-          sessions={MOCK_SESSIONS}
+          sessions={sessions}
           evenements={evenements}
           salle={modalMoisOuvert.salle}
         />
