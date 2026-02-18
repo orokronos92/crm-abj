@@ -480,10 +480,10 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
           <div className="flex items-center justify-between">
             <button
               onClick={() => setShowEnvoyerMessageModal(true)}
-              className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center gap-2"
+              className="px-4 py-2 bg-[rgb(var(--warning))] text-[rgb(var(--primary))] rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
             >
               <MessageSquare className="w-4 h-4" />
-              Contacter
+              Envoyer un mail
             </button>
             <button
               onClick={() => setShowGenererDevisModal(true)}
