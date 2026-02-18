@@ -166,7 +166,7 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
     { key: 'expertise' as TabKey, label: 'Expertise & Méthodes', icon: GraduationCap },
     { key: 'maintien' as TabKey, label: 'Maintien des Compétences', icon: BookOpen },
     { key: 'tracabilite' as TabKey, label: 'Traçabilité Pédagogique', icon: BarChart },
-    { key: 'documents' as TabKey, label: 'Documents & Preuves', icon: FolderOpen }
+    { key: 'documents' as TabKey, label: 'Documents & Justificatifs', icon: FolderOpen }
   ]
 
   return (

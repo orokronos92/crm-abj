@@ -307,5 +307,22 @@ export const formateurWebhooks = {
     telephone?: string
   }): Promise<WebhookResponse> {
     return callWebhook('/formateur/envoyer-message', data)
+  },
+
+  /**
+   * Demander un document à un formateur
+   */
+  async demanderDocument(data: {
+    idFormateur: number
+    idAction?: number
+    destinataire: string
+    codeTypeDocument: string
+    libelleDocument: string
+    motif: string
+    nom?: string
+    prenom?: string
+    telephone?: string
+  }): Promise<WebhookResponse> {
+    return callWebhook('/formateur/demander-document', data)
   }
 }

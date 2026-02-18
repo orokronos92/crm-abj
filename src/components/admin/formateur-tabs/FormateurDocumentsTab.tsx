@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { FileText, Download, Upload, CheckCircle, Clock, AlertCircle, Award, BookOpen, Shield, Send, RefreshCw } from 'lucide-react'
+import { FileText, Download, Upload, CheckCircle, Clock, AlertCircle, Award, BookOpen, Shield, Send, RefreshCw, FileQuestion } from 'lucide-react'
+import { DemanderDocumentModal } from '../DemanderDocumentModal'
 
 interface FormateurDocumentsTabProps {
   formateur: any
@@ -10,6 +11,8 @@ interface FormateurDocumentsTabProps {
 
 export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: FormateurDocumentsTabProps) {
   const [uploading, setUploading] = useState<string | null>(null)
+  const [showDemanderDocModal, setShowDemanderDocModal] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<any | null>(null)
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, doc: any) => {
@@ -54,6 +57,11 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
 
   const triggerFileInput = (codeTypeDocument: string) => {
     fileInputRefs.current[codeTypeDocument]?.click()
+  }
+
+  const handleDemanderDocument = (doc: any) => {
+    setSelectedDocument(doc)
+    setShowDemanderDocModal(true)
   }
   // Debug : vérifier les documents reçus
   console.log('Documents reçus:', formateur.documents?.length, 'documents')
@@ -238,43 +246,13 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                     onChange={(e) => handleFileSelect(e, doc)}
                     disabled={uploading === doc.codeTypeDocument}
                   />
-                  {doc.idDocument === 0 || !doc.urlFichier ? (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-3.5 h-3.5" />
-                          Envoyer
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          Mettre à jour
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDemanderDocument(doc)}
+                    className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  >
+                    <FileQuestion className="w-3.5 h-3.5" />
+                    Demander un document
+                  </button>
                 </div>
               </div>
             ))
@@ -324,43 +302,13 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                     onChange={(e) => handleFileSelect(e, doc)}
                     disabled={uploading === doc.codeTypeDocument}
                   />
-                  {doc.idDocument === 0 || !doc.urlFichier ? (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-3.5 h-3.5" />
-                          Envoyer
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          Mettre à jour
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDemanderDocument(doc)}
+                    className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  >
+                    <FileQuestion className="w-3.5 h-3.5" />
+                    Demander un document
+                  </button>
                 </div>
               </div>
             ))
@@ -407,43 +355,13 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                     onChange={(e) => handleFileSelect(e, doc)}
                     disabled={uploading === doc.codeTypeDocument}
                   />
-                  {doc.idDocument === 0 || !doc.urlFichier ? (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-3.5 h-3.5" />
-                          Envoyer
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          Mettre à jour
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDemanderDocument(doc)}
+                    className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  >
+                    <FileQuestion className="w-3.5 h-3.5" />
+                    Demander un document
+                  </button>
                 </div>
               </div>
             ))
@@ -491,43 +409,13 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
                     onChange={(e) => handleFileSelect(e, doc)}
                     disabled={uploading === doc.codeTypeDocument}
                   />
-                  {doc.idDocument === 0 || !doc.urlFichier ? (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-3.5 h-3.5" />
-                          Envoyer
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => triggerFileInput(doc.codeTypeDocument)}
-                      disabled={uploading === doc.codeTypeDocument}
-                      className="px-3 py-1.5 text-xs bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploading === doc.codeTypeDocument ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Upload...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          Mettre à jour
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDemanderDocument(doc)}
+                    className="px-3 py-1.5 text-xs bg-[rgb(var(--accent))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  >
+                    <FileQuestion className="w-3.5 h-3.5" />
+                    Demander un document
+                  </button>
                 </div>
               </div>
             ))}
@@ -544,6 +432,29 @@ export function FormateurDocumentsTab({ formateur, onDocumentUploaded }: Formate
           Les documents optionnels enrichissent le dossier mais ne sont pas requis pour la certification.
         </p>
       </div>
+
+      {/* Modal Demander Document */}
+      {showDemanderDocModal && selectedDocument && (
+        <DemanderDocumentModal
+          formateur={{
+            idFormateur: formateur.id,
+            nom: formateur.nom,
+            prenom: formateur.prenom,
+            email: formateur.email
+          }}
+          document={{
+            codeTypeDocument: selectedDocument.codeTypeDocument,
+            libelle: selectedDocument.typeDocument?.libelle || selectedDocument.libelle,
+            statut: selectedDocument.statut
+          }}
+          onClose={() => setShowDemanderDocModal(false)}
+          onSuccess={() => {
+            if (onDocumentUploaded) {
+              onDocumentUploaded()
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
