@@ -16,7 +16,7 @@ import { prospectWebhooks } from '@/lib/webhook-client'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { idProspect, formationCode, montant, modeFinancement } = body
+    const { idProspect, formationCode, montant, modeFinancement, messageMarjorie } = body
 
     // Validation
     if (!idProspect || !formationCode || !montant) {
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
       formationCode,
       montant,
       modeFinancement,
+      messageMarjorie: messageMarjorie || undefined,
       email: prospect.emails[0] || '',
       nom: prospect.nom || '',
       prenom: prospect.prenom || '',

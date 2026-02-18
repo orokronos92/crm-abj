@@ -181,6 +181,7 @@ export const prospectWebhooks = {
     formationCode: string
     montant: number
     modeFinancement?: string
+    messageMarjorie?: string
     email?: string
     nom?: string
     prenom?: string

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, FileText, CheckCircle, Loader2, Euro, GraduationCap, CreditCard, User } from 'lucide-react'
+import { X, FileText, CheckCircle, Loader2, Euro, GraduationCap, CreditCard, User, MessageSquare } from 'lucide-react'
 
 interface GenererDevisModalProps {
   prospect: {
@@ -50,7 +50,8 @@ export function GenererDevisModal({
 
   const [formData, setFormData] = useState({
     formationCode: formationParDefaut.code,
-    modeFinancement: 'CPF'
+    modeFinancement: 'CPF',
+    messageMarjorie: ''
   })
 
   const formationSelectionnee = FORMATIONS_TARIFS.find(f => f.code === formData.formationCode) || formationParDefaut
@@ -70,7 +71,8 @@ export function GenererDevisModal({
           idProspect: prospect.idProspect,
           formationCode: formData.formationCode,
           montant: formationSelectionnee.tarif,
-          modeFinancement: formData.modeFinancement
+          modeFinancement: formData.modeFinancement,
+          messageMarjorie: formData.messageMarjorie || undefined
         })
       })
 
@@ -244,6 +246,25 @@ export function GenererDevisModal({
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Message pour Marjorie (optionnel) */}
+            <div>
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
+                <MessageSquare className="w-4 h-4 inline mr-2" />
+                Instructions pour Marjorie (optionnel)
+              </label>
+              <textarea
+                value={formData.messageMarjorie}
+                onChange={(e) => handleChange('messageMarjorie', e.target.value)}
+                placeholder="Ex: Appliquer une ristourne de 10% pour ce prospect, conditions particulières de paiement, etc."
+                rows={3}
+                className="w-full px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none resize-none text-sm"
+                disabled={submitting}
+              />
+              <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
+                💡 Exemples : ristourne, facilités de paiement, tarif préférentiel, etc.
+              </p>
             </div>
 
             {/* Ce qui va se passer */}
