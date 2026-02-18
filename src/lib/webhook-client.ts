@@ -177,9 +177,16 @@ export const prospectWebhooks = {
    */
   async genererDevis(data: {
     idProspect: string
+    idAction?: number
     formationCode: string
     montant: number
     modeFinancement?: string
+    email?: string
+    nom?: string
+    prenom?: string
+    telephone?: string
+    ville?: string
+    codePostal?: string
   }): Promise<WebhookResponse> {
     return callWebhook('/prospect/generer-devis', data)
   },

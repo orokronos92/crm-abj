@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { HistoriqueEchangesModal } from './HistoriqueEchangesModal'
 import { ConvertirCandidatModal } from './ConvertirCandidatModal'
 import { EnvoyerDossierModal } from './EnvoyerDossierModal'
+import { GenererDevisModal } from './GenererDevisModal'
 import {
   Mail,
   Phone,
@@ -67,6 +68,7 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
   const [showHistorique, setShowHistorique] = useState(false)
   const [showConvertirModal, setShowConvertirModal] = useState(false)
   const [showEnvoyerDossierModal, setShowEnvoyerDossierModal] = useState(false)
+  const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
 
   useEffect(() => {
     async function fetchProspect() {
@@ -97,6 +99,15 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
 
   const handleEnvoiDossierSuccess = async () => {
     // Recharger les données du prospect après envoi dossier
+    const res = await fetch(`/api/prospects/${prospectId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setProspect(data)
+    }
+  }
+
+  const handleGenererDevisSuccess = async () => {
+    // Recharger les données du prospect après génération devis
     const res = await fetch(`/api/prospects/${prospectId}`)
     if (res.ok) {
       const data = await res.json()
@@ -256,7 +267,10 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
             Actions
           </h3>
           <div className="space-y-2">
-            <button className="w-full px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg text-sm font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center justify-center gap-2">
+            <button
+              onClick={() => setShowGenererDevisModal(true)}
+              className="w-full px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg text-sm font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center justify-center gap-2"
+            >
               <FileText className="w-4 h-4" />
               Générer devis
             </button>
@@ -318,6 +332,22 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
           }}
           onClose={() => setShowEnvoyerDossierModal(false)}
           onSuccess={handleEnvoiDossierSuccess}
+        />
+      )}
+
+      {/* Modal Générer Devis */}
+      {showGenererDevisModal && prospect && (
+        <GenererDevisModal
+          prospect={{
+            idProspect: prospect.id,
+            nom: prospect.nom,
+            prenom: prospect.prenom,
+            email: prospect.email,
+            telephone: prospect.telephone,
+            formationPrincipale: prospect.formationSouhaitee
+          }}
+          onClose={() => setShowGenererDevisModal(false)}
+          onSuccess={handleGenererDevisSuccess}
         />
       )}
     </div>
