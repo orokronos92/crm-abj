@@ -243,3 +243,21 @@ export const candidatWebhooks = {
     return callWebhook('/candidat/generer-devis', data)
   }
 }
+
+/**
+ * Webhooks spécifiques pour les actions Élèves
+ */
+export const eleveWebhooks = {
+  /**
+   * Envoyer un message/email personnalisé à un élève
+   */
+  async envoyerMessage(data: {
+    numeroDossier: string
+    idAction?: number
+    destinataire: string
+    objet: string
+    contenu: string
+  }): Promise<WebhookResponse> {
+    return callWebhook('/eleve/envoyer-message', data)
+  }
+}

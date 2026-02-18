@@ -11,6 +11,7 @@ import { TabEvaluations } from './eleve-tabs/TabEvaluations'
 import { TabPresences } from './eleve-tabs/TabPresences'
 import { TabDocuments } from './eleve-tabs/TabDocuments'
 import { TabHistorique } from './eleve-tabs/TabHistorique'
+import { EnvoyerMessageEleveModal } from './EnvoyerMessageEleveModal'
 
 interface EleveDetailModalProps {
   eleveId: number
@@ -22,6 +23,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
   const [eleve, setEleve] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
 
   useEffect(() => {
     const fetchEleve = async () => {
@@ -45,6 +47,15 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
 
     fetchEleve()
   }, [eleveId])
+
+  const handleEnvoyerMessageSuccess = async () => {
+    // Recharger les données de l'élève après envoi message
+    const res = await fetch(`/api/eleves/${eleveId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setEleve(data)
+    }
+  }
 
   const tabs = [
     { id: 'general', label: 'Général', icon: User },
@@ -117,9 +128,12 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
         {/* Footer avec actions */}
         <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
           <div className="flex items-center justify-between">
-            <button className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border border-[rgba(var(--border),0.5)] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center gap-2">
+            <button
+              onClick={() => setShowEnvoyerMessageModal(true)}
+              className="px-4 py-2 bg-[rgb(var(--warning))] text-[rgb(var(--primary))] rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+            >
               <MessageSquare className="w-4 h-4" />
-              Contacter l'élève
+              Envoyer un mail
             </button>
             <div className="flex gap-2">
               <button className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border border-[rgba(var(--border),0.5)] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center gap-2">
@@ -134,6 +148,23 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal Envoyer Message */}
+      {showEnvoyerMessageModal && eleve && (
+        <EnvoyerMessageEleveModal
+          eleve={{
+            idEleve: eleve.id,
+            numeroDossier: eleve.numeroDossier,
+            nom: eleve.nom,
+            prenom: eleve.prenom,
+            email: eleve.email,
+            telephone: eleve.telephone,
+            formation: eleve.formation
+          }}
+          onClose={() => setShowEnvoyerMessageModal(false)}
+          onSuccess={handleEnvoyerMessageSuccess}
+        />
+      )}
     </div>
   )
 }
