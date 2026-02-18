@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { formateurWebhooks } from '@/lib/webhook-client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,9 +93,24 @@ export async function POST(request: NextRequest) {
       return { utilisateur, formateur }
     })
 
-    // TODO: Déclencher notification à Marjorie pour demander les documents
-    // Endpoint n8n à appeler : POST /webhook/nouveau-formateur
-    // Body: { formateurId, email, nom, prenom }
+    // ===== FIRE-AND-FORGET : Notifier Marjorie du nouveau formateur =====
+    // Marjorie va envoyer un email de bienvenue et demander les documents requis
+    formateurWebhooks.nouveauFormateur({
+      idFormateur: result.formateur.idFormateur,
+      email: result.formateur.email,
+      nom: result.formateur.nom,
+      prenom: result.formateur.prenom,
+      telephone: result.formateur.telephone || undefined,
+      specialites: result.formateur.specialites as string[]
+    }).then(webhookResult => {
+      if (!webhookResult.success) {
+        console.error(`[API] ❌ Webhook échoué pour nouveau formateur ${result.formateur.idFormateur}:`, webhookResult.error)
+      } else {
+        console.log(`[API] ✅ Webhook nouveau formateur envoyé avec succès pour ${result.formateur.prenom} ${result.formateur.nom}`)
+      }
+    }).catch(error => {
+      console.error(`[API] ❌ Erreur critique webhook nouveau formateur ${result.formateur.idFormateur}:`, error)
+    })
 
     return NextResponse.json({
       success: true,

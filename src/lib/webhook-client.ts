@@ -324,5 +324,20 @@ export const formateurWebhooks = {
     telephone?: string
   }): Promise<WebhookResponse> {
     return callWebhook('/formateur/demander-document', data)
+  },
+
+  /**
+   * Notifier Marjorie de la création d'un nouveau formateur
+   * Déclenche la demande automatique des documents requis
+   */
+  async nouveauFormateur(data: {
+    idFormateur: number
+    email: string
+    nom: string
+    prenom: string
+    telephone?: string
+    specialites?: string[]
+  }): Promise<WebhookResponse> {
+    return callWebhook('/formateur/nouveau-formateur', data)
   }
 }
