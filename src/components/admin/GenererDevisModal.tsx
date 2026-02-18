@@ -138,7 +138,7 @@ export function GenererDevisModal({
   // Modal de confirmation
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-2xl flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-4xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-center gap-3">
