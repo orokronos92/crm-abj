@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react'
 import { HistoriqueEchangesModal } from './HistoriqueEchangesModal'
 import { ConvertirCandidatModal } from './ConvertirCandidatModal'
+import { EnvoyerDossierModal } from './EnvoyerDossierModal'
 import {
   Mail,
   Phone,
@@ -65,6 +66,7 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
   const [loading, setLoading] = useState(true)
   const [showHistorique, setShowHistorique] = useState(false)
   const [showConvertirModal, setShowConvertirModal] = useState(false)
+  const [showEnvoyerDossierModal, setShowEnvoyerDossierModal] = useState(false)
 
   useEffect(() => {
     async function fetchProspect() {
@@ -86,6 +88,15 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
 
   const handleConversionSuccess = async () => {
     // Recharger les données du prospect après conversion
+    const res = await fetch(`/api/prospects/${prospectId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setProspect(data)
+    }
+  }
+
+  const handleEnvoiDossierSuccess = async () => {
+    // Recharger les données du prospect après envoi dossier
     const res = await fetch(`/api/prospects/${prospectId}`)
     if (res.ok) {
       const data = await res.json()
@@ -249,7 +260,10 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
               <FileText className="w-4 h-4" />
               Générer devis
             </button>
-            <button className="w-full px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg text-sm font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center justify-center gap-2">
+            <button
+              onClick={() => setShowEnvoyerDossierModal(true)}
+              className="w-full px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg text-sm font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center justify-center gap-2"
+            >
               <Send className="w-4 h-4" />
               Envoyer dossier
             </button>
@@ -286,6 +300,24 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
           }}
           onClose={() => setShowConvertirModal(false)}
           onSuccess={handleConversionSuccess}
+        />
+      )}
+
+      {/* Modal Envoyer Dossier */}
+      {showEnvoyerDossierModal && prospect && (
+        <EnvoyerDossierModal
+          prospect={{
+            idProspect: prospect.id,
+            nom: prospect.nom,
+            prenom: prospect.prenom,
+            email: prospect.email,
+            telephone: prospect.telephone,
+            ville: prospect.ville,
+            codePostal: prospect.codePostal,
+            formationPrincipale: prospect.formationSouhaitee
+          }}
+          onClose={() => setShowEnvoyerDossierModal(false)}
+          onSuccess={handleEnvoiDossierSuccess}
         />
       )}
     </div>

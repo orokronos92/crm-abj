@@ -160,9 +160,14 @@ export const prospectWebhooks = {
    */
   async envoyerDossier(data: {
     idProspect: string
+    idAction?: number
     email: string
     nom: string
     prenom: string
+    telephone?: string
+    ville?: string
+    codePostal?: string
+    formationPrincipale?: string
   }): Promise<WebhookResponse> {
     return callWebhook('/prospect/envoyer-dossier', data)
   },
