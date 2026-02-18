@@ -11,6 +11,7 @@ import { TabEvaluations } from './eleve-tabs/TabEvaluations'
 import { TabPresences } from './eleve-tabs/TabPresences'
 import { TabDocuments } from './eleve-tabs/TabDocuments'
 import { TabHistorique } from './eleve-tabs/TabHistorique'
+import { TabAnalyseIA } from './eleve-tabs/TabAnalyseIA'
 import { EnvoyerMessageEleveModal } from './EnvoyerMessageEleveModal'
 
 interface EleveDetailModalProps {
@@ -24,6 +25,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
+  const [demandingAnalyse, setDemandingAnalyse] = useState(false)
 
   useEffect(() => {
     const fetchEleve = async () => {
@@ -57,6 +59,45 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
     }
   }
 
+  const handleDemanderAnalyse = async () => {
+    if (!eleve || demandingAnalyse) return
+
+    setDemandingAnalyse(true)
+    try {
+      const response = await fetch('/api/eleves/demander-analyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idEleve: eleve.id,
+          numeroDossier: eleve.numeroDossier
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.status === 202 && result.success) {
+        alert('Analyse demandée à Marjorie ! Vous serez notifié lorsqu\'elle sera terminée.')
+        // Optionnel : recharger après quelques secondes pour voir si l'analyse est déjà dispo
+        setTimeout(async () => {
+          const res = await fetch(`/api/eleves/${eleveId}`)
+          if (res.ok) {
+            const data = await res.json()
+            setEleve(data)
+          }
+        }, 3000)
+      } else if (response.status === 409) {
+        alert(result.message || 'Une analyse est déjà en cours pour cet élève')
+      } else {
+        alert(result.error || 'Erreur lors de la demande d\'analyse')
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
+      alert('Erreur lors de la demande d\'analyse')
+    } finally {
+      setDemandingAnalyse(false)
+    }
+  }
+
   const tabs = [
     { id: 'general', label: 'Général', icon: User },
     { id: 'synthese', label: 'Synthèse', icon: BarChart3 },
@@ -64,6 +105,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
     { id: 'presences', label: 'Présences', icon: Calendar },
     { id: 'documents', label: 'Documents', icon: FolderOpen },
     { id: 'historique', label: 'Historique', icon: History },
+    { id: 'analyse-ia', label: 'Analyse IA', icon: Sparkles },
   ]
 
   return (
@@ -121,6 +163,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
               {activeTab === 'presences' && <TabPresences eleve={eleve} />}
               {activeTab === 'documents' && <TabDocuments eleve={eleve} />}
               {activeTab === 'historique' && <TabHistorique eleve={eleve} />}
+              {activeTab === 'analyse-ia' && <TabAnalyseIA eleve={eleve} onDemanderAnalyse={handleDemanderAnalyse} />}
             </>
           ) : null}
         </div>
@@ -135,16 +178,23 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
               <MessageSquare className="w-4 h-4" />
               Envoyer un mail
             </button>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border border-[rgba(var(--border),0.5)] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Télécharger dossier complet
-              </button>
-              <button className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Demander analyse Marjorie
-              </button>
-            </div>
+            <button
+              onClick={handleDemanderAnalyse}
+              disabled={demandingAnalyse}
+              className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {demandingAnalyse ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin"></div>
+                  Demande en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Demander analyse Marjorie
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

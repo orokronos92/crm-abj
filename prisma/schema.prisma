@@ -357,6 +357,8 @@ model Eleve {
   statutFormation String?   @map("statut_formation") // EN_COURS | TERMINE | ABANDONNE | SUSPENDU
   motifAbandon    String?   @map("motif_abandon")
   notesGenerales  String?   @map("notes_generales")
+  analyseIa       String?   @map("analyse_ia") @db.Text // Analyse Marjorie de l'élève (notes, progression, etc.)
+  dateAnalyseIa   DateTime? @map("date_analyse_ia") @db.Timestamptz(6) // Date de la dernière analyse
   creeLe          DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe       DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 

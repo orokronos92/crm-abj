@@ -274,5 +274,17 @@ export const eleveWebhooks = {
     montantTotal: number
   }): Promise<WebhookResponse> {
     return callWebhook('/eleve/envoyer-rappel-paiement', data)
+  },
+
+  /**
+   * Demander une analyse IA complète d'un élève
+   */
+  async demanderAnalyse(data: {
+    numeroDossier: string
+    idAction?: number
+    nom: string
+    prenom: string
+  }): Promise<WebhookResponse> {
+    return callWebhook('/eleve/demander-analyse', data)
   }
 }
