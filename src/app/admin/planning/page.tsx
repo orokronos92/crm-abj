@@ -16,7 +16,6 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Download,
   Eye,
   Edit,
   Trash2,
@@ -244,18 +243,12 @@ export default function PlanningPage() {
         {/* Header/Stats/Onglets - partie fixe (ne scroll jamais) */}
         <div className="flex-shrink-0 space-y-4 pb-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[rgb(var(--foreground))]">Planning annuel</h1>
             <p className="text-[rgb(var(--muted-foreground))] mt-1">
               Gestion occupation salles, disponibilités formateurs et événements
             </p>
           </div>
-          <button className="px-4 py-2 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-all flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Exporter planning
-          </button>
-        </div>
 
         {/* Stats globales */}
         <div className="grid grid-cols-4 gap-4">

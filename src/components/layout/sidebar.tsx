@@ -17,7 +17,6 @@ import {
   Calendar,
   FileText,
   Mail,
-  MessageSquare,
   BarChart3,
   Settings,
   LogOut,
@@ -32,7 +31,6 @@ import {
   Award,
   ClipboardList,
   PenTool,
-  Sparkles,
 } from 'lucide-react'
 import { DiamondLogo } from '@/components/ui/diamond-logo'
 
@@ -59,7 +57,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
           { icon: Calendar, label: 'Planning', href: '/admin/planning' },
           { icon: BarChart3, label: 'Statistiques', href: '/admin/stats' },
           { icon: Bell, label: 'Notifications', href: '/admin/notifications' },
-          { icon: MessageSquare, label: 'Chat Marjorie', href: '/admin/marjorie', special: true },
         ]
 
       case 'professeur':
@@ -69,7 +66,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
           { icon: Users, label: 'Mes élèves', href: '/formateur/eleves' },
           { icon: PenTool, label: 'Évaluations', href: '/formateur/evaluations' },
           { icon: Bell, label: 'Notifications', href: '/formateur/notifications' },
-          { icon: MessageSquare, label: 'Chat Marjorie', href: '/formateur/marjorie', special: true },
           { icon: Calendar, label: 'Disponibilités', href: '/formateur/disponibilites' },
         ]
 
@@ -80,7 +76,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
           { icon: Award, label: 'Mes notes', href: '/eleve/evaluations' },
           { icon: FileText, label: 'Documents', href: '/eleve/documents' },
           { icon: BookOpen, label: 'Cours', href: '/eleve/cours' },
-          { icon: MessageSquare, label: 'Chat Marjorie', href: '/eleve/marjorie', special: true },
           { icon: Bell, label: 'Notifications', href: '/eleve/notifications' },
         ]
 
@@ -125,7 +120,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
                       flex items-center gap-3 px-3 py-2.5 rounded-lg
                       transition-all duration-200 group relative
                       ${isActive ? 'sidebar-item active' : 'sidebar-item'}
-                      ${item.special ? 'border border-[rgba(var(--accent),0.2)]' : ''}
                     `}
                   >
                     <Icon
@@ -133,7 +127,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
                         w-5 h-5 flex-shrink-0
                         ${isActive ? 'text-[rgb(var(--accent))]' : 'text-[rgb(var(--muted-foreground))]'}
                         group-hover:text-[rgb(var(--accent))]
-                        ${item.special ? 'text-[rgb(var(--accent))]' : ''}
                       `}
                     />
                     {!isCollapsed && (
@@ -146,9 +139,6 @@ export function Sidebar({ role, userName }: SidebarProps) {
                       >
                         {item.label}
                       </span>
-                    )}
-                    {item.special && !isCollapsed && (
-                      <Sparkles className="w-3 h-3 text-[rgb(var(--accent))] ml-auto animate-pulse" />
                     )}
 
                     {/* Tooltip pour mode collapsed */}
