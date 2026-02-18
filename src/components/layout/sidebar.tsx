@@ -49,6 +49,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
       case 'admin':
         return [
           { icon: Home, label: 'Tableau de bord', href: '/admin/dashboard' },
+          { icon: Bell, label: 'Notifications', href: '/admin/notifications' },
           { icon: Users, label: 'Prospects', href: '/admin/prospects' },
           { icon: UserCheck, label: 'Candidats', href: '/admin/candidats' },
           { icon: GraduationCap, label: 'Élèves', href: '/admin/eleves' },
@@ -56,27 +57,26 @@ export function Sidebar({ role, userName }: SidebarProps) {
           { icon: BookOpen, label: 'Sessions', href: '/admin/sessions' },
           { icon: Calendar, label: 'Planning', href: '/admin/planning' },
           { icon: BarChart3, label: 'Statistiques', href: '/admin/stats' },
-          { icon: Bell, label: 'Notifications', href: '/admin/notifications' },
         ]
 
       case 'professeur':
         return [
           { icon: LayoutDashboard, label: 'Tableau de bord', href: '/formateur/planning' },
+          { icon: Bell, label: 'Notifications', href: '/formateur/notifications' },
           { icon: Award, label: 'Compétences et qualifications', href: '/formateur/competences' },
           { icon: Users, label: 'Mes élèves', href: '/formateur/eleves' },
           { icon: PenTool, label: 'Évaluations', href: '/formateur/evaluations' },
-          { icon: Bell, label: 'Notifications', href: '/formateur/notifications' },
           { icon: Calendar, label: 'Disponibilités', href: '/formateur/disponibilites' },
         ]
 
       case 'eleve':
         return [
           { icon: Home, label: 'Ma formation', href: '/eleve/formation' },
+          { icon: Bell, label: 'Notifications', href: '/eleve/notifications' },
           { icon: Calendar, label: 'Planning', href: '/eleve/planning' },
           { icon: Award, label: 'Mes notes', href: '/eleve/evaluations' },
           { icon: FileText, label: 'Documents', href: '/eleve/documents' },
           { icon: BookOpen, label: 'Cours', href: '/eleve/cours' },
-          { icon: Bell, label: 'Notifications', href: '/eleve/notifications' },
         ]
 
       default:

@@ -1,12 +1,14 @@
 /**
  * Page Notifications Élève
- * Notifications personnelles et globales
+ * Notifications personnelles et globales avec SSE temps réel
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { useNotifications } from '@/hooks/use-notifications'
 import {
   Bell,
   CheckCircle,
@@ -14,223 +16,123 @@ import {
   Info,
   Trophy,
   Calendar,
-  FileText,
   MessageSquare,
   Clock,
-  Check,
-  X,
   Filter,
   Trash2,
   Eye,
   EyeOff,
-  ChevronDown,
   Users,
   User,
-  Sparkles,
   BookOpen,
   Award,
-  AlertTriangle,
+  Mail,
+  Target,
 } from 'lucide-react'
 
-// Types de notifications
-type NotificationType = 'cours' | 'evaluation' | 'administratif' | 'message' | 'systeme' | 'reussite'
-type NotificationScope = 'personnel' | 'global'
-type NotificationPriority = 'haute' | 'normale' | 'basse'
-
-interface Notification {
-  id: number
-  titre: string
-  message: string
-  type: NotificationType
-  scope: NotificationScope
-  priority: NotificationPriority
-  lu: boolean
-  date: string
-  heure: string
-  expediteur?: string
-  action?: {
-    label: string
-    href?: string
-  }
-}
-
-// Données mockées - Notifications mixtes (personnelles + globales)
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 1,
-    titre: 'Nouvelle évaluation disponible',
-    message: 'Votre évaluation de Sertissage a été corrigée. Note : 16/20',
-    type: 'evaluation',
-    scope: 'personnel',
-    priority: 'normale',
-    lu: false,
-    date: '2024-02-08',
-    heure: '14:30',
-    expediteur: 'M. Laurent - Formateur',
-    action: { label: 'Voir la note', href: '/eleve/evaluations' },
-  },
-  {
-    id: 2,
-    titre: 'Fermeture exceptionnelle',
-    message: 'L\'académie sera fermée le vendredi 16 février pour inventaire annuel. Reprise des cours le lundi 19.',
-    type: 'administratif',
-    scope: 'global',
-    priority: 'haute',
-    lu: false,
-    date: '2024-02-08',
-    heure: '09:15',
-    expediteur: 'Direction ABJ',
-  },
-  {
-    id: 3,
-    titre: 'Badge "Designer Pro" débloqué !',
-    message: 'Félicitations ! Vous avez terminé le module Dessin technique avec une moyenne de 17/20.',
-    type: 'reussite',
-    scope: 'personnel',
-    priority: 'normale',
-    lu: false,
-    date: '2024-02-07',
-    heure: '16:45',
-    action: { label: 'Voir mes badges', href: '/eleve/cours' },
-  },
-  {
-    id: 4,
-    titre: 'Modification planning',
-    message: 'Le cours de Gemmologie du 12/02 (14h-17h) est déplacé au 13/02 (9h-12h).',
-    type: 'cours',
-    scope: 'personnel',
-    priority: 'haute',
-    lu: true,
-    date: '2024-02-07',
-    heure: '11:20',
-    expediteur: 'Mme Lambert - Formatrice',
-    action: { label: 'Voir planning', href: '/eleve/planning' },
-  },
-  {
-    id: 5,
-    titre: 'Nouveau support de cours disponible',
-    message: 'Le guide complet "Techniques de polissage avancées" est maintenant disponible dans votre bibliothèque.',
-    type: 'cours',
-    scope: 'global',
-    priority: 'basse',
-    lu: true,
-    date: '2024-02-06',
-    heure: '18:00',
-    action: { label: 'Télécharger', href: '/eleve/cours' },
-  },
-  {
-    id: 6,
-    titre: 'Message de votre formateur',
-    message: 'Excellent travail sur votre dernier projet ! Continuez comme ça.',
-    type: 'message',
-    scope: 'personnel',
-    priority: 'normale',
-    lu: true,
-    date: '2024-02-06',
-    heure: '15:30',
-    expediteur: 'M. Laurent - Formateur',
-    action: { label: 'Répondre', href: '/eleve/marjorie' },
-  },
-  {
-    id: 7,
-    titre: 'Portes ouvertes ABJ',
-    message: 'Participez à nos portes ouvertes le 25 février ! Invitez vos proches à découvrir nos formations.',
-    type: 'administratif',
-    scope: 'global',
-    priority: 'basse',
-    lu: true,
-    date: '2024-02-05',
-    heure: '10:00',
-    expediteur: 'Direction ABJ',
-  },
-  {
-    id: 8,
-    titre: 'Rappel : Évaluation à venir',
-    message: 'N\'oubliez pas votre évaluation pratique de Sertissage le 15/02 à 9h (Coeff. 3).',
-    type: 'evaluation',
-    scope: 'personnel',
-    priority: 'haute',
-    lu: true,
-    date: '2024-02-04',
-    heure: '08:00',
-    action: { label: 'Préparer', href: '/eleve/cours' },
-  },
-]
-
 export default function EleveNotificationsPage() {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS)
-  const [filterType, setFilterType] = useState<NotificationType | 'all'>('all')
-  const [filterScope, setFilterScope] = useState<NotificationScope | 'all'>('all')
+  const searchParams = useSearchParams()
+  const highlightId = searchParams.get('highlight')
+
+  const [filterType, setFilterType] = useState<string>('all')
+  const [filterScope, setFilterScope] = useState<string>('all')
   const [showOnlyUnread, setShowOnlyUnread] = useState(false)
 
-  // Statistiques
-  const totalNotifications = notifications.length
-  const unreadCount = notifications.filter((n) => !n.lu).length
-  const personalCount = notifications.filter((n) => n.scope === 'personnel').length
-  const globalCount = notifications.filter((n) => n.scope === 'global').length
+  // Hook SSE pour les vraies notifications
+  const {
+    notifications,
+    counts,
+    loading,
+    sseConnected,
+    markAsRead: markAsReadHook,
+    markAllAsRead: markAllAsReadHook,
+  } = useNotifications({
+    useSSE: true,
+    limit: 100
+  })
 
-  // Filtrage
+  // Scroll vers notification mise en évidence
+  useEffect(() => {
+    if (highlightId) {
+      setTimeout(() => {
+        const element = document.getElementById(`notification-${highlightId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          element.classList.add('animate-pulse-highlight')
+          setTimeout(() => {
+            element.classList.remove('animate-pulse-highlight')
+          }, 3000)
+        }
+      }, 500)
+    }
+  }, [highlightId])
+
+  // Statistiques depuis le hook
+  const totalNotifications = counts.total
+  const unreadCount = counts.nonLues
+  const personalCount = notifications.filter((n) => n.audience === 'ELEVE').length
+  const globalCount = notifications.filter((n) => n.audience === 'TOUS').length
+
+  // Filtrage local
   const filteredNotifications = notifications
-    .filter((n) => filterType === 'all' || n.type === filterType)
-    .filter((n) => filterScope === 'all' || n.scope === filterScope)
-    .filter((n) => !showOnlyUnread || !n.lu)
+    .filter((n) => filterType === 'all' || n.categorie.toLowerCase().includes(filterType.toLowerCase()))
+    .filter((n) => {
+      if (filterScope === 'all') return true
+      if (filterScope === 'personnel') return n.audience === 'ELEVE'
+      if (filterScope === 'global') return n.audience === 'TOUS'
+      return true
+    })
+    .filter((n) => !showOnlyUnread || !n.lue)
 
   // Actions
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map((n) => (n.id === id ? { ...n, lu: true } : n)))
+  const markAsRead = async (id: number) => {
+    const notif = notifications.find(n => n.idNotification === id)
+    if (notif && !notif.lue) {
+      await markAsReadHook(id)
+    }
   }
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, lu: true })))
+  const markAllAsRead = async () => {
+    await markAllAsReadHook()
   }
 
   const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter((n) => n.id !== id))
+    // TODO: Implémenter suppression via API
+    console.log('Suppression notification à implémenter:', id)
   }
 
-  // Styles par type
-  const getTypeIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'cours':
-        return <BookOpen className="w-5 h-5" />
-      case 'evaluation':
-        return <Award className="w-5 h-5" />
-      case 'administratif':
-        return <AlertCircle className="w-5 h-5" />
-      case 'message':
-        return <MessageSquare className="w-5 h-5" />
-      case 'systeme':
-        return <Info className="w-5 h-5" />
-      case 'reussite':
-        return <Trophy className="w-5 h-5" />
-    }
+  // Styles par catégorie (mapping depuis BDD)
+  const getTypeIcon = (categorie: string) => {
+    const cat = categorie.toUpperCase()
+    if (cat.includes('COURS') || cat.includes('PLANNING')) return <BookOpen className="w-5 h-5" />
+    if (cat.includes('EVALUATION') || cat.includes('NOTE')) return <Award className="w-5 h-5" />
+    if (cat.includes('ADMINISTRATIF') || cat.includes('SYSTEM')) return <AlertCircle className="w-5 h-5" />
+    if (cat.includes('MESSAGE')) return <MessageSquare className="w-5 h-5" />
+    if (cat.includes('REUSSITE') || cat.includes('SUCCESS')) return <Trophy className="w-5 h-5" />
+    return <Info className="w-5 h-5" />
   }
 
-  const getTypeColor = (type: NotificationType) => {
-    switch (type) {
-      case 'cours':
-        return 'text-[rgb(var(--info))] bg-[rgba(var(--info),0.1)]'
-      case 'evaluation':
-        return 'text-[rgb(var(--accent))] bg-[rgba(var(--accent),0.1)]'
-      case 'administratif':
-        return 'text-[rgb(var(--warning))] bg-[rgba(var(--warning),0.1)]'
-      case 'message':
-        return 'text-[rgb(var(--success))] bg-[rgba(var(--success),0.1)]'
-      case 'systeme':
-        return 'text-[rgb(var(--muted-foreground))] bg-[rgba(var(--muted-foreground),0.1)]'
-      case 'reussite':
-        return 'text-[rgb(var(--accent))] bg-[rgba(var(--accent),0.1)]'
-    }
+  const getTypeColor = (categorie: string) => {
+    const cat = categorie.toUpperCase()
+    if (cat.includes('COURS') || cat.includes('PLANNING')) return 'text-[rgb(var(--info))] bg-[rgba(var(--info),0.1)]'
+    if (cat.includes('EVALUATION') || cat.includes('NOTE')) return 'text-[rgb(var(--accent))] bg-[rgba(var(--accent),0.1)]'
+    if (cat.includes('ADMINISTRATIF') || cat.includes('SYSTEM')) return 'text-[rgb(var(--warning))] bg-[rgba(var(--warning),0.1)]'
+    if (cat.includes('MESSAGE')) return 'text-[rgb(var(--success))] bg-[rgba(var(--success),0.1)]'
+    if (cat.includes('REUSSITE') || cat.includes('SUCCESS')) return 'text-[rgb(var(--accent))] bg-[rgba(var(--accent),0.1)]'
+    return 'text-[rgb(var(--muted-foreground))] bg-[rgba(var(--muted-foreground),0.1)]'
   }
 
-  const getPriorityBorder = (priority: NotificationPriority) => {
-    switch (priority) {
-      case 'haute':
+  const getPriorityBorder = (priorite: string) => {
+    switch (priorite) {
+      case 'URGENTE':
+      case 'HAUTE':
         return 'border-l-4 border-l-[rgb(var(--error))]'
-      case 'normale':
+      case 'NORMALE':
         return 'border-l-4 border-l-[rgb(var(--accent))]'
-      case 'basse':
+      case 'BASSE':
         return 'border-l-4 border-l-[rgba(var(--border),0.5)]'
+      default:
+        return 'border-l-4 border-l-[rgb(var(--accent))]'
     }
   }
 
@@ -307,7 +209,7 @@ export default function EleveNotificationsPage() {
           {/* Filtre type */}
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as NotificationType | 'all')}
+            onChange={(e) => setFilterType(e.target.value)}
             className="px-3 py-1.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.3)] rounded-lg text-sm text-[rgb(var(--foreground))]"
           >
             <option value="all">Tous les types</option>
@@ -321,7 +223,7 @@ export default function EleveNotificationsPage() {
           {/* Filtre scope */}
           <select
             value={filterScope}
-            onChange={(e) => setFilterScope(e.target.value as NotificationScope | 'all')}
+            onChange={(e) => setFilterScope(e.target.value)}
             className="px-3 py-1.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.3)] rounded-lg text-sm text-[rgb(var(--foreground))]"
           >
             <option value="all">Toutes les portées</option>
@@ -362,97 +264,107 @@ export default function EleveNotificationsPage() {
             </p>
           </div>
         ) : (
-          filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`p-4 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl hover:shadow-md transition-all ${getPriorityBorder(
-                notification.priority
-              )} ${!notification.lu ? 'bg-[rgba(var(--accent),0.02)]' : ''}`}
-            >
-              <div className="flex items-start gap-4">
-                {/* Icône type */}
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${getTypeColor(notification.type)}`}>
-                  {getTypeIcon(notification.type)}
-                </div>
+          filteredNotifications.map((notification) => {
+            const dateCreation = new Date(notification.creeLe)
+            const dateStr = dateCreation.toLocaleDateString('fr-FR')
+            const heureStr = dateCreation.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
-                {/* Contenu */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className={`text-base font-semibold text-[rgb(var(--foreground))] ${!notification.lu ? 'font-bold' : ''}`}>
-                          {notification.titre}
-                        </h3>
-                        {!notification.lu && (
-                          <span className="w-2 h-2 bg-[rgb(var(--accent))] rounded-full animate-pulse flex-shrink-0" />
-                        )}
-                      </div>
-                      {notification.expediteur && (
-                        <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">
-                          {notification.expediteur}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {/* Badge scope */}
-                      {notification.scope === 'global' ? (
-                        <span className="px-2 py-1 bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))] text-xs rounded flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          Global
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-[rgba(var(--info),0.1)] text-[rgb(var(--info))] text-xs rounded flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          Personnel
-                        </span>
-                      )}
-                    </div>
+            return (
+              <div
+                key={notification.idNotification}
+                id={`notification-${notification.idNotification}`}
+                className={`p-4 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl hover:shadow-md transition-all ${getPriorityBorder(
+                  notification.priorite
+                )} ${!notification.lue ? 'bg-[rgba(var(--accent),0.02)]' : ''}`}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Icône type */}
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${getTypeColor(notification.categorie)}`}>
+                    {getTypeIcon(notification.categorie)}
                   </div>
 
-                  <p className="text-sm text-[rgb(var(--muted-foreground))] mb-3">
-                    {notification.message}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-xs text-[rgb(var(--muted-foreground))]">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {notification.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {notification.heure}
-                      </span>
+                  {/* Contenu */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className={`text-base font-semibold text-[rgb(var(--foreground))] ${!notification.lue ? 'font-bold' : ''}`}>
+                            {notification.titre}
+                          </h3>
+                          {!notification.lue && (
+                            <span className="w-2 h-2 bg-[rgb(var(--accent))] rounded-full animate-pulse flex-shrink-0" />
+                          )}
+                        </div>
+                        {notification.sourceAgent && (
+                          <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">
+                            De: {notification.sourceAgent}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Badge audience */}
+                        {notification.audience === 'TOUS' ? (
+                          <span className="px-2 py-1 bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))] text-xs rounded flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Global
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 bg-[rgba(var(--info),0.1)] text-[rgb(var(--info))] text-xs rounded flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            Personnel
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {notification.action && (
-                        <button className="px-3 py-1.5 bg-[rgba(var(--accent),0.1)] border border-[rgba(var(--accent),0.2)] text-[rgb(var(--accent))] rounded-lg text-xs font-medium hover:bg-[rgba(var(--accent),0.2)] transition-colors">
-                          {notification.action.label}
-                        </button>
-                      )}
-                      {!notification.lu && (
+                    <p className="text-sm text-[rgb(var(--muted-foreground))] mb-3">
+                      {notification.message}
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-xs text-[rgb(var(--muted-foreground))]">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {dateStr}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {heureStr}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {notification.lienAction && (
+                          <a
+                            href={notification.lienAction}
+                            className="px-3 py-1.5 bg-[rgba(var(--accent),0.1)] border border-[rgba(var(--accent),0.2)] text-[rgb(var(--accent))] rounded-lg text-xs font-medium hover:bg-[rgba(var(--accent),0.2)] transition-colors"
+                          >
+                            Voir
+                          </a>
+                        )}
+                        {!notification.lue && (
+                          <button
+                            onClick={() => markAsRead(notification.idNotification)}
+                            className="p-1.5 hover:bg-[rgba(var(--accent),0.1)] rounded transition-colors"
+                            title="Marquer comme lu"
+                          >
+                            <Eye className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => markAsRead(notification.id)}
-                          className="p-1.5 hover:bg-[rgba(var(--accent),0.1)] rounded transition-colors"
-                          title="Marquer comme lu"
+                          onClick={() => deleteNotification(notification.idNotification)}
+                          className="p-1.5 hover:bg-[rgba(var(--error),0.1)] rounded transition-colors"
+                          title="Supprimer"
                         >
-                          <Eye className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
+                          <Trash2 className="w-4 h-4 text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--error))]" />
                         </button>
-                      )}
-                      <button
-                        onClick={() => deleteNotification(notification.id)}
-                        className="p-1.5 hover:bg-[rgba(var(--error),0.1)] rounded transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4 text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--error))]" />
-                      </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
