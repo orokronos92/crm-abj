@@ -288,3 +288,24 @@ export const eleveWebhooks = {
     return callWebhook('/eleve/demander-analyse', data)
   }
 }
+
+/**
+ * Webhooks spécifiques pour les actions Formateurs
+ */
+export const formateurWebhooks = {
+  /**
+   * Envoyer un message/email personnalisé à un formateur
+   */
+  async envoyerMessage(data: {
+    idFormateur: number
+    idAction?: number
+    destinataire: string
+    objet: string
+    contenu: string
+    nom?: string
+    prenom?: string
+    telephone?: string
+  }): Promise<WebhookResponse> {
+    return callWebhook('/formateur/envoyer-message', data)
+  }
+}

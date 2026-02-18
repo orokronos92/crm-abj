@@ -6,13 +6,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, User, Award, GraduationCap, BookOpen, BarChart, FolderOpen, Star, Calendar, Users, Clock } from 'lucide-react'
+import { X, User, Award, GraduationCap, BookOpen, BarChart, FolderOpen, Star, Calendar, Users, Clock, Mail } from 'lucide-react'
 import { FormateurProfilTab } from './formateur-tabs/FormateurProfilTab'
 import { FormateurCompetencesTab } from './formateur-tabs/FormateurCompetencesTab'
 import { FormateurExpertiseTab } from './formateur-tabs/FormateurExpertiseTab'
 import { FormateurMaintienTab } from './formateur-tabs/FormateurMaintienTab'
 import { FormateurTracabiliteTab } from './formateur-tabs/FormateurTracabiliteTab'
 import { FormateurDocumentsTab } from './formateur-tabs/FormateurDocumentsTab'
+import { EnvoyerMessageFormateurModal } from './EnvoyerMessageFormateurModal'
 
 interface FormateurDetailModalProps {
   formateurId: number
@@ -117,6 +118,7 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
   const [formateur, setFormateur] = useState<FormateurDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
 
   useEffect(() => {
     fetchFormateurDetail()
@@ -180,7 +182,7 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
               </div>
 
               {/* Infos principales */}
-              <div>
+              <div className="flex-1">
                 <h2 className="text-2xl font-bold text-[rgb(var(--foreground))]">
                   {formateur.prenom} {formateur.nom}
                 </h2>
@@ -204,13 +206,22 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
               </div>
             </div>
 
-            {/* Bouton fermer */}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Boutons actions */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEnvoyerMessageModal(true)}
+                className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2"
+              >
+                <Mail className="w-4 h-4" />
+                Envoyer un mail
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Statistiques rapides */}
@@ -284,6 +295,24 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
           {activeTab === 'documents' && <FormateurDocumentsTab formateur={formateur} onDocumentUploaded={fetchFormateurDetail} />}
         </div>
       </div>
+
+      {/* Modal Envoyer Message */}
+      {showEnvoyerMessageModal && formateur && (
+        <EnvoyerMessageFormateurModal
+          formateur={{
+            idFormateur: formateur.id,
+            nom: formateur.nom,
+            prenom: formateur.prenom,
+            email: formateur.email,
+            telephone: formateur.telephone
+          }}
+          onClose={() => setShowEnvoyerMessageModal(false)}
+          onSuccess={() => {
+            // Optionnel: recharger les données du formateur après envoi
+            fetchFormateurDetail()
+          }}
+        />
+      )}
     </div>
   )
 }
