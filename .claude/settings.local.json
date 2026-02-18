@@ -62,7 +62,8 @@
       "Bash(timeout 15 npm run dev:*)",
       "Bash(scripts/test-carte-provisoire-complete.ts)",
       "Bash(scripts/check-formations.ts)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
