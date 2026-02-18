@@ -1,0 +1,175 @@
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import { candidatWebhooks } from '@/lib/webhook-client'
+
+/**
+ * API Endpoint: Générer et envoyer un devis pour un candidat
+ *
+ * Pattern: Fire-and-Forget (202 Accepted)
+ * - Vérifie si génération déjà en cours (lock database)
+ * - Crée un verrouillage dans conversions_en_cours
+ * - Lance le webhook n8n de manière asynchrone (sans attendre)
+ * - Retourne 202 immédiatement
+ * - n8n génère le devis, l'envoie, log, notification
+ * - n8n déverrouillera via callback /api/candidats/conversion-complete
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { idCandidat, numeroDossier, formationCode, montant, modeFinancement, messageMarjorie } = body
+
+    // Validation
+    if (!idCandidat || !formationCode || !montant) {
+      return NextResponse.json(
+        { success: false, error: 'idCandidat, formationCode et montant requis' },
+        { status: 400 }
+      )
+    }
+
+    // Vérifier que le candidat existe
+    const candidat = await prisma.candidat.findUnique({
+      where: { idCandidat },
+      select: {
+        idCandidat: true,
+        numeroDossier: true,
+        idProspect: true,
+        prospect: {
+          select: {
+            nom: true,
+            prenom: true,
+            emails: true,
+            telephones: true,
+            ville: true,
+            codePostal: true
+          }
+        },
+        statutDossier: true
+      }
+    })
+
+    if (!candidat) {
+      return NextResponse.json(
+        { success: false, error: 'Candidat introuvable' },
+        { status: 404 }
+      )
+    }
+
+    // ===== LOCK : Vérifier si génération déjà en cours =====
+    const actionExistante = await prisma.conversionEnCours.findFirst({
+      where: {
+        idProspect: candidat.idProspect,
+        typeAction: 'GENERER_DEVIS',
+        statutAction: 'EN_COURS'
+      }
+    })
+
+    if (actionExistante) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Génération déjà en cours',
+          message: `Une génération de devis est déjà en cours de traitement pour ${candidat.prospect?.prenom} ${candidat.prospect?.nom}. Vous serez notifié lorsqu'elle sera terminée.`,
+          enCours: true
+        },
+        { status: 409 } // 409 Conflict
+      )
+    }
+
+    // ===== LOCK : Créer le verrouillage =====
+    const action = await prisma.conversionEnCours.create({
+      data: {
+        idProspect: candidat.idProspect,
+        typeAction: 'GENERER_DEVIS',
+        statutAction: 'EN_COURS'
+      }
+    })
+
+    console.log(`[API] 🔒 Génération devis verrouillée - ID: ${action.idConversion}, Candidat: ${candidat.numeroDossier}`)
+
+    // ===== FIRE-AND-FORGET : Lancer webhook n8n de manière asynchrone =====
+    candidatWebhooks.genererDevis({
+      numeroDossier: candidat.numeroDossier,
+      idAction: action.idConversion,
+      formationCode,
+      montant,
+      modeFinancement,
+      messageMarjorie,
+      email: candidat.prospect?.emails?.[0],
+      nom: candidat.prospect?.nom || undefined,
+      prenom: candidat.prospect?.prenom || undefined,
+      telephone: candidat.prospect?.telephones?.[0],
+      ville: candidat.prospect?.ville || undefined,
+      codePostal: candidat.prospect?.codePostal || undefined
+    }).then(webhookResult => {
+      if (!webhookResult.success) {
+        console.error(`[API] ❌ Webhook échoué pour génération devis ${action.idConversion}:`, webhookResult.error)
+        // Mettre à jour le statut de l'action en ERREUR
+        prisma.conversionEnCours.update({
+          where: { idConversion: action.idConversion },
+          data: {
+            statutAction: 'ERREUR',
+            messageErreur: webhookResult.error || 'Erreur inconnue',
+            dateFin: new Date(),
+            dureeMs: Date.now() - action.dateDebut.getTime()
+          }
+        }).catch(err => console.error('[API] Erreur update action:', err))
+      } else {
+        console.log(`[API] ✅ Webhook génération devis lancé avec succès pour action ${action.idConversion}`)
+      }
+    }).catch(error => {
+      console.error(`[API] ❌ Erreur critique lancement webhook génération devis ${action.idConversion}:`, error)
+      // Mettre à jour le statut de l'action en ERREUR
+      prisma.conversionEnCours.update({
+        where: { idConversion: action.idConversion },
+        data: {
+          statutAction: 'ERREUR',
+          messageErreur: error instanceof Error ? error.message : 'Erreur critique',
+          dateFin: new Date(),
+          dureeMs: Date.now() - action.dateDebut.getTime()
+        }
+      }).catch(err => console.error('[API] Erreur update action:', err))
+    })
+
+    // ===== RETOUR IMMÉDIAT 202 ACCEPTED =====
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Devis transmis à Marjorie pour génération et envoi. Vous serez notifié lorsque le devis sera prêt.',
+        data: {
+          numeroDossier: candidat.numeroDossier,
+          idAction: action.idConversion,
+          formationCode,
+          montant,
+          enCours: true
+        }
+      },
+      { status: 202 } // 202 Accepted (traitement asynchrone)
+    )
+
+  } catch (error) {
+    console.error('[API] Erreur génération devis:', error)
+
+    // Log en BDD
+    try {
+      await prisma.journalErreur.create({
+        data: {
+          nomWorkflow: 'api-generer-devis-candidat',
+          nomNoeud: 'POST-handler',
+          messageErreur: error instanceof Error ? error.message : 'Erreur inconnue',
+          donneesEntree: {},
+          resolu: false
+        }
+      })
+    } catch (logError) {
+      console.error('[API] Erreur log journal:', logError)
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erreur interne serveur'
+      },
+      { status: 500 }
+    )
+  }
+}

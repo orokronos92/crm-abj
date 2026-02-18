@@ -221,5 +221,25 @@ export const candidatWebhooks = {
     contenu: string
   }): Promise<WebhookResponse> {
     return callWebhook('/candidat/envoyer-message', data)
+  },
+
+  /**
+   * Générer et envoyer un devis pour un candidat
+   */
+  async genererDevis(data: {
+    numeroDossier: string
+    idAction?: number
+    formationCode: string
+    montant: number
+    modeFinancement?: string
+    messageMarjorie?: string
+    email?: string
+    nom?: string
+    prenom?: string
+    telephone?: string
+    ville?: string
+    codePostal?: string
+  }): Promise<WebhookResponse> {
+    return callWebhook('/candidat/generer-devis', data)
   }
 }

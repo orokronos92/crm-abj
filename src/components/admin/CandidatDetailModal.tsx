@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { EnvoyerMessageCandidatModal } from './EnvoyerMessageCandidatModal'
+import { GenererDevisCandidatModal } from './GenererDevisCandidatModal'
 
 interface CandidatDetail {
   id: number
@@ -87,6 +88,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('general')
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
+  const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
 
   useEffect(() => {
     async function fetchCandidat() {
@@ -108,6 +110,15 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
 
   const handleEnvoyerMessageSuccess = async () => {
     // Recharger les données du candidat après envoi message
+    const res = await fetch(`/api/candidats/${candidatId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setCandidat(data)
+    }
+  }
+
+  const handleGenererDevisSuccess = async () => {
+    // Recharger les données du candidat après génération devis
     const res = await fetch(`/api/candidats/${candidatId}`)
     if (res.ok) {
       const data = await res.json()
@@ -409,16 +420,13 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
               <MessageSquare className="w-4 h-4" />
               Contacter
             </button>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)] flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Télécharger dossier
-              </button>
-              <button className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2">
-                <Send className="w-4 h-4" />
-                Envoyer devis
-              </button>
-            </div>
+            <button
+              onClick={() => setShowGenererDevisModal(true)}
+              className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Envoyer devis
+            </button>
           </div>
         </div>
       </div>
@@ -437,6 +445,23 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
           }}
           onClose={() => setShowEnvoyerMessageModal(false)}
           onSuccess={handleEnvoyerMessageSuccess}
+        />
+      )}
+
+      {/* Modal Générer Devis */}
+      {showGenererDevisModal && candidat && (
+        <GenererDevisCandidatModal
+          candidat={{
+            idCandidat: candidat.id,
+            numeroDossier: candidat.numero_dossier,
+            nom: candidat.nom,
+            prenom: candidat.prenom,
+            email: candidat.email,
+            telephone: candidat.telephone,
+            formation: candidat.formation
+          }}
+          onClose={() => setShowGenererDevisModal(false)}
+          onSuccess={handleGenererDevisSuccess}
         />
       )}
     </div>
