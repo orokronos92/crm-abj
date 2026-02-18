@@ -10,6 +10,7 @@ import { HistoriqueEchangesModal } from './HistoriqueEchangesModal'
 import { ConvertirCandidatModal } from './ConvertirCandidatModal'
 import { EnvoyerDossierModal } from './EnvoyerDossierModal'
 import { GenererDevisModal } from './GenererDevisModal'
+import { EnvoyerEmailModal } from './EnvoyerEmailModal'
 import {
   Mail,
   Phone,
@@ -69,6 +70,7 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
   const [showConvertirModal, setShowConvertirModal] = useState(false)
   const [showEnvoyerDossierModal, setShowEnvoyerDossierModal] = useState(false)
   const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
+  const [showEnvoyerEmailModal, setShowEnvoyerEmailModal] = useState(false)
 
   useEffect(() => {
     async function fetchProspect() {
@@ -108,6 +110,15 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
 
   const handleGenererDevisSuccess = async () => {
     // Recharger les données du prospect après génération devis
+    const res = await fetch(`/api/prospects/${prospectId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setProspect(data)
+    }
+  }
+
+  const handleEnvoyerEmailSuccess = async () => {
+    // Recharger les données du prospect après envoi email
     const res = await fetch(`/api/prospects/${prospectId}`)
     if (res.ok) {
       const data = await res.json()
@@ -161,7 +172,10 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
 
         {/* Actions rapides */}
         <div className="flex gap-2">
-          <button className="flex-1 px-3 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[rgb(var(--accent-light))] transition-colors">
+          <button
+            onClick={() => setShowEnvoyerEmailModal(true)}
+            className="flex-1 px-3 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[rgb(var(--accent-light))] transition-colors"
+          >
             <Mail className="w-4 h-4" />
             Envoyer email
           </button>
@@ -348,6 +362,22 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
           }}
           onClose={() => setShowGenererDevisModal(false)}
           onSuccess={handleGenererDevisSuccess}
+        />
+      )}
+
+      {/* Modal Envoyer Email */}
+      {showEnvoyerEmailModal && prospect && (
+        <EnvoyerEmailModal
+          prospect={{
+            idProspect: prospect.id,
+            nom: prospect.nom,
+            prenom: prospect.prenom,
+            email: prospect.email,
+            telephone: prospect.telephone,
+            formationPrincipale: prospect.formationSouhaitee
+          }}
+          onClose={() => setShowEnvoyerEmailModal(false)}
+          onSuccess={handleEnvoyerEmailSuccess}
         />
       )}
     </div>

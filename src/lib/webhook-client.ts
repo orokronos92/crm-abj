@@ -197,6 +197,7 @@ export const prospectWebhooks = {
    */
   async envoyerEmail(data: {
     idProspect: string
+    idAction?: number
     destinataire: string
     objet: string
     contenu: string
