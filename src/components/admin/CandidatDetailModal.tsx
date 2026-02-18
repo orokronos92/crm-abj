@@ -89,6 +89,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   const [activeTab, setActiveTab] = useState('general')
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
   const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
+  const [validatingEtape, setValidatingEtape] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchCandidat() {
@@ -123,6 +124,41 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
     if (res.ok) {
       const data = await res.json()
       setCandidat(data)
+    }
+  }
+
+  const handleValiderEtape = async (etape: string) => {
+    if (!candidat) return
+
+    setValidatingEtape(etape)
+
+    try {
+      const response = await fetch('/api/candidats/valider-etape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idCandidat: candidat.id,
+          etape
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Recharger les données du candidat
+        const res = await fetch(`/api/candidats/${candidatId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setCandidat(data)
+        }
+      } else {
+        alert(result.error || 'Erreur lors de la validation de l\'étape')
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
+      alert('Erreur lors de la validation de l\'étape')
+    } finally {
+      setValidatingEtape(null)
     }
   }
 
@@ -313,15 +349,44 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
                       ) : (
                         <Clock className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
                       )}
-                      <span className="text-sm font-medium text-[rgb(var(--foreground))]">
-                        {etape.label}
-                      </span>
-                    </div>
-                    {etape.date && (
-                      <div className="flex items-center gap-2 text-xs text-[rgb(var(--muted-foreground))]">
-                        <Calendar className="w-4 h-4" />
-                        {etape.date}
+                      <div>
+                        <span className="text-sm font-medium text-[rgb(var(--foreground))]">
+                          {etape.label}
+                        </span>
+                        {etape.date && (
+                          <div className="flex items-center gap-2 text-xs text-[rgb(var(--muted-foreground))] mt-1">
+                            <Calendar className="w-3 h-3" />
+                            {etape.date}
+                          </div>
+                        )}
                       </div>
+                    </div>
+
+                    {done ? (
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)]">
+                        <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
+                        <span className="text-sm font-medium text-[rgb(var(--success))]">
+                          Étape validée
+                        </span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleValiderEtape(etape.key)}
+                        disabled={validatingEtape === etape.key}
+                        className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {validatingEtape === etape.key ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin"></div>
+                            Validation...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            Valider l'étape
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
                 )
