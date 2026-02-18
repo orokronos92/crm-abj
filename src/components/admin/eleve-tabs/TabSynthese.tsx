@@ -1,4 +1,7 @@
-import { GraduationCap, Euro, AlertTriangle, Send } from 'lucide-react'
+'use client'
+
+import { useState } from 'react'
+import { GraduationCap, Euro, AlertTriangle, Send, CheckCircle } from 'lucide-react'
 
 interface TabSyntheseProps {
   eleve: any
@@ -6,6 +9,42 @@ interface TabSyntheseProps {
 
 export function TabSynthese({ eleve }: TabSyntheseProps) {
   const hasAlert = eleve.alertes && eleve.alertes.length > 0
+  const [sendingRappel, setSendingRappel] = useState(false)
+  const [rappelSent, setRappelSent] = useState(false)
+
+  const handleEnvoyerRappel = async () => {
+    if (!eleve) return
+
+    setSendingRappel(true)
+    try {
+      const response = await fetch('/api/eleves/envoyer-rappel-paiement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idEleve: eleve.id,
+          numeroDossier: eleve.numero_dossier
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.status === 202 && result.success) {
+        // Demande envoyée avec succès
+        setRappelSent(true)
+        setTimeout(() => setRappelSent(false), 5000) // Reset après 5 secondes
+      } else if (response.status === 409) {
+        // Envoi déjà en cours
+        alert(result.message || 'Un rappel de paiement est déjà en cours pour cet élève')
+      } else {
+        alert(result.error || 'Erreur lors de l\'envoi du rappel de paiement')
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
+      alert('Erreur lors de l\'envoi du rappel de paiement')
+    } finally {
+      setSendingRappel(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -96,9 +135,27 @@ export function TabSynthese({ eleve }: TabSyntheseProps) {
           </div>
         </div>
         {eleve.reste_a_payer > 0 && (
-          <button className="w-full mt-4 px-4 py-2.5 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center justify-center gap-2">
-            <Send className="w-4 h-4" />
-            Envoyer rappel de paiement
+          <button
+            onClick={handleEnvoyerRappel}
+            disabled={sendingRappel || rappelSent}
+            className="w-full mt-4 px-4 py-2.5 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {sendingRappel ? (
+              <>
+                <div className="w-4 h-4 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin"></div>
+                Envoi en cours...
+              </>
+            ) : rappelSent ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Rappel envoyé !
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Envoyer rappel de paiement
+              </>
+            )}
           </button>
         )}
       </div>

@@ -259,5 +259,20 @@ export const eleveWebhooks = {
     contenu: string
   }): Promise<WebhookResponse> {
     return callWebhook('/eleve/envoyer-message', data)
+  },
+
+  /**
+   * Envoyer un rappel de paiement à un élève
+   */
+  async envoyerRappelPaiement(data: {
+    numeroDossier: string
+    idAction?: number
+    nom: string
+    prenom: string
+    email: string
+    telephone?: string
+    montantTotal: number
+  }): Promise<WebhookResponse> {
+    return callWebhook('/eleve/envoyer-rappel-paiement', data)
   }
 }
