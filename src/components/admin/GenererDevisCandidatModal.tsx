@@ -133,7 +133,7 @@ export function GenererDevisCandidatModal({
 
       const result = await response.json()
 
-      if (response.status === 202 && result.success) {
+      if (response.ok && result.success) {
         // Demande envoyée avec succès
         setSubmitted(true)
         // Auto-close après 3 secondes

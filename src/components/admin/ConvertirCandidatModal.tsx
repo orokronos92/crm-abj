@@ -206,7 +206,7 @@ export function ConvertirCandidatModal({
 
       const result = await response.json()
 
-      if (response.status === 202 && result.success) {
+      if (response.ok && result.success) {
         // Conversion lancée avec succès (fire-and-forget)
         setSubmitted(true)
         // Auto-close après 3 secondes

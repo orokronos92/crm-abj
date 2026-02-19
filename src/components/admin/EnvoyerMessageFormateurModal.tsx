@@ -106,7 +106,7 @@ export function EnvoyerMessageFormateurModal({
 
       const result = await response.json()
 
-      if (response.status === 202 && result.success) {
+      if (response.ok && result.success) {
         // Succès : 202 Accepted (traitement en arrière-plan)
         setSent(true)
 

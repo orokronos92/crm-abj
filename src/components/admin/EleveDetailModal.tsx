@@ -128,7 +128,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
 
       const result = await response.json()
 
-      if (response.status === 202 && result.success) {
+      if (response.ok && result.success) {
         alert('Analyse demandée à Marjorie ! Vous serez notifié lorsqu\'elle sera terminée.')
         // Optionnel : recharger après quelques secondes pour voir si l'analyse est déjà dispo
         setTimeout(async () => {

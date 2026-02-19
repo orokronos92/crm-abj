@@ -83,7 +83,7 @@ export function TabSynthese({ eleve }: TabSyntheseProps) {
 
       const result = await response.json()
 
-      if (response.status === 202 && result.success) {
+      if (response.ok && result.success) {
         // Demande envoyée avec succès
         setRappelSent(true)
         setTimeout(() => setRappelSent(false), 5000) // Reset après 5 secondes
