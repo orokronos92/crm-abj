@@ -19,6 +19,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sseManager } from '@/lib/sse-manager'
 
+interface ResponseConfig {
+  callbackUrl?: string                  // URL de callback pour confirmation
+  updateNotification?: boolean          // Mettre à jour la notification automatiquement
+  expectedResponse?: string             // Type de réponse attendue ("email_sent", "pdf_generated", etc.)
+  timeoutSeconds?: number               // Timeout en secondes (défaut: 30s)
+}
+
 interface ActionPayload {
   // === IDENTIFICATION ACTION ===
   actionType: string                    // Ex: "RELANCE_CANDIDAT_EMAIL", "GENERER_DEVIS"
@@ -37,6 +44,9 @@ interface ActionPayload {
 
   // === MÉTADONNÉES SPÉCIFIQUES ===
   metadonnees?: Record<string, any>     // Métadonnées spécifiques à l'action
+
+  // === CONFIGURATION RÉPONSE n8n ===
+  responseConfig?: ResponseConfig       // Configuration callback et timeouts
 
   // === LEGACY (compatibilité) ===
   typeAction?: 'VALIDER' | 'RELANCER' | 'CORRIGER' | 'DECIDER' | 'VERIFIER' | string
@@ -124,6 +134,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Récupérer l'utilisateur depuis le payload (nouveau format) ou mock (legacy)
     const userId = body.decidePar || 1
 
+    // Configuration responseConfig avec valeurs par défaut
+    const responseConfig: ResponseConfig = {
+      callbackUrl: body.responseConfig?.callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhook/callback`,
+      updateNotification: body.responseConfig?.updateNotification !== false, // true par défaut
+      expectedResponse: body.responseConfig?.expectedResponse || 'action_completed',
+      timeoutSeconds: body.responseConfig?.timeoutSeconds || 30
+    }
+
     // Construire le résultat de l'action (nouveau format enrichi)
     const resultatAction = {
       // Nouveau format
@@ -137,6 +155,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       decisionType: body.decisionType,
       commentaire: body.commentaire,
       metadonnees: body.metadonnees,
+      responseConfig,
 
       // Legacy
       action: body.typeAction,
@@ -199,6 +218,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       // Métadonnées
       metadonnees: body.metadonnees || body.metadata,
 
+      // Configuration réponse
+      responseConfig,
+
       // Notification source
       notificationId,
       notificationCategorie: notification.typeAction || '',
@@ -260,6 +282,8 @@ async function callN8nWebhook(data: {
 
   metadonnees?: Record<string, any>      // { documentsManquants: [...] }
 
+  responseConfig?: ResponseConfig        // Configuration callback et timeouts
+
   notificationId: number                 // 42
   notificationCategorie?: string         // "CANDIDAT"
   notificationType?: string              // "DOSSIER_INCOMPLET"
@@ -301,6 +325,9 @@ async function callN8nWebhook(data: {
 
       // Métadonnées
       metadonnees: data.metadonnees,
+
+      // Configuration réponse (callback, timeout)
+      responseConfig: data.responseConfig,
 
       // Notification source
       notificationId: data.notificationId,
