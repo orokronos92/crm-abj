@@ -10,6 +10,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sseManager } from '@/lib/sse-manager'
 
+// Même clé API que l'endpoint d'ingestion
+const API_KEY = process.env.NOTIFICATIONS_API_KEY || 'default-api-key-change-me'
+
 interface CallbackPayload {
   notificationId: number          // ID de la notification source
   status: 'success' | 'error'     // Statut de l'exécution
@@ -22,8 +25,14 @@ interface CallbackPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    // Récupérer le payload
+    // Vérification API Key (header prioritaire, sinon body)
+    const headerApiKey = request.headers.get('X-API-Key')
     const body: CallbackPayload = await request.json()
+    const providedApiKey = headerApiKey || (body as CallbackPayload & { apiKey?: string }).apiKey
+
+    if (!providedApiKey || providedApiKey !== API_KEY) {
+      return NextResponse.json({ error: 'Invalid API Key' }, { status: 401 })
+    }
 
     console.log('[Callback n8n] Reçu:', {
       notificationId: body.notificationId,
@@ -79,27 +88,21 @@ export async function POST(request: NextRequest) {
       actionEffectuee: updated.actionEffectuee
     })
 
-    // Broadcast SSE pour mise à jour temps réel de l'UI
+    // Broadcast SSE dédié action_completed pour que les modals réagissent
     try {
-      sseManager.broadcast({
-        idNotification: updated.idNotification,
-        sourceAgent: notification.sourceAgent || 'n8n',
-        categorie: notification.categorie || 'SYSTEM',
-        type: notification.type || 'ACTION_CALLBACK',
-        priorite: body.status === 'success' ? 'NORMALE' : 'HAUTE',
-        titre: body.status === 'success'
-          ? `Action terminée avec succès`
-          : `Erreur lors de l'action`,
-        message: body.status === 'success'
-          ? `Réponse: ${body.response}`
-          : `Erreur: ${body.error || 'Erreur inconnue'}`,
-        audience: notification.audience || 'ADMIN',
-        idUtilisateurCible: notification.idUtilisateurCible,
-        lienAction: notification.lienAction,
-        actionRequise: false,
-        creeLe: new Date()
-      })
-      console.log('[Callback n8n] SSE broadcast envoyé')
+      // Déterminer le rôle cible selon l'audience de la notification
+      const targetRole = notification.audience === 'ADMIN' ? 'admin'
+        : notification.audience === 'FORMATEUR' ? 'professeur'
+        : notification.audience === 'ELEVE' ? 'eleve'
+        : undefined // TOUS → broadcast à tous
+
+      sseManager.broadcastActionCompleted(
+        body.notificationId,
+        body.response,
+        body.status, // 'success' ou 'error'
+        targetRole
+      )
+      console.log(`[Callback n8n] SSE action_completed broadcast: ${body.status} pour notification ${body.notificationId}`)
     } catch (sseError) {
       console.error('[Callback n8n] Erreur SSE broadcast:', sseError)
       // Ne pas faire échouer le callback pour une erreur SSE
@@ -122,4 +125,16 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// OPTIONS pour CORS si n8n est sur un autre domaine
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
+    },
+  })
 }

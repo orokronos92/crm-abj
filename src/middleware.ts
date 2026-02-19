@@ -51,7 +51,14 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token
+      authorized: ({ token, req }) => {
+        // Laisser passer les webhooks n8n sans authentification
+        // La sécurité est gérée par API Key dans la route elle-même
+        const path = req.nextUrl.pathname
+        if (path.startsWith('/api/webhook/')) return true
+        if (path.startsWith('/api/notifications/ingest')) return true
+        return !!token
+      }
     }
   }
 )
