@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Mail, CheckCircle, Loader2, User, FileText, GraduationCap } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface EnvoyerMessageCandidatModalProps {
   candidat: {
@@ -24,6 +25,7 @@ export function EnvoyerMessageCandidatModal({
 }: EnvoyerMessageCandidatModalProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const { createActionNotification } = useActionNotification()
 
   const [formData, setFormData] = useState({
     objet: '',
@@ -43,16 +45,65 @@ export function EnvoyerMessageCandidatModal({
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/candidats/envoyer-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'CANDIDAT',
+        type: 'ENVOI_MESSAGE',
+        priorite: 'NORMALE',
+        titre: `Message envoyé à ${candidat.prenom} ${candidat.nom}`,
+        message: `Objet: ${formData.objet} - Dossier ${candidat.numeroDossier}`,
+        entiteType: 'candidat',
+        entiteId: candidat.idCandidat.toString(),
+        actionRequise: true,
+        typeAction: 'RELANCER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'ENVOYER_MESSAGE_CANDIDAT',
+        actionSource: 'admin.candidats.detail',
+        actionButton: 'envoyer_message',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'candidat',
+        entiteId: candidat.idCandidat.toString(),
+        entiteData: {
           idCandidat: candidat.idCandidat,
           numeroDossier: candidat.numeroDossier,
-          destinataire: candidat.email,
+          nom: candidat.nom,
+          prenom: candidat.prenom,
+          email: candidat.email,
+          telephone: candidat.telephone,
+          formation: candidat.formation
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'envoi_message',
+        commentaire: formData.objet,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
           objet: formData.objet,
-          contenu: formData.contenu
-        })
+          contenu: formData.contenu,
+          destinataire: candidat.email,
+          numeroDossier: candidat.numeroDossier
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'message_sent',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

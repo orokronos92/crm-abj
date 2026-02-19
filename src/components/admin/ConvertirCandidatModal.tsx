@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, User, Calendar, GraduationCap, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface ConvertirCandidatModalProps {
   prospect: {
@@ -46,6 +47,7 @@ export function ConvertirCandidatModal({
   const [conversionMessage, setConversionMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const { createActionNotification } = useActionNotification()
 
   const [formData, setFormData] = useState({
     formationRetenue: prospect.formationPrincipale || '',
@@ -145,15 +147,61 @@ export function ConvertirCandidatModal({
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/prospects/convertir-candidat', {
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'PROSPECT',
+        type: 'CONVERSION_CANDIDAT',
+        priorite: 'NORMALE',
+        titre: `Conversion prospect → candidat : ${prospect.prenom} ${prospect.nom}`,
+        message: `Conversion en candidat pour ${formData.formationRetenue}${formData.sessionVisee ? ` - Session: ${formData.sessionVisee}` : ''}`,
+        entiteType: 'prospect',
+        entiteId: prospect.idProspect,
+        actionRequise: true,
+        typeAction: 'VALIDER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'CONVERTIR_PROSPECT_CANDIDAT',
+        actionSource: 'admin.prospects.detail',
+        actionButton: 'convertir_candidat',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'prospect',
+        entiteId: prospect.idProspect,
+        entiteData: {
+          nom: prospect.nom,
+          prenom: prospect.prenom,
+          email: prospect.email,
+          formationPrincipale: prospect.formationPrincipale
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'conversion_candidat',
+        commentaire: `Conversion en candidat pour ${formData.formationRetenue}`,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
+          formationRetenue: formData.formationRetenue,
+          sessionVisee: formData.sessionVisee || null,
+          dateDebutSouhaitee: formData.dateDebutSouhaitee || null
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'candidat_created',
+          timeoutSeconds: 45
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idProspect: prospect.idProspect,
-          formationRetenue: formData.formationRetenue,
-          sessionVisee: formData.sessionVisee || undefined,
-          dateDebutSouhaitee: formData.dateDebutSouhaitee || undefined
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Mail, CheckCircle, Loader2, User, FileText } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface EnvoyerEmailModalProps {
   prospect: {
@@ -23,6 +24,7 @@ export function EnvoyerEmailModal({
 }: EnvoyerEmailModalProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const { createActionNotification, userId } = useActionNotification()
 
   const [formData, setFormData] = useState({
     objet: '',
@@ -42,15 +44,62 @@ export function EnvoyerEmailModal({
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/prospects/envoyer-email', {
+      // 1. Créer une vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'PROSPECT',
+        type: 'ENVOI_EMAIL',
+        priorite: 'NORMALE',
+        titre: `Email à ${prospect.prenom} ${prospect.nom}`,
+        message: `Objet: ${formData.objet}`,
+        entiteType: 'prospect',
+        entiteId: prospect.idProspect,
+        actionRequise: true,
+        typeAction: 'RELANCER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'RELANCE_PROSPECT_EMAIL',
+        actionSource: 'admin.prospects.detail',
+        actionButton: 'envoyer_email',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'prospect',
+        entiteId: prospect.idProspect,
+        entiteData: {
+          nom: prospect.nom,
+          prenom: prospect.prenom,
+          email: prospect.email,
+          telephone: prospect.telephone,
+          formationPrincipale: prospect.formationPrincipale
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId, // ID utilisateur depuis NextAuth session
+        decisionType: 'envoi_email',
+        commentaire: formData.objet,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
+          objet: formData.objet,
+          contenu: formData.contenu,
+          destinataire: prospect.email
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'email_sent',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idProspect: prospect.idProspect,
-          destinataire: prospect.email,
-          objet: formData.objet,
-          contenu: formData.contenu
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

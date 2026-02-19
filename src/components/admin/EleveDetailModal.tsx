@@ -13,6 +13,7 @@ import { TabDocuments } from './eleve-tabs/TabDocuments'
 import { TabHistorique } from './eleve-tabs/TabHistorique'
 import { TabAnalyseIA } from './eleve-tabs/TabAnalyseIA'
 import { EnvoyerMessageEleveModal } from './EnvoyerMessageEleveModal'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface EleveDetailModalProps {
   eleveId: number
@@ -26,6 +27,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
   const [error, setError] = useState<string | null>(null)
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
   const [demandingAnalyse, setDemandingAnalyse] = useState(false)
+  const { createActionNotification } = useActionNotification()
 
   useEffect(() => {
     const fetchEleve = async () => {
@@ -64,13 +66,64 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
 
     setDemandingAnalyse(true)
     try {
-      const response = await fetch('/api/eleves/demander-analyse', {
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'ELEVE',
+        type: 'DEMANDE_ANALYSE',
+        priorite: 'NORMALE',
+        titre: `Analyse IA demandée pour ${eleve.prenom} ${eleve.nom}`,
+        message: `Demande d'analyse complète du profil - Dossier ${eleve.numeroDossier}`,
+        entiteType: 'eleve',
+        entiteId: eleve.id.toString(),
+        actionRequise: true,
+        typeAction: 'ANALYSER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'DEMANDER_ANALYSE_ELEVE',
+        actionSource: 'admin.eleves.detail',
+        actionButton: 'demander_analyse',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'eleve',
+        entiteId: eleve.id.toString(),
+        entiteData: {
+          idEleve: eleve.id,
+          numeroDossier: eleve.numeroDossier,
+          nom: eleve.nom,
+          prenom: eleve.prenom,
+          email: eleve.email,
+          telephone: eleve.telephone,
+          formation: eleve.formation
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'demande_analyse',
+        commentaire: `Demande d'analyse IA pour ${eleve.prenom} ${eleve.nom}`,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
+          numeroDossier: eleve.numeroDossier,
+          formation: eleve.formation,
+          typeAnalyse: 'profil_complet'
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'analyse_generated',
+          timeoutSeconds: 120 // Analyse IA peut prendre du temps
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idEleve: eleve.id,
-          numeroDossier: eleve.numeroDossier
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

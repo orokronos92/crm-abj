@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { GraduationCap, Euro, AlertTriangle, Send, CheckCircle } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface TabSyntheseProps {
   eleve: any
@@ -11,19 +12,73 @@ export function TabSynthese({ eleve }: TabSyntheseProps) {
   const hasAlert = eleve.alertes && eleve.alertes.length > 0
   const [sendingRappel, setSendingRappel] = useState(false)
   const [rappelSent, setRappelSent] = useState(false)
+  const { createActionNotification } = useActionNotification()
 
   const handleEnvoyerRappel = async () => {
     if (!eleve) return
 
     setSendingRappel(true)
     try {
-      const response = await fetch('/api/eleves/envoyer-rappel-paiement', {
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'ELEVE',
+        type: 'RAPPEL_PAIEMENT',
+        priorite: 'HAUTE',
+        titre: `Rappel de paiement envoyé à ${eleve.prenom} ${eleve.nom}`,
+        message: `Reste à payer: ${eleve.reste_a_payer.toLocaleString('fr-FR')}€ - Dossier ${eleve.numero_dossier}`,
+        entiteType: 'eleve',
+        entiteId: eleve.id.toString(),
+        actionRequise: true,
+        typeAction: 'RELANCER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'ENVOYER_RAPPEL_PAIEMENT_ELEVE',
+        actionSource: 'admin.eleves.synthese',
+        actionButton: 'envoyer_rappel_paiement',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'eleve',
+        entiteId: eleve.id.toString(),
+        entiteData: {
+          idEleve: eleve.id,
+          numeroDossier: eleve.numero_dossier,
+          nom: eleve.nom,
+          prenom: eleve.prenom,
+          email: eleve.email,
+          telephone: eleve.telephone,
+          formation: eleve.formation
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'relance_paiement',
+        commentaire: `Rappel de paiement pour ${eleve.prenom} ${eleve.nom}`,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
+          numeroDossier: eleve.numero_dossier,
+          montantTotal: eleve.montant_total,
+          montantPaye: eleve.montant_paye,
+          resteAPayer: eleve.reste_a_payer,
+          modeFinancement: eleve.financement
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'rappel_sent',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idEleve: eleve.id,
-          numeroDossier: eleve.numero_dossier
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

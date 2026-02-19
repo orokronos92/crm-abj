@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, FileText, CheckCircle, Loader2, Euro, GraduationCap, CreditCard, User, MessageSquare } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface GenererDevisCandidatModalProps {
   candidat: {
@@ -40,6 +41,7 @@ export function GenererDevisCandidatModal({
 }: GenererDevisCandidatModalProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const { createActionNotification } = useActionNotification()
 
   // Trouver la formation par défaut
   const formationParDefaut = FORMATIONS_TARIFS.find(f =>
@@ -65,17 +67,68 @@ export function GenererDevisCandidatModal({
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/candidats/generer-devis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'CANDIDAT',
+        type: 'GENERATION_DEVIS',
+        priorite: 'NORMALE',
+        titre: `Devis généré pour candidat ${candidat.numeroDossier}`,
+        message: `Devis ${formationSelectionnee.nom} (${formationSelectionnee.tarif}€) - Financement ${formData.modeFinancement}`,
+        entiteType: 'candidat',
+        entiteId: candidat.idCandidat.toString(),
+        actionRequise: true,
+        typeAction: 'GENERER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'GENERER_DEVIS_CANDIDAT',
+        actionSource: 'admin.candidats.detail',
+        actionButton: 'generer_devis',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'candidat',
+        entiteId: candidat.idCandidat.toString(),
+        entiteData: {
           idCandidat: candidat.idCandidat,
           numeroDossier: candidat.numeroDossier,
+          nom: candidat.nom,
+          prenom: candidat.prenom,
+          email: candidat.email,
+          telephone: candidat.telephone,
+          formation: candidat.formation
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'generation_devis',
+        commentaire: formData.messageMarjorie || `Génération devis pour ${formationSelectionnee.nom}`,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
           formationCode: formData.formationCode,
+          formationNom: formationSelectionnee.nom,
           montant: formationSelectionnee.tarif,
+          duree: formationSelectionnee.duree,
           modeFinancement: formData.modeFinancement,
-          messageMarjorie: formData.messageMarjorie || undefined
-        })
+          instructionsSpeciales: formData.messageMarjorie,
+          numeroDossier: candidat.numeroDossier
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'devis_generated',
+          timeoutSeconds: 60 // Génération PDF peut prendre du temps
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

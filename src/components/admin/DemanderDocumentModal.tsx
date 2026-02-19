@@ -8,6 +8,7 @@
 
 import { useState } from 'react'
 import { X, FileText, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface DemanderDocumentModalProps {
   formateur: {
@@ -42,6 +43,7 @@ export function DemanderDocumentModal({
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { createActionNotification } = useActionNotification()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,18 +57,63 @@ export function DemanderDocumentModal({
     setError(null)
 
     try {
-      const response = await fetch('/api/formateurs/demander-document', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'FORMATEUR',
+        type: 'DEMANDE_DOCUMENT',
+        priorite: 'NORMALE',
+        titre: `Demande de document envoyée à ${formateur.prenom} ${formateur.nom}`,
+        message: `Document demandé: ${document.libelle} - Motif: ${motifSelectionne}`,
+        entiteType: 'formateur',
+        entiteId: formateur.idFormateur.toString(),
+        actionRequise: true,
+        typeAction: 'RELANCER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'DEMANDER_DOCUMENT_FORMATEUR',
+        actionSource: 'admin.formateurs.documents',
+        actionButton: 'demander_document',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'formateur',
+        entiteId: formateur.idFormateur.toString(),
+        entiteData: {
           idFormateur: formateur.idFormateur,
-          destinataire: formateur.email,
+          nom: formateur.nom,
+          prenom: formateur.prenom,
+          email: formateur.email
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'demande_document',
+        commentaire: `Demande de document : ${document.libelle}`,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
           codeTypeDocument: document.codeTypeDocument,
           libelleDocument: document.libelle,
-          motif: motifSelectionne
-        })
+          statutActuel: document.statut,
+          motif: motifSelectionne,
+          destinataire: formateur.email
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'demande_sent',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

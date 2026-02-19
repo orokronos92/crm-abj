@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Send, CheckCircle, Loader2, Mail, User, MessageSquare } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface EnvoyerMessageEleveModalProps {
   eleve: {
@@ -24,6 +25,7 @@ export function EnvoyerMessageEleveModal({
 }: EnvoyerMessageEleveModalProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const { createActionNotification } = useActionNotification()
 
   const [formData, setFormData] = useState({
     objet: '',
@@ -43,16 +45,65 @@ export function EnvoyerMessageEleveModal({
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/eleves/envoyer-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'ELEVE',
+        type: 'ENVOI_MESSAGE',
+        priorite: 'NORMALE',
+        titre: `Message envoyé à ${eleve.prenom} ${eleve.nom}`,
+        message: `Objet: ${formData.objet} - Dossier ${eleve.numeroDossier}`,
+        entiteType: 'eleve',
+        entiteId: eleve.idEleve.toString(),
+        actionRequise: true,
+        typeAction: 'RELANCER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'ENVOYER_MESSAGE_ELEVE',
+        actionSource: 'admin.eleves.detail',
+        actionButton: 'envoyer_message',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'eleve',
+        entiteId: eleve.idEleve.toString(),
+        entiteData: {
           idEleve: eleve.idEleve,
           numeroDossier: eleve.numeroDossier,
-          destinataire: eleve.email,
+          nom: eleve.nom,
+          prenom: eleve.prenom,
+          email: eleve.email,
+          telephone: eleve.telephone,
+          formation: eleve.formation
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'envoi_message',
+        commentaire: formData.objet,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
           objet: formData.objet,
-          contenu: formData.contenu
-        })
+          contenu: formData.contenu,
+          destinataire: eleve.email,
+          numeroDossier: eleve.numeroDossier
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'message_sent',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

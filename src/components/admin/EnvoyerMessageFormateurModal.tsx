@@ -8,6 +8,7 @@
 
 import { useState } from 'react'
 import { X, Send, Mail, Loader2, CheckCircle } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface EnvoyerMessageFormateurModalProps {
   formateur: {
@@ -31,6 +32,7 @@ export function EnvoyerMessageFormateurModal({
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { createActionNotification } = useActionNotification()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,17 +46,62 @@ export function EnvoyerMessageFormateurModal({
     setError(null)
 
     try {
-      const response = await fetch('/api/formateurs/envoyer-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'FORMATEUR',
+        type: 'ENVOI_MESSAGE',
+        priorite: 'NORMALE',
+        titre: `Message envoyé à ${formateur.prenom} ${formateur.nom}`,
+        message: `Objet: ${objet.trim()}`,
+        entiteType: 'formateur',
+        entiteId: formateur.idFormateur.toString(),
+        actionRequise: true,
+        typeAction: 'RELANCER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'ENVOYER_MESSAGE_FORMATEUR',
+        actionSource: 'admin.formateurs.detail',
+        actionButton: 'envoyer_message',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'formateur',
+        entiteId: formateur.idFormateur.toString(),
+        entiteData: {
           idFormateur: formateur.idFormateur,
-          destinataire: formateur.email,
+          nom: formateur.nom,
+          prenom: formateur.prenom,
+          email: formateur.email,
+          telephone: formateur.telephone
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'envoi_message',
+        commentaire: objet.trim(),
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
           objet: objet.trim(),
-          contenu: message.trim()
-        })
+          contenu: message.trim(),
+          destinataire: formateur.email
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'message_sent',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

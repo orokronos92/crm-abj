@@ -28,6 +28,7 @@ import {
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { EnvoyerMessageCandidatModal } from './EnvoyerMessageCandidatModal'
 import { GenererDevisCandidatModal } from './GenererDevisCandidatModal'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface CandidatDetail {
   id: number
@@ -90,6 +91,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
   const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
   const [validatingEtape, setValidatingEtape] = useState<string | null>(null)
+  const { createActionNotification } = useActionNotification()
 
   useEffect(() => {
     async function fetchCandidat() {
@@ -133,13 +135,64 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
     setValidatingEtape(etape)
 
     try {
-      const response = await fetch('/api/candidats/valider-etape', {
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'CANDIDAT',
+        type: 'VALIDATION_ETAPE',
+        priorite: 'NORMALE',
+        titre: `Étape ${etape} validée pour ${candidat.prenom} ${candidat.nom}`,
+        message: `Validation étape ${etape} - Dossier ${candidat.numero_dossier}`,
+        entiteType: 'candidat',
+        entiteId: candidat.id.toString(),
+        actionRequise: true,
+        typeAction: 'VALIDER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'VALIDER_ETAPE_CANDIDAT',
+        actionSource: 'admin.candidats.detail',
+        actionButton: 'valider_etape',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'candidat',
+        entiteId: candidat.id.toString(),
+        entiteData: {
+          idCandidat: candidat.id,
+          numeroDossier: candidat.numero_dossier,
+          nom: candidat.nom,
+          prenom: candidat.prenom,
+          email: candidat.email,
+          telephone: candidat.telephone,
+          formation: candidat.formation
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'validation_etape',
+        commentaire: `Validation étape : ${etape}`,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
+          etape: etape,
+          numeroDossier: candidat.numero_dossier,
+          statutDossier: candidat.statut_dossier
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'etape_validated',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idCandidat: candidat.id,
-          etape
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

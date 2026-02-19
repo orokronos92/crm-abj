@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Send, CheckCircle, Loader2, Mail, User, Phone, MapPin } from 'lucide-react'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface EnvoyerDossierModalProps {
   prospect: {
@@ -25,17 +26,69 @@ export function EnvoyerDossierModal({
 }: EnvoyerDossierModalProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const { createActionNotification } = useActionNotification()
 
   const handleSubmit = async () => {
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/prospects/envoyer-dossier', {
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'PROSPECT',
+        type: 'ENVOI_DOSSIER',
+        priorite: 'NORMALE',
+        titre: `Dossier envoyé à ${prospect.prenom} ${prospect.nom}`,
+        message: `Lien formulaire candidature envoyé pour ${prospect.formationPrincipale || 'formation'}`,
+        entiteType: 'prospect',
+        entiteId: prospect.idProspect,
+        actionRequise: true,
+        typeAction: 'RELANCER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'ENVOYER_DOSSIER_PROSPECT',
+        actionSource: 'admin.prospects.detail',
+        actionButton: 'envoyer_dossier',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'prospect',
+        entiteId: prospect.idProspect,
+        entiteData: {
+          nom: prospect.nom,
+          prenom: prospect.prenom,
+          email: prospect.email,
+          telephone: prospect.telephone,
+          ville: prospect.ville,
+          codePostal: prospect.codePostal,
+          formationPrincipale: prospect.formationPrincipale
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'envoi_dossier_complet',
+        commentaire: 'Envoi du lien formulaire dossier de candidature',
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
+          formationCiblee: prospect.formationPrincipale,
+          destinataire: prospect.email
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'dossier_sent',
+          timeoutSeconds: 30
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idProspect: prospect.idProspect
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()

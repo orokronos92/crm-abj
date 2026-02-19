@@ -13,6 +13,7 @@ import { FormationCAPForm } from './session-form/FormationCAPForm'
 import { SessionReviewPanel } from './SessionReviewPanel'
 import { SessionProposalReview } from './SessionProposalReview'
 import type { SessionType, SessionFormData, SessionProposal } from './session-form/session-form.types'
+import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface SessionFormModalProps {
   onClose: () => void
@@ -29,6 +30,7 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
   const [proposal, setProposal] = useState<SessionProposal | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { createActionNotification } = useActionNotification()
 
   // Navigation entre étapes
   const handleTypeSelected = (type: SessionType) => {
@@ -59,13 +61,59 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
     setError(null)
 
     try {
-      const response = await fetch('/api/sessions/validate', {
+      // 1. Créer vraie notification en BDD
+      const { notificationId, userId: currentUserId } = await createActionNotification({
+        categorie: 'SESSION',
+        type: 'CREATION_SESSION',
+        priorite: 'NORMALE',
+        titre: `Nouvelle session ${sessionType} créée`,
+        message: `Validation IA en cours pour ${sessionType === 'CAP' ? 'Formation CAP' : 'Formation courte'}`,
+        entiteType: 'session',
+        entiteId: 'NEW_SESSION', // Sera mis à jour avec l'ID réel après création
+        actionRequise: true,
+        typeAction: 'VALIDER'
+      })
+
+      // 2. Construire le payload enrichi
+      const payload = {
+        // === IDENTIFICATION ACTION ===
+        actionType: 'CREER_SESSION',
+        actionSource: 'admin.sessions.creation',
+        actionButton: 'valider_session',
+
+        // === CONTEXTE MÉTIER ===
+        entiteType: 'session',
+        entiteId: 'NEW_SESSION', // Sera remplacé par l'ID session créée après validation IA
+        entiteData: {
+          type: sessionType,
+          formData: formData,
+          typeSession: sessionType === 'CAP' ? 'Formation CAP' : 'Formation courte'
+        },
+
+        // === DÉCISION UTILISATEUR ===
+        decidePar: currentUserId,
+        decisionType: 'creation_session',
+        commentaire: `Création session ${sessionType}`,
+
+        // === MÉTADONNÉES SPÉCIFIQUES ===
+        metadonnees: {
+          sessionType: sessionType,
+          formData: formData
+        },
+
+        // === CONFIGURATION RÉPONSE ===
+        responseConfig: {
+          callbackUrl: `${window.location.origin}/api/webhook/callback`,
+          updateNotification: true,
+          expectedResponse: 'session_created',
+          timeoutSeconds: 60 // Validation IA peut prendre du temps
+        }
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: sessionType,
-          data: formData
-        })
+        body: JSON.stringify(payload)
       })
 
       if (!response.ok) {
