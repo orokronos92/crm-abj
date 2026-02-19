@@ -63,7 +63,8 @@
       "Bash(scripts/test-carte-provisoire-complete.ts)",
       "Bash(scripts/check-formations.ts)",
       "Bash(echo:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

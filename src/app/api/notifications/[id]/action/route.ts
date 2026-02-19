@@ -20,9 +20,27 @@ import prisma from '@/lib/prisma'
 import { sseManager } from '@/lib/sse-manager'
 
 interface ActionPayload {
-  typeAction: 'VALIDER' | 'RELANCER' | 'CORRIGER' | 'DECIDER' | 'VERIFIER' | string
+  // === IDENTIFICATION ACTION ===
+  actionType: string                    // Ex: "RELANCE_CANDIDAT_EMAIL", "GENERER_DEVIS"
+  actionSource: string                  // Ex: "admin.candidats.detail", "admin.prospects.list"
+  actionButton: string                  // Ex: "relancer_email", "generer_devis"
+
+  // === CONTEXTE MÉTIER ===
+  entiteType: 'prospect' | 'candidat' | 'eleve' | 'formateur' | 'session' | 'document'
+  entiteId: string                      // ID ou numéro dossier
+  entiteData?: Record<string, any>      // Données contextuelles complètes
+
+  // === DÉCISION UTILISATEUR ===
+  decidePar: number                     // idUtilisateur qui effectue l'action
+  decisionType: string                  // Type de décision prise
+  commentaire?: string                  // Commentaire optionnel
+
+  // === MÉTADONNÉES SPÉCIFIQUES ===
+  metadonnees?: Record<string, any>     // Métadonnées spécifiques à l'action
+
+  // === LEGACY (compatibilité) ===
+  typeAction?: 'VALIDER' | 'RELANCER' | 'CORRIGER' | 'DECIDER' | 'VERIFIER' | string
   resultat?: string
-  commentaire?: string
   metadata?: Record<string, any>
 }
 
@@ -47,11 +65,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Récupérer le payload
     const body: ActionPayload = await request.json()
 
-    if (!body.typeAction) {
+    // Support du nouveau format ET de l'ancien (legacy)
+    const actionType = body.actionType || body.typeAction
+    if (!actionType) {
       return NextResponse.json(
-        { error: 'Type d\'action requis' },
+        { error: 'actionType requis' },
         { status: 400 }
       )
+    }
+
+    // Validation du nouveau format (si actionType est défini)
+    if (body.actionType) {
+      if (!body.actionSource || !body.actionButton || !body.entiteType || !body.entiteId || !body.decidePar || !body.decisionType) {
+        return NextResponse.json(
+          { error: 'Payload incomplet. Requis: actionType, actionSource, actionButton, entiteType, entiteId, decidePar, decisionType' },
+          { status: 400 }
+        )
+      }
     }
 
     // Vérifier que la notification existe et nécessite une action
@@ -91,9 +121,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Pour le moment, on simule l'utilisateur qui effectue l'action
-    // TODO: Récupérer depuis la session NextAuth
-    const mockUserId = 1
+    // Récupérer l'utilisateur depuis le payload (nouveau format) ou mock (legacy)
+    const userId = body.decidePar || 1
+
+    // Construire le résultat de l'action (nouveau format enrichi)
+    const resultatAction = {
+      // Nouveau format
+      actionType: body.actionType || body.typeAction,
+      actionSource: body.actionSource,
+      actionButton: body.actionButton,
+      entiteType: body.entiteType,
+      entiteId: body.entiteId,
+      entiteData: body.entiteData,
+      decidePar: userId,
+      decisionType: body.decisionType,
+      commentaire: body.commentaire,
+      metadonnees: body.metadonnees,
+
+      // Legacy
+      action: body.typeAction,
+      resultat: body.resultat || 'success',
+      metadata: body.metadata,
+
+      // Timestamp
+      timestamp: new Date().toISOString()
+    }
 
     // Mettre à jour la notification
     const updated = await prisma.notification.update({
@@ -101,14 +153,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       data: {
         actionEffectuee: true,
         dateAction: new Date(),
-        actionPar: mockUserId,
-        resultatAction: JSON.stringify({
-          action: body.typeAction,
-          resultat: body.resultat || 'success',
-          commentaire: body.commentaire,
-          metadata: body.metadata,
-          timestamp: new Date().toISOString()
-        })
+        actionPar: userId,
+        resultatAction: JSON.stringify(resultatAction)
       },
       select: {
         idNotification: true,
@@ -124,8 +170,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
       sseManager.broadcastActionCompleted(
         notificationId,
-        body.typeAction,
-        body.resultat || 'success',
+        actionType,
+        body.resultat || body.decisionType || 'success',
         'admin' // TODO: adapter selon le rôle réel
       )
       console.log(`[SSE] Action completed broadcast pour notification ${notificationId}`)
@@ -133,19 +179,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       console.error('[SSE] Erreur broadcast action:', sseError)
     }
 
-    // Appeler le webhook n8n pour déclencher des actions automatiques
-    if (notification.sourceWorkflow) {
-      await callN8nWebhook({
-        notificationId,
-        typeAction: body.typeAction,
-        resultat: body.resultat || 'success',
-        entiteType: notification.entiteType,
-        entiteId: notification.entiteId,
-        commentaire: body.commentaire,
-        executedBy: mockUserId,
-        metadata: body.metadata
-      })
-    }
+    // ✅ APPEL WEBHOOK n8n avec payload ENRICHI
+    await callN8nWebhook({
+      // Contexte action
+      actionType: body.actionType || body.typeAction || '',
+      actionSource: body.actionSource,
+      actionButton: body.actionButton,
+
+      // Entité métier (priorité au nouveau format)
+      entiteType: body.entiteType || notification.entiteType || '',
+      entiteId: body.entiteId || notification.entiteId || '',
+      entiteData: body.entiteData,
+
+      // Décision utilisateur
+      decidePar: userId,
+      decisionType: body.decisionType || body.resultat || 'success',
+      commentaire: body.commentaire,
+
+      // Métadonnées
+      metadonnees: body.metadonnees || body.metadata,
+
+      // Notification source
+      notificationId,
+      notificationCategorie: notification.typeAction || '',
+      notificationType: notification.titre,
+      notificationTitre: notification.titre,
+
+      // Legacy
+      typeAction: body.typeAction,
+      resultat: body.resultat,
+      executedBy: userId,
+      metadata: body.metadata
+    })
 
     // Logger l'action dans l'historique
     await logAction(notificationId, body, mockUserId)
@@ -155,9 +220,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       message: 'Action exécutée avec succès',
       data: {
         notificationId: updated.idNotification,
-        actionExecutee: body.typeAction,
-        resultat: body.resultat || 'success',
-        dateAction: updated.dateAction
+        actionExecutee: actionType,
+        actionSource: body.actionSource,
+        decisionType: body.decisionType || body.resultat || 'success',
+        dateAction: updated.dateAction,
+        webhookEnvoye: true
       }
     })
 
@@ -175,15 +242,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 /**
  * Appelle le webhook n8n pour déclencher des actions automatiques
+ * Payload ENRICHI avec contexte complet pour dispatch intelligent
  */
 async function callN8nWebhook(data: {
-  notificationId: number
-  typeAction: string
-  resultat: string
-  entiteType: string | null
-  entiteId: string | null
-  commentaire?: string
-  executedBy: number
+  // === NOUVEAU FORMAT ENRICHI ===
+  actionType?: string                    // "RELANCE_CANDIDAT_EMAIL"
+  actionSource?: string                  // "admin.candidats.detail"
+  actionButton?: string                  // "relancer_email"
+
+  entiteType: string | null              // "candidat"
+  entiteId: string | null                // "DUMI15091992"
+  entiteData?: Record<string, any>       // { nom, prenom, email, ... }
+
+  decidePar?: number                     // 1
+  decisionType?: string                  // "relance_email"
+  commentaire?: string                   // "Relance pour documents"
+
+  metadonnees?: Record<string, any>      // { documentsManquants: [...] }
+
+  notificationId: number                 // 42
+  notificationCategorie?: string         // "CANDIDAT"
+  notificationType?: string              // "DOSSIER_INCOMPLET"
+  notificationTitre?: string             // "Documents manquants"
+
+  // === LEGACY ===
+  typeAction?: string
+  resultat?: string
+  executedBy?: number
   metadata?: any
 }) {
   try {
@@ -193,23 +278,66 @@ async function callN8nWebhook(data: {
       return
     }
 
-    const response = await fetch(`${webhookUrl}/notification-action`, {
+    // Construire le payload complet pour n8n
+    const payload = {
+      // Timestamp et source
+      timestamp: new Date().toISOString(),
+      source: 'crm-abj',
+
+      // Contexte action (nouveau format)
+      actionType: data.actionType,
+      actionSource: data.actionSource,
+      actionButton: data.actionButton,
+
+      // Entité métier
+      entiteType: data.entiteType,
+      entiteId: data.entiteId,
+      entiteData: data.entiteData,
+
+      // Décision utilisateur
+      decidePar: data.decidePar,
+      decisionType: data.decisionType,
+      commentaire: data.commentaire,
+
+      // Métadonnées
+      metadonnees: data.metadonnees,
+
+      // Notification source
+      notificationId: data.notificationId,
+      notificationCategorie: data.notificationCategorie,
+      notificationType: data.notificationType,
+      notificationTitre: data.notificationTitre,
+
+      // Legacy (pour compatibilité)
+      typeAction: data.typeAction,
+      resultat: data.resultat,
+      executedBy: data.executedBy,
+      metadata: data.metadata
+    }
+
+    console.log('[n8n] Envoi webhook avec payload enrichi:', {
+      actionType: payload.actionType,
+      actionSource: payload.actionSource,
+      entiteType: payload.entiteType,
+      entiteId: payload.entiteId
+    })
+
+    const response = await fetch(`${webhookUrl}/crm-action`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': process.env.N8N_API_KEY || ''
       },
-      body: JSON.stringify({
-        ...data,
-        timestamp: new Date().toISOString(),
-        source: 'crm-abj'
-      })
+      body: JSON.stringify(payload)
     })
 
     if (!response.ok) {
       console.error('[n8n] Erreur webhook:', response.status, response.statusText)
+      const errorText = await response.text().catch(() => 'Impossible de lire la réponse')
+      console.error('[n8n] Détails erreur:', errorText)
     } else {
-      console.log(`[n8n] Webhook appelé avec succès pour notification ${data.notificationId}`)
+      console.log(`[n8n] ✅ Webhook appelé avec succès pour notification ${data.notificationId}`)
+      console.log(`[n8n] Action: ${payload.actionType} | Entité: ${payload.entiteType}/${payload.entiteId}`)
     }
   } catch (error) {
     console.error('[n8n] Erreur appel webhook:', error)
