@@ -100,7 +100,7 @@ export function EnvoyerDossierModal({
         setTimeout(() => {
           onSuccess()
           onClose()
-        }, 3000)
+        }, 5000)
       } else if (response.status === 409) {
         // Envoi déjà en cours
         alert(result.message || 'Un envoi est déjà en cours pour ce prospect')

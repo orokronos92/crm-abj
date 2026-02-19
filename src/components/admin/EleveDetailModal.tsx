@@ -137,7 +137,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
             const data = await res.json()
             setEleve(data)
           }
-        }, 3000)
+        }, 5000)
       } else if (response.status === 409) {
         alert(result.message || 'Une analyse est déjà en cours pour cet élève')
       } else {

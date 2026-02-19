@@ -213,7 +213,7 @@ export function ConvertirCandidatModal({
         setTimeout(() => {
           onSuccess()
           onClose()
-        }, 3000)
+        }, 5000)
       } else if (response.status === 409) {
         // Conversion déjà en cours
         setConversionEnCours(true)

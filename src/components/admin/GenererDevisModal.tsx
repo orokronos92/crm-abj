@@ -136,7 +136,7 @@ export function GenererDevisModal({
         setTimeout(() => {
           onSuccess()
           onClose()
-        }, 3000)
+        }, 5000)
       } else if (response.status === 409) {
         // Génération déjà en cours
         alert(result.message || 'Une génération de devis est déjà en cours pour ce prospect')
