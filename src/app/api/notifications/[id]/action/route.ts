@@ -213,7 +213,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
     // Logger l'action dans l'historique
-    await logAction(notificationId, body, mockUserId)
+    await logAction(notificationId, body, userId)
 
     return NextResponse.json({
       success: true,
