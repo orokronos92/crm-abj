@@ -12,11 +12,9 @@ import {
   Sparkles,
   Mic,
   Paperclip,
-  MoreVertical,
   User,
   Bot,
   FileText,
-  Download,
   Copy,
   RefreshCw,
   Settings,
@@ -25,43 +23,15 @@ import {
   MessageSquare,
   ChevronDown,
 } from 'lucide-react'
+import { useMarjorieChat } from '@/hooks/use-marjorie-chat'
 
-// Messages mockés
-const MOCK_MESSAGES = [
-  {
-    id: 1,
-    role: 'assistant',
-    content: 'Bonjour ! Je suis Marjorie, votre assistante IA pour le CRM ABJ. Comment puis-je vous aider aujourd\'hui ?',
-    timestamp: '09:00',
-  },
-  {
-    id: 2,
-    role: 'user',
-    content: 'Peux-tu me faire un résumé des nouveaux prospects de cette semaine ?',
-    timestamp: '09:02',
-  },
-  {
-    id: 3,
-    role: 'assistant',
-    content: `Voici le résumé des nouveaux prospects de cette semaine :
-
-📊 **8 nouveaux prospects** ont été ajoutés
-
-**Répartition par formation :**
-• CAP Bijouterie-Joaillerie : 4 prospects
-• Initiation : 2 prospects
-• Perfectionnement : 2 prospects
-
-**Points d'attention :**
-- Sophie Martin (CAP) : Très motivée, financement CPF confirmé ✅
-- Jean Dupont : En attente de validation du financement
-- 3 prospects nécessitent un rappel téléphonique
-
-Souhaitez-vous que je génère un rapport détaillé ou que j'envoie des emails de relance ?`,
-    timestamp: '09:03',
-    suggestions: ['Générer rapport', 'Envoyer emails', 'Voir détails'],
-  },
-]
+// Message de bienvenue initial
+const INITIAL_MESSAGE = {
+  id: 1,
+  role: 'assistant' as const,
+  content: 'Bonjour ! Je suis Marjorie, votre assistante IA pour le CRM ABJ. Comment puis-je vous aider aujourd\'hui ?',
+  timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+}
 
 const QUICK_ACTIONS = [
   { icon: FileText, label: 'Générer un devis', prompt: 'Génère un devis pour' },
@@ -71,35 +41,23 @@ const QUICK_ACTIONS = [
 ]
 
 export default function MarjoriePage() {
-  const [messages, setMessages] = useState(MOCK_MESSAGES)
+  const { messages, isTyping, sendMessage } = useMarjorieChat([INITIAL_MESSAGE])
   const [inputMessage, setInputMessage] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
 
-  const sendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
 
-    // Ajouter le message utilisateur
-    const userMessage = {
-      id: messages.length + 1,
-      role: 'user',
-      content: inputMessage,
-      timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-    }
-    setMessages([...messages, userMessage])
-    setInputMessage('')
-    setIsTyping(true)
+    const messageToSend = inputMessage
+    setInputMessage('') // Vider immédiatement pour meilleure UX
 
-    // Simuler la réponse de Marjorie
-    setTimeout(() => {
-      const assistantMessage = {
-        id: messages.length + 2,
-        role: 'assistant',
-        content: 'Je traite votre demande... Dans une vraie implémentation, je communiquerais avec les webhooks n8n pour exécuter vos actions.',
-        timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      }
-      setMessages(prev => [...prev, assistantMessage])
-      setIsTyping(false)
-    }, 2000)
+    await sendMessage(messageToSend)
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
   }
 
   return (
@@ -223,9 +181,10 @@ export default function MarjoriePage() {
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  onKeyDown={handleKeyPress}
                   placeholder="Demandez-moi n'importe quoi..."
-                  className="w-full px-4 py-3 pr-12 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.2)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-1 focus:ring-[rgba(var(--accent),0.2)]"
+                  disabled={isTyping}
+                  className="w-full px-4 py-3 pr-12 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.2)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-1 focus:ring-[rgba(var(--accent),0.2)] disabled:opacity-50"
                 />
                 <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors">
                   <Mic className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
@@ -233,8 +192,8 @@ export default function MarjoriePage() {
               </div>
 
               <button
-                onClick={sendMessage}
-                disabled={!inputMessage.trim()}
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isTyping}
                 className="px-4 py-3 bg-gradient-to-r from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] text-[rgb(var(--primary))] rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Send className="w-5 h-5" />
