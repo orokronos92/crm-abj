@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * Page Formateurs (Server Component)
  * Liste des formateurs avec fiche détaillée conforme Qualiopi

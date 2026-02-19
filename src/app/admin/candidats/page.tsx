@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * Page Candidats
  * Server Component - Gestion des candidatures

@@ -4,6 +4,8 @@
  * Server Component pour data fetching
  */
 
+export const dynamic = 'force-dynamic'
+
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { DashboardService } from '@/services/dashboard.service'
 import {

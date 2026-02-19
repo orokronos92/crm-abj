@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { EleveService } from '@/services/eleve.service'
 import { ElevesPageClient } from '@/components/admin/ElevesPageClient'
