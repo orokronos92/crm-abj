@@ -166,14 +166,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       timestamp: new Date().toISOString()
     }
 
-    // Mettre à jour la notification
+    // Mettre à jour la notification en PENDING (pas encore confirmé par n8n)
     const updated = await prisma.notification.update({
       where: { idNotification: notificationId },
       data: {
-        actionEffectuee: true,
+        actionEffectuee: false, // Reste false jusqu'au callback n8n
         dateAction: new Date(),
         actionPar: userId,
-        resultatAction: JSON.stringify(resultatAction)
+        resultatAction: JSON.stringify({ ...resultatAction, status: 'pending' })
       },
       select: {
         idNotification: true,
@@ -185,21 +185,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     })
 
-    // Broadcast SSE de la mise à jour
-    try {
-      sseManager.broadcastActionCompleted(
-        notificationId,
-        actionType,
-        body.resultat || body.decisionType || 'success',
-        'admin' // TODO: adapter selon le rôle réel
-      )
-      console.log(`[SSE] Action completed broadcast pour notification ${notificationId}`)
-    } catch (sseError) {
-      console.error('[SSE] Erreur broadcast action:', sseError)
-    }
-
     // ✅ APPEL WEBHOOK n8n avec payload ENRICHI
-    await callN8nWebhook({
+    // Le broadcast SSE n'est PAS envoyé ici — on attend la confirmation de n8n
+    // via /api/webhook/callback pour éviter les notifications prématurées
+    const n8nSuccess = await callN8nWebhook({
       // Contexte action
       actionType: body.actionType || body.typeAction || '',
       actionSource: body.actionSource,
@@ -234,19 +223,55 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       metadata: body.metadata
     })
 
+    // Si n8n a échoué, on met à jour la BDD et on broadcast l'erreur immédiatement
+    if (!n8nSuccess) {
+      await prisma.notification.update({
+        where: { idNotification: notificationId },
+        data: {
+          actionEffectuee: false,
+          resultatAction: JSON.stringify({
+            ...resultatAction,
+            status: 'error',
+            error: 'Échec de la communication avec Marjorie (n8n)'
+          })
+        }
+      })
+
+      try {
+        sseManager.broadcastActionCompleted(
+          notificationId,
+          actionType,
+          'error',
+          'admin'
+        )
+      } catch (sseError) {
+        console.error('[SSE] Erreur broadcast action error:', sseError)
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Échec de la communication avec Marjorie. Veuillez réessayer.',
+          data: { notificationId, status: 'error' }
+        },
+        { status: 502 }
+      )
+    }
+
     // Logger l'action dans l'historique
     await logAction(notificationId, body, userId)
 
     return NextResponse.json({
       success: true,
-      message: 'Action exécutée avec succès',
+      message: 'Action envoyée à Marjorie, en attente de confirmation',
       data: {
         notificationId: updated.idNotification,
         actionExecutee: actionType,
         actionSource: body.actionSource,
-        decisionType: body.decisionType || body.resultat || 'success',
+        decisionType: body.decisionType || body.resultat || 'pending',
         dateAction: updated.dateAction,
-        webhookEnvoye: true
+        webhookEnvoye: true,
+        status: 'pending' // n8n confirmera via callback
       }
     })
 
@@ -266,6 +291,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
  * Appelle le webhook n8n pour déclencher des actions automatiques
  * Payload ENRICHI avec contexte complet pour dispatch intelligent
  */
+// Retourne true si le webhook a été appelé avec succès, false sinon
 async function callN8nWebhook(data: {
   // === NOUVEAU FORMAT ENRICHI ===
   actionType?: string                    // "RELANCE_CANDIDAT_EMAIL"
@@ -299,7 +325,7 @@ async function callN8nWebhook(data: {
     const webhookUrl = process.env.N8N_WEBHOOK_URL
     if (!webhookUrl) {
       console.log('[n8n] Webhook URL non configuré, skip')
-      return
+      return true // Pas d'URL configurée = pas une erreur bloquante (dev/test)
     }
 
     // Construire le payload complet pour n8n
@@ -359,16 +385,17 @@ async function callN8nWebhook(data: {
     })
 
     if (!response.ok) {
-      console.error('[n8n] Erreur webhook:', response.status, response.statusText)
       const errorText = await response.text().catch(() => 'Impossible de lire la réponse')
-      console.error('[n8n] Détails erreur:', errorText)
-    } else {
-      console.log(`[n8n] ✅ Webhook appelé avec succès pour notification ${data.notificationId}`)
-      console.log(`[n8n] Action: ${payload.actionType} | Entité: ${payload.entiteType}/${payload.entiteId}`)
+      console.error('[n8n] Erreur webhook:', response.status, response.statusText, errorText)
+      return false
     }
+
+    console.log(`[n8n] ✅ Webhook appelé avec succès pour notification ${data.notificationId}`)
+    console.log(`[n8n] Action: ${payload.actionType} | Entité: ${payload.entiteType}/${payload.entiteId}`)
+    return true
   } catch (error) {
     console.error('[n8n] Erreur appel webhook:', error)
-    // On ne fait pas échouer l'action pour une erreur webhook
+    return false
   }
 }
 
