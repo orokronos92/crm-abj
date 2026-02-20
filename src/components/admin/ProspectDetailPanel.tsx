@@ -98,7 +98,7 @@ export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }:
         onProspectConverti(prospectId)
       }
       onClose()
-    }, 5500)
+    }, 2000)
   }
 
   const handleEnvoiDossierSuccess = async () => {
