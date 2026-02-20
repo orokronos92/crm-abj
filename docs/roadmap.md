@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-20
+**Dernière mise à jour** : 2026-02-20 (T2 terminée)
 
 ---
 
@@ -23,7 +23,7 @@
 
 ---
 
-## 🔄 EN COURS / À FAIRE
+## ✅ TERMINÉ (suite)
 
 ### T2 — Refonte architecture notifications actions
 
@@ -54,7 +54,29 @@
 6. `GenererDevisCandidatModal.tsx`
 7. `GenererDevisModal.tsx`
 
-**Statut** : Décision architecturale prise, implémentation à planifier
+**Statut** : ✅ TERMINÉ — commit `968b0ec`
+
+**Actions mises en œuvre** :
+- Suppression de `useActionNotification` et `createActionNotification()` dans les 7 modals
+- Remplacement par `correlationId = useRef(crypto.randomUUID())` généré côté client
+- Nouveau hook `use-callback-listener.ts` : écoute SSE filtré par `correlationId` (ou `notificationId` en mode legacy)
+- Nouvel endpoint `POST /api/actions/trigger` : appel direct n8n sans écriture BDD
+- Endpoint `POST /api/webhook/callback` : mode dual — T2 (correlationId → broadcast SSE immédiat) + legacy (notificationId → mise à jour BDD)
+- `sse-manager.ts` : `broadcastActionCompleted` accepte `correlationId` optionnel
+
+**Flux final** :
+1. Clic bouton → `correlationId` UUID généré côté client
+2. `POST /api/actions/trigger` → n8n appelé directement (aucune écriture BDD)
+3. n8n traite → `POST /api/webhook/callback` avec le même `correlationId`
+4. SSE broadcast → `useCallbackListener` détecte → modal passe en `success` ou `error`
+
+**Résultat** : Une notification dans la cloche = une action **confirmée par n8n**. Zéro notification prématurée.
+
+---
+
+## 🔄 EN COURS / À FAIRE
+
+*(Aucune tâche en cours)*
 
 ---
 
