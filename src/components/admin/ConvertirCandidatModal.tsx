@@ -55,7 +55,7 @@ export function ConvertirCandidatModal({
       setSubmitting(false)
       setActionStatus(status)
       if (status === 'success') {
-        setTimeout(() => { onSuccess(); onClose() }, 5000)
+        setTimeout(() => { onSuccess() }, 5000)
       }
     },
     timeoutSeconds: 60
