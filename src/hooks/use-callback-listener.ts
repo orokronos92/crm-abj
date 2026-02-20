@@ -91,8 +91,11 @@ export function useCallbackListener({
         if (status === 'pending') return
 
         // Succès ou erreur → notifier le modal et nettoyer
+        // setTimeout(0) garantit que React a rendu l'état "pending" avant de passer à "success"/"error"
         cleanup()
-        onCallbackRef.current(status, data)
+        setTimeout(() => {
+          onCallbackRef.current(status, data)
+        }, 0)
       } catch (e) {
         console.error('[useCallbackListener] Erreur parsing action_completed:', e)
       }
