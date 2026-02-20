@@ -170,7 +170,8 @@ class SSEManager {
     notificationId: number,
     typeAction: string,
     resultat: string,
-    targetRole?: string
+    targetRole?: string,
+    correlationId?: string
   ): void {
     const clients = targetRole
       ? Array.from(this.clients.values()).filter(c => c.role === targetRole)
@@ -182,7 +183,8 @@ class SSEManager {
         data: {
           notificationId,
           typeAction,
-          resultat
+          resultat,
+          correlationId
         }
       })
     }

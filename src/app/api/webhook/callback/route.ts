@@ -2,8 +2,12 @@
  * Endpoint de callback pour recevoir les réponses de n8n
  * POST /api/webhook/callback
  *
+ * Supporte deux modes :
+ * - Mode legacy : notificationId (notification existante en BDD)
+ * - Mode T2 : correlationId (UUID) sans notification préalable
+ *
  * Appelé par n8n après l'exécution d'un workflow déclenché par une action CRM
- * Permet de mettre à jour la notification et broadcaster via SSE
+ * Permet de broadcaster via SSE pour que les modals réagissent
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -14,44 +18,89 @@ import { sseManager } from '@/lib/sse-manager'
 const API_KEY = process.env.NOTIFICATIONS_API_KEY || 'default-api-key-change-me'
 
 interface CallbackPayload {
-  notificationId: number          // ID de la notification source
+  // === MODE CORRÉLATION ===
+  notificationId?: number         // Mode legacy : ID de la notification source
+  correlationId?: string          // Mode T2 : UUID généré côté client
+
+  // === RÉSULTAT ===
   status: 'success' | 'error'     // Statut de l'exécution
   response: string                // Type de réponse (ex: "email_sent", "pdf_generated")
-  data?: Record<string, any>      // Données additionnelles (ex: emailId, pdfUrl)
+  data?: Record<string, unknown>  // Données additionnelles (ex: emailId, pdfUrl)
   error?: string                  // Message d'erreur si status = error
   executionId?: string            // ID d'exécution n8n pour traçabilité
   timestamp?: string              // ISO timestamp de fin d'exécution
+
+  // === CIBLAGE SSE ===
+  targetRole?: string             // Rôle cible pour le broadcast SSE
+  typeAction?: string             // Type d'action pour le broadcast SSE
 }
 
 export async function POST(request: NextRequest) {
   try {
     // Vérification API Key (header prioritaire, sinon body)
     const headerApiKey = request.headers.get('X-API-Key')
-    const body: CallbackPayload = await request.json()
-    const providedApiKey = headerApiKey || (body as CallbackPayload & { apiKey?: string }).apiKey
+    const body: CallbackPayload & { apiKey?: string } = await request.json()
+    const providedApiKey = headerApiKey || body.apiKey
 
     if (!providedApiKey || providedApiKey !== API_KEY) {
       return NextResponse.json({ error: 'Invalid API Key' }, { status: 401 })
     }
 
+    const hasCorrelationId = !!body.correlationId
+    const hasNotificationId = !!body.notificationId
+
     console.log('[Callback n8n] Reçu:', {
+      correlationId: body.correlationId,
       notificationId: body.notificationId,
       status: body.status,
       response: body.response,
-      executionId: body.executionId
+      executionId: body.executionId,
+      mode: hasCorrelationId ? 'T2 (correlationId)' : 'legacy (notificationId)'
     })
 
-    // Validation des champs requis
-    if (!body.notificationId || !body.status || !body.response) {
+    // Validation : au moins un identifiant de corrélation requis
+    if (!hasCorrelationId && !hasNotificationId) {
       return NextResponse.json(
-        { error: 'Champs requis manquants: notificationId, status, response' },
+        { error: 'Champs requis manquants: correlationId ou notificationId, status, response' },
         { status: 400 }
       )
     }
 
-    // Vérifier que la notification existe
+    if (!body.status || !body.response) {
+      return NextResponse.json(
+        { error: 'Champs requis manquants: status, response' },
+        { status: 400 }
+      )
+    }
+
+    // === MODE T2 : correlationId sans notification en BDD ===
+    if (hasCorrelationId && !hasNotificationId) {
+      try {
+        const targetRole = body.targetRole || 'admin'
+        const typeAction = body.typeAction || body.response
+
+        sseManager.broadcastActionCompleted(
+          0, // pas de notificationId
+          typeAction,
+          body.status,
+          targetRole,
+          body.correlationId
+        )
+        console.log(`[Callback n8n] SSE T2 broadcast: ${body.status} pour correlationId ${body.correlationId}`)
+      } catch (sseError) {
+        console.error('[Callback n8n] Erreur SSE broadcast T2:', sseError)
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Callback T2 traité avec succès',
+        correlationId: body.correlationId
+      })
+    }
+
+    // === MODE LEGACY : notificationId avec notification en BDD ===
     const notification = await prisma.notification.findUnique({
-      where: { idNotification: body.notificationId }
+      where: { idNotification: body.notificationId! }
     })
 
     if (!notification) {
@@ -76,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     // Mettre à jour la notification
     const updated = await prisma.notification.update({
-      where: { idNotification: body.notificationId },
+      where: { idNotification: body.notificationId! },
       data: {
         actionEffectuee: body.status === 'success',
         resultatAction: JSON.stringify(resultatCallback)
@@ -97,10 +146,11 @@ export async function POST(request: NextRequest) {
         : undefined // TOUS → broadcast à tous
 
       sseManager.broadcastActionCompleted(
-        body.notificationId,
+        body.notificationId!,
         body.response,
-        body.status, // 'success' ou 'error'
-        targetRole
+        body.status,
+        targetRole,
+        body.correlationId // undefined en mode legacy, mais présent si n8n le renvoie
       )
       console.log(`[Callback n8n] SSE action_completed broadcast: ${body.status} pour notification ${body.notificationId}`)
     } catch (sseError) {

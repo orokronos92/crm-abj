@@ -25,6 +25,7 @@ export interface Notification {
   actionRequise?: boolean
   typeAction?: string
   actionEffectuee?: boolean
+  callbackStatus?: 'pending' | 'success' | 'error' // Statut callback n8n (temps réel)
   lue: boolean
   dateLecture?: string
   creeLe: string
@@ -328,19 +329,36 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
         }
       })
 
-      // Action complétée
+      // Action complétée (ou en attente / erreur)
       eventSource.addEventListener('action_completed', (event) => {
         try {
           const data = JSON.parse(event.data)
-          console.log('✅ Action complétée SSE:', data)
+          console.log('🔔 SSE action_completed:', data)
+
+          // data.resultat peut être 'pending' | 'success' | 'error'
+          const isPending = data.resultat === 'pending'
+          const isSuccess = data.resultat === 'success'
 
           setNotifications(prev =>
             prev.map(n =>
               n.idNotification === data.notificationId
-                ? { ...n, actionEffectuee: true }
+                ? {
+                    ...n,
+                    actionEffectuee: isSuccess, // true seulement si succès confirmé
+                    // Stocker le statut callback pour que les modals puissent réagir
+                    callbackStatus: data.resultat as 'pending' | 'success' | 'error'
+                  }
                 : n
             )
           )
+
+          // Décrémenter actionsRequises seulement si vraiment terminé (success ou error)
+          if (!isPending) {
+            setCounts(prev => ({
+              ...prev,
+              actionsRequises: Math.max(0, prev.actionsRequises - 1)
+            }))
+          }
         } catch (e) {
           console.error('Erreur parsing action_completed:', e)
         }

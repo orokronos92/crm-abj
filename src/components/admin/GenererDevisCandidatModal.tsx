@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { X, FileText, CheckCircle, Loader2, Euro, GraduationCap, CreditCard, User, MessageSquare } from 'lucide-react'
-import { useActionNotification } from '@/hooks/use-action-notification'
+import { useState, useRef } from 'react'
+import { X, FileText, CheckCircle, AlertCircle, Loader2, Euro, GraduationCap, CreditCard, User, MessageSquare } from 'lucide-react'
+import { useCallbackListener } from '@/hooks/use-callback-listener'
 
 interface GenererDevisCandidatModalProps {
   candidat: {
@@ -40,8 +40,20 @@ export function GenererDevisCandidatModal({
   onSuccess
 }: GenererDevisCandidatModalProps) {
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const { createActionNotification } = useActionNotification()
+  const [actionStatus, setActionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
+  const correlationId = useRef(crypto.randomUUID())
+
+  useCallbackListener({
+    correlationId: correlationId.current,
+    onCallback: (status) => {
+      setSubmitting(false)
+      setActionStatus(status)
+      if (status === 'success') {
+        setTimeout(() => { onSuccess(); onClose() }, 5000)
+      }
+    },
+    timeoutSeconds: 60
+  })
 
   // Trouver la formation par défaut
   const formationParDefaut = FORMATIONS_TARIFS.find(f =>
@@ -67,21 +79,10 @@ export function GenererDevisCandidatModal({
     setSubmitting(true)
 
     try {
-      // 1. Créer vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'CANDIDAT',
-        type: 'GENERATION_DEVIS',
-        priorite: 'NORMALE',
-        titre: `Devis généré pour candidat ${candidat.numeroDossier}`,
-        message: `Devis ${formationSelectionnee.nom} (${formationSelectionnee.tarif}€) - Financement ${formData.modeFinancement}`,
-        entiteType: 'candidat',
-        entiteId: candidat.idCandidat.toString(),
-        actionRequise: true,
-        typeAction: 'GENERER'
-      })
-
-      // 2. Construire le payload enrichi
       const payload = {
+        // === CORRÉLATION ===
+        correlationId: correlationId.current,
+
         // === IDENTIFICATION ACTION ===
         actionType: 'GENERER_DEVIS_CANDIDAT',
         actionSource: 'admin.candidats.detail',
@@ -101,7 +102,6 @@ export function GenererDevisCandidatModal({
         },
 
         // === DÉCISION UTILISATEUR ===
-        decidePar: currentUserId,
         decisionType: 'generation_devis',
         commentaire: formData.messageMarjorie || `Génération devis pour ${formationSelectionnee.nom}`,
 
@@ -118,14 +118,12 @@ export function GenererDevisCandidatModal({
 
         // === CONFIGURATION RÉPONSE ===
         responseConfig: {
-          callbackUrl: `${window.location.origin}/api/webhook/callback`,
-          updateNotification: true,
           expectedResponse: 'devis_generated',
           timeoutSeconds: 60 // Génération PDF peut prendre du temps
         }
       }
 
-      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+      const response = await fetch('/api/actions/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -134,30 +132,50 @@ export function GenererDevisCandidatModal({
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Demande envoyée avec succès
-        setSubmitted(true)
-        // Auto-close après 3 secondes
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 5000)
+        // Demande envoyée — en attente de confirmation n8n via SSE
+        setActionStatus('pending')
       } else if (response.status === 409) {
         // Génération déjà en cours
         alert(result.message || 'Une génération de devis est déjà en cours pour ce candidat')
+        setSubmitting(false)
         onClose()
       } else {
+        setSubmitting(false)
         alert(result.error || 'Erreur lors de la génération du devis')
       }
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Erreur lors de la génération du devis')
-    } finally {
       setSubmitting(false)
+      alert('Erreur lors de la génération du devis')
     }
   }
 
-  // Demande envoyée avec succès
-  if (submitted) {
+  // En attente de confirmation n8n
+  if (actionStatus === 'pending') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--accent),0.1)] rounded-full">
+              <Loader2 className="w-12 h-12 text-[rgb(var(--accent))] animate-spin" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Génération en cours...
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              Marjorie génère le devis pour <strong>{candidat.prenom} {candidat.nom}</strong>.
+            </p>
+            <p className="text-xs text-[rgb(var(--muted-foreground))]">
+              En attente de confirmation (max 60s)...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Devis généré avec succès
+  if (actionStatus === 'success') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
@@ -166,10 +184,10 @@ export function GenererDevisCandidatModal({
               <CheckCircle className="w-12 h-12 text-[rgb(var(--success))]" />
             </div>
             <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
-              Devis en cours de génération
+              Devis généré
             </h2>
             <p className="text-sm text-[rgb(var(--muted-foreground))]">
-              La demande de devis pour <strong>{candidat.prenom} {candidat.nom}</strong> a été transmise à Marjorie.
+              Le devis pour <strong>{candidat.prenom} {candidat.nom}</strong> a été généré et envoyé avec succès.
             </p>
             <div className="p-3 bg-[rgba(var(--accent),0.05)] rounded-lg border border-[rgba(var(--accent),0.1)] w-full">
               <p className="text-sm text-[rgb(var(--foreground))]">
@@ -179,14 +197,36 @@ export function GenererDevisCandidatModal({
                 💰 Montant : <strong>{formationSelectionnee.tarif}€</strong>
               </p>
             </div>
-            <div className="p-3 bg-[rgba(var(--accent),0.05)] rounded-lg border border-[rgba(var(--accent),0.1)] w-full">
-              <p className="text-sm text-[rgb(var(--foreground))]">
-                🔔 Vous serez averti par les notifications lorsque le devis sera prêt et envoyé.
-              </p>
-            </div>
             <p className="text-xs text-[rgb(var(--muted-foreground))]">
-              Fermeture automatique dans 3 secondes...
+              Fermeture automatique dans 5 secondes...
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Erreur lors de la génération
+  if (actionStatus === 'error') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--error),0.1)] rounded-full">
+              <AlertCircle className="w-12 h-12 text-[rgb(var(--error))]" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Erreur de génération
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              La génération du devis n&apos;a pas pu être confirmée. Vérifiez les notifications pour plus de détails.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       </div>

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { X, Send, CheckCircle, Loader2, Mail, User, MessageSquare } from 'lucide-react'
-import { useActionNotification } from '@/hooks/use-action-notification'
+import { useState, useRef } from 'react'
+import { X, Send, CheckCircle, AlertCircle, Loader2, Mail, User, MessageSquare } from 'lucide-react'
+import { useCallbackListener } from '@/hooks/use-callback-listener'
 
 interface EnvoyerMessageEleveModalProps {
   eleve: {
@@ -24,8 +24,20 @@ export function EnvoyerMessageEleveModal({
   onSuccess
 }: EnvoyerMessageEleveModalProps) {
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const { createActionNotification } = useActionNotification()
+  const [actionStatus, setActionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
+  const correlationId = useRef(crypto.randomUUID())
+
+  useCallbackListener({
+    correlationId: correlationId.current,
+    onCallback: (status) => {
+      setSubmitting(false)
+      setActionStatus(status)
+      if (status === 'success') {
+        setTimeout(() => { onSuccess(); onClose() }, 5000)
+      }
+    },
+    timeoutSeconds: 60
+  })
 
   const [formData, setFormData] = useState({
     objet: '',
@@ -45,21 +57,10 @@ export function EnvoyerMessageEleveModal({
     setSubmitting(true)
 
     try {
-      // 1. Créer vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'ELEVE',
-        type: 'ENVOI_MESSAGE',
-        priorite: 'NORMALE',
-        titre: `Message envoyé à ${eleve.prenom} ${eleve.nom}`,
-        message: `Objet: ${formData.objet} - Dossier ${eleve.numeroDossier}`,
-        entiteType: 'eleve',
-        entiteId: eleve.idEleve.toString(),
-        actionRequise: true,
-        typeAction: 'RELANCER'
-      })
-
-      // 2. Construire le payload enrichi
       const payload = {
+        // === CORRÉLATION ===
+        correlationId: correlationId.current,
+
         // === IDENTIFICATION ACTION ===
         actionType: 'ENVOYER_MESSAGE_ELEVE',
         actionSource: 'admin.eleves.detail',
@@ -79,7 +80,6 @@ export function EnvoyerMessageEleveModal({
         },
 
         // === DÉCISION UTILISATEUR ===
-        decidePar: currentUserId,
         decisionType: 'envoi_message',
         commentaire: formData.objet,
 
@@ -93,14 +93,12 @@ export function EnvoyerMessageEleveModal({
 
         // === CONFIGURATION RÉPONSE ===
         responseConfig: {
-          callbackUrl: `${window.location.origin}/api/webhook/callback`,
-          updateNotification: true,
           expectedResponse: 'message_sent',
           timeoutSeconds: 30
         }
       }
 
-      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+      const response = await fetch('/api/actions/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -109,30 +107,50 @@ export function EnvoyerMessageEleveModal({
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Demande envoyée avec succès
-        setSubmitted(true)
-        // Auto-close après 3 secondes
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 5000)
+        // Demande envoyée — en attente de confirmation n8n via SSE
+        setActionStatus('pending')
       } else if (response.status === 409) {
         // Envoi déjà en cours
         alert(result.message || 'Un envoi de message est déjà en cours pour cet élève')
+        setSubmitting(false)
         onClose()
       } else {
+        setSubmitting(false)
         alert(result.error || 'Erreur lors de l\'envoi du message')
       }
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Erreur lors de l\'envoi du message')
-    } finally {
       setSubmitting(false)
+      alert('Erreur lors de l\'envoi du message')
     }
   }
 
-  // Modal de succès
-  if (submitted) {
+  // En attente de confirmation n8n
+  if (actionStatus === 'pending') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--accent),0.1)] rounded-full">
+              <Loader2 className="w-12 h-12 text-[rgb(var(--accent))] animate-spin" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Envoi en cours...
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              Marjorie traite votre message pour <strong>{eleve.prenom} {eleve.nom}</strong>.
+            </p>
+            <p className="text-xs text-[rgb(var(--muted-foreground))]">
+              En attente de confirmation (max 60s)...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Message envoyé avec succès
+  if (actionStatus === 'success') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
@@ -141,27 +159,49 @@ export function EnvoyerMessageEleveModal({
               <CheckCircle className="w-12 h-12 text-[rgb(var(--success))]" />
             </div>
             <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
-              Message en cours d'envoi
+              Message envoyé
             </h2>
             <p className="text-sm text-[rgb(var(--muted-foreground))]">
-              Le message pour <strong>{eleve.prenom} {eleve.nom}</strong> a été transmis à Marjorie.
+              Le message pour <strong>{eleve.prenom} {eleve.nom}</strong> a été envoyé avec succès.
             </p>
             <div className="p-3 bg-[rgba(var(--accent),0.05)] rounded-lg border border-[rgba(var(--accent),0.1)] w-full">
               <p className="text-sm text-[rgb(var(--foreground))]">
-                📧 Destinataire : <strong>{eleve.email}</strong>
+                📧 Email envoyé à <strong>{eleve.email}</strong>
               </p>
               <p className="text-sm text-[rgb(var(--foreground))] mt-1">
                 💬 Objet : <strong>{formData.objet}</strong>
               </p>
             </div>
-            <div className="p-3 bg-[rgba(var(--accent),0.05)] rounded-lg border border-[rgba(var(--accent),0.1)] w-full">
-              <p className="text-sm text-[rgb(var(--foreground))]">
-                🔔 Vous serez averti par les notifications lorsque le message sera envoyé.
-              </p>
-            </div>
             <p className="text-xs text-[rgb(var(--muted-foreground))]">
-              Fermeture automatique dans 3 secondes...
+              Fermeture automatique dans 5 secondes...
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Erreur lors de l'envoi
+  if (actionStatus === 'error') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--error),0.1)] rounded-full">
+              <AlertCircle className="w-12 h-12 text-[rgb(var(--error))]" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Erreur d&apos;envoi
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              L&apos;envoi du message n&apos;a pas pu être confirmé. Vérifiez les notifications pour plus de détails.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       </div>
@@ -183,7 +223,7 @@ export function EnvoyerMessageEleveModal({
                 Envoyer un message
               </h2>
               <p className="text-sm text-[rgb(var(--muted-foreground))]">
-                Envoyer un email personnalisé à l'élève
+                Envoyer un email personnalisé à l&apos;élève
               </p>
             </div>
           </div>

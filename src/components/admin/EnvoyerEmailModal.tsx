@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { X, Mail, CheckCircle, Loader2, User, FileText } from 'lucide-react'
-import { useActionNotification } from '@/hooks/use-action-notification'
+import { useState, useRef } from 'react'
+import { X, Mail, CheckCircle, AlertCircle, Loader2, User, FileText } from 'lucide-react'
+import { useCallbackListener } from '@/hooks/use-callback-listener'
 
 interface EnvoyerEmailModalProps {
   prospect: {
@@ -23,8 +23,20 @@ export function EnvoyerEmailModal({
   onSuccess
 }: EnvoyerEmailModalProps) {
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const { createActionNotification, userId } = useActionNotification()
+  const [actionStatus, setActionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
+  const correlationId = useRef(crypto.randomUUID())
+
+  useCallbackListener({
+    correlationId: correlationId.current,
+    onCallback: (status) => {
+      setSubmitting(false)
+      setActionStatus(status)
+      if (status === 'success') {
+        setTimeout(() => { onSuccess(); onClose() }, 5000)
+      }
+    },
+    timeoutSeconds: 60
+  })
 
   const [formData, setFormData] = useState({
     objet: '',
@@ -44,23 +56,12 @@ export function EnvoyerEmailModal({
     setSubmitting(true)
 
     try {
-      // 1. Créer une vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'PROSPECT',
-        type: 'ENVOI_EMAIL',
-        priorite: 'NORMALE',
-        titre: `Email à ${prospect.prenom} ${prospect.nom}`,
-        message: `Objet: ${formData.objet}`,
-        entiteType: 'prospect',
-        entiteId: prospect.idProspect,
-        actionRequise: true,
-        typeAction: 'RELANCER'
-      })
-
-      // 2. Construire le payload enrichi
       const payload = {
+        // === CORRÉLATION ===
+        correlationId: correlationId.current,
+
         // === IDENTIFICATION ACTION ===
-        actionType: 'RELANCE_PROSPECT_EMAIL',
+        actionType: 'ENVOYER_EMAIL',
         actionSource: 'admin.prospects.detail',
         actionButton: 'envoyer_email',
 
@@ -76,7 +77,6 @@ export function EnvoyerEmailModal({
         },
 
         // === DÉCISION UTILISATEUR ===
-        decidePar: currentUserId, // ID utilisateur depuis NextAuth session
         decisionType: 'envoi_email',
         commentaire: formData.objet,
 
@@ -89,14 +89,12 @@ export function EnvoyerEmailModal({
 
         // === CONFIGURATION RÉPONSE ===
         responseConfig: {
-          callbackUrl: `${window.location.origin}/api/webhook/callback`,
-          updateNotification: true,
           expectedResponse: 'email_sent',
           timeoutSeconds: 30
         }
       }
 
-      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+      const response = await fetch('/api/actions/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -105,30 +103,50 @@ export function EnvoyerEmailModal({
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Demande envoyée avec succès
-        setSubmitted(true)
-        // Auto-close après 3 secondes
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 5000)
+        // Demande envoyée — en attente de confirmation n8n via SSE
+        setActionStatus('pending')
       } else if (response.status === 409) {
         // Envoi déjà en cours
         alert(result.message || 'Un envoi d\'email est déjà en cours pour ce prospect')
+        setSubmitting(false)
         onClose()
       } else {
+        setSubmitting(false)
         alert(result.error || 'Erreur lors de l\'envoi de l\'email')
       }
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Erreur lors de l\'envoi de l\'email')
-    } finally {
       setSubmitting(false)
+      alert('Erreur lors de l\'envoi de l\'email')
     }
   }
 
-  // Demande envoyée avec succès
-  if (submitted) {
+  // En attente de confirmation n8n
+  if (actionStatus === 'pending') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--accent),0.1)] rounded-full">
+              <Loader2 className="w-12 h-12 text-[rgb(var(--accent))] animate-spin" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Envoi en cours...
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              Marjorie traite votre demande d'email pour <strong>{prospect.prenom} {prospect.nom}</strong>.
+            </p>
+            <p className="text-xs text-[rgb(var(--muted-foreground))]">
+              En attente de confirmation (max 60s)...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Email envoyé avec succès
+  if (actionStatus === 'success') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
@@ -140,21 +158,43 @@ export function EnvoyerEmailModal({
               Email envoyé
             </h2>
             <p className="text-sm text-[rgb(var(--muted-foreground))]">
-              L'email pour <strong>{prospect.prenom} {prospect.nom}</strong> a été transmis à Marjorie pour envoi.
+              L'email pour <strong>{prospect.prenom} {prospect.nom}</strong> a été envoyé avec succès.
             </p>
             <div className="p-3 bg-[rgba(var(--accent),0.05)] rounded-lg border border-[rgba(var(--accent),0.1)] w-full">
               <p className="text-sm text-[rgb(var(--foreground))]">
-                📧 L'email sera envoyé à <strong>{prospect.email}</strong>
-              </p>
-            </div>
-            <div className="p-3 bg-[rgba(var(--accent),0.05)] rounded-lg border border-[rgba(var(--accent),0.1)] w-full">
-              <p className="text-sm text-[rgb(var(--foreground))]">
-                🔔 Vous serez averti par les notifications lorsque l'email sera envoyé.
+                📧 Email envoyé à <strong>{prospect.email}</strong>
               </p>
             </div>
             <p className="text-xs text-[rgb(var(--muted-foreground))]">
-              Fermeture automatique dans 3 secondes...
+              Fermeture automatique dans 5 secondes...
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Erreur lors de l'envoi
+  if (actionStatus === 'error') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--error),0.1)] rounded-full">
+              <AlertCircle className="w-12 h-12 text-[rgb(var(--error))]" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Erreur d'envoi
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              L'envoi de l'email n'a pas pu être confirmé. Vérifiez les notifications pour plus de détails.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       </div>

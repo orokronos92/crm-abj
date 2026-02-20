@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, User, Calendar, GraduationCap, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
-import { useActionNotification } from '@/hooks/use-action-notification'
+import { useCallbackListener } from '@/hooks/use-callback-listener'
 
 interface ConvertirCandidatModalProps {
   prospect: {
@@ -46,8 +46,20 @@ export function ConvertirCandidatModal({
   const [conversionEnCours, setConversionEnCours] = useState(false)
   const [conversionMessage, setConversionMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const { createActionNotification } = useActionNotification()
+  const [actionStatus, setActionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
+  const correlationId = useRef(crypto.randomUUID())
+
+  useCallbackListener({
+    correlationId: correlationId.current,
+    onCallback: (status) => {
+      setSubmitting(false)
+      setActionStatus(status)
+      if (status === 'success') {
+        setTimeout(() => { onSuccess(); onClose() }, 5000)
+      }
+    },
+    timeoutSeconds: 60
+  })
 
   const [formData, setFormData] = useState({
     formationRetenue: prospect.formationPrincipale || '',
@@ -147,23 +159,12 @@ export function ConvertirCandidatModal({
     setSubmitting(true)
 
     try {
-      // 1. Créer vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'PROSPECT',
-        type: 'CONVERSION_CANDIDAT',
-        priorite: 'NORMALE',
-        titre: `Conversion prospect → candidat : ${prospect.prenom} ${prospect.nom}`,
-        message: `Conversion en candidat pour ${formData.formationRetenue}${formData.sessionVisee ? ` - Session: ${formData.sessionVisee}` : ''}`,
-        entiteType: 'prospect',
-        entiteId: prospect.idProspect,
-        actionRequise: true,
-        typeAction: 'VALIDER'
-      })
-
-      // 2. Construire le payload enrichi
       const payload = {
+        // === CORRÉLATION ===
+        correlationId: correlationId.current,
+
         // === IDENTIFICATION ACTION ===
-        actionType: 'CONVERTIR_PROSPECT_CANDIDAT',
+        actionType: 'CONVERTIR_CANDIDAT',
         actionSource: 'admin.prospects.detail',
         actionButton: 'convertir_candidat',
 
@@ -178,7 +179,6 @@ export function ConvertirCandidatModal({
         },
 
         // === DÉCISION UTILISATEUR ===
-        decidePar: currentUserId,
         decisionType: 'conversion_candidat',
         commentaire: `Conversion en candidat pour ${formData.formationRetenue}`,
 
@@ -191,14 +191,12 @@ export function ConvertirCandidatModal({
 
         // === CONFIGURATION RÉPONSE ===
         responseConfig: {
-          callbackUrl: `${window.location.origin}/api/webhook/callback`,
-          updateNotification: true,
           expectedResponse: 'candidat_created',
           timeoutSeconds: 45
         }
       }
 
-      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+      const response = await fetch('/api/actions/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -207,25 +205,21 @@ export function ConvertirCandidatModal({
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Conversion lancée avec succès (fire-and-forget)
-        setSubmitted(true)
-        // Auto-close après 3 secondes
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 5000)
+        // Demande envoyée — en attente de confirmation n8n via SSE
+        setActionStatus('pending')
       } else if (response.status === 409) {
         // Conversion déjà en cours
         setConversionEnCours(true)
         setConversionMessage(result.message || 'Une conversion est déjà en cours')
+        setSubmitting(false)
       } else {
+        setSubmitting(false)
         alert(result.error || 'Erreur lors de la conversion')
       }
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Erreur lors de la conversion en candidat')
-    } finally {
       setSubmitting(false)
+      alert('Erreur lors de la conversion en candidat')
     }
   }
 
@@ -278,8 +272,32 @@ export function ConvertirCandidatModal({
     )
   }
 
-  // Demande envoyée avec succès
-  if (submitted) {
+  // En attente de confirmation n8n
+  if (actionStatus === 'pending') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--accent),0.1)] rounded-full">
+              <Loader2 className="w-12 h-12 text-[rgb(var(--accent))] animate-spin" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Conversion en cours...
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              Marjorie traite la conversion de <strong>{prospect.prenom} {prospect.nom}</strong> en candidat.
+            </p>
+            <p className="text-xs text-[rgb(var(--muted-foreground))]">
+              En attente de confirmation (max 60s)...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Conversion réalisée avec succès
+  if (actionStatus === 'success') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
@@ -288,19 +306,51 @@ export function ConvertirCandidatModal({
               <CheckCircle className="w-12 h-12 text-[rgb(var(--success))]" />
             </div>
             <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
-              Demande envoyée
+              Candidat créé
             </h2>
             <p className="text-sm text-[rgb(var(--muted-foreground))]">
-              La demande de conversion de <strong>{prospect.prenom} {prospect.nom}</strong> en candidat a été envoyée à Marjorie.
+              <strong>{prospect.prenom} {prospect.nom}</strong> a été converti en candidat avec succès.
             </p>
             <div className="p-3 bg-[rgba(var(--accent),0.05)] rounded-lg border border-[rgba(var(--accent),0.1)] w-full">
               <p className="text-sm text-[rgb(var(--foreground))]">
-                🔔 Vous serez averti par les notifications lorsque le traitement sera terminé.
+                🎓 Formation : <strong>{formData.formationRetenue}</strong>
               </p>
+              {formData.sessionVisee && (
+                <p className="text-sm text-[rgb(var(--foreground))] mt-1">
+                  📅 Session : <strong>{formData.sessionVisee}</strong>
+                </p>
+              )}
             </div>
             <p className="text-xs text-[rgb(var(--muted-foreground))]">
-              Fermeture automatique dans 3 secondes...
+              Fermeture automatique dans 5 secondes...
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Erreur lors de la conversion
+  if (actionStatus === 'error') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="p-3 bg-[rgba(var(--error),0.1)] rounded-full">
+              <AlertCircle className="w-12 h-12 text-[rgb(var(--error))]" />
+            </div>
+            <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">
+              Erreur de conversion
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              La conversion n&apos;a pas pu être confirmée. Vérifiez les notifications pour plus de détails.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       </div>
