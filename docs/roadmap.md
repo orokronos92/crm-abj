@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-20 (T2 terminée)
+**Dernière mise à jour** : 2026-02-20 (T2 terminée + correctif popup succès)
 
 ---
 
@@ -71,6 +71,112 @@
 4. SSE broadcast → `useCallbackListener` détecte → modal passe en `success` ou `error`
 
 **Résultat** : Une notification dans la cloche = une action **confirmée par n8n**. Zéro notification prématurée.
+
+---
+
+## 📅 JOURNAL — 2026-02-20
+
+### Fix — Popup succès invisible après callback n8n (ConvertirCandidatModal)
+
+**Symptôme** : Après callback n8n confirmant la conversion, le popup "Candidat converti avec succès" n'apparaissait jamais. Les logs montraient pourtant que le callback était bien reçu et `onCallback('success')` appelé.
+
+**Cause racine** : `ProspectDetailPanel.handleConversionSuccess` appelait immédiatement `onProspectConverti(id)` + `onClose()` dès réception du succès. Cela déclenchait `setSelectedProspectId(null)` dans le parent (`ProspectsPageClient`), ce qui démontait le panel — et par effet de cascade, le modal `ConvertirCandidatModal`. React ignorait alors silencieusement le `setActionStatus('success')` exécuté sur un composant démonté.
+
+**Fix appliqué** : Ajout d'un `setTimeout` de 5500ms dans `handleConversionSuccess` — légèrement supérieur aux 5000ms d'auto-fermeture du modal — pour laisser le temps au modal d'afficher et fermer le popup succès avant de démonter le panel.
+
+```typescript
+// ProspectDetailPanel.tsx
+const handleConversionSuccess = () => {
+  setTimeout(() => {
+    if (onProspectConverti) onProspectConverti(prospectId)
+    onClose()
+  }, 5500)
+}
+```
+
+**Fichier modifié** : `src/components/admin/ProspectDetailPanel.tsx`
+**Commit** : `4e4a70e` — `fix: ajout délai 5500ms dans handleConversionSuccess pour laisser le popup succès s'afficher`
+
+---
+
+### Architecture T2 — Clarification notification cloche
+
+**Question** : Pourquoi la notification ne remonte pas dans la cloche après une action réussie ?
+
+**Réponse** : C'est voulu. En T2, le CRM n'écrit **plus** de notification en BDD lors du déclenchement d'une action. Le popup résultat (modal) est géré via SSE + `correlationId` directement. La notification dans la cloche doit être créée par **n8n** via un POST vers `/api/notifications/ingest` en fin de workflow.
+
+**Node n8n à ajouter** dans chaque workflow, après le node `✅ Callback Success` :
+
+```json
+{
+  "name": "🔔 Notification Cloche",
+  "type": "n8n-nodes-base.httpRequest",
+  "parameters": {
+    "method": "POST",
+    "url": "https://crm.abj.fr/api/notifications/ingest",
+    "headers": {
+      "X-API-Key": "{{ $env.CRM_API_KEY }}"
+    },
+    "body": {
+      "sourceAgent": "marjorie",
+      "categorie": "CANDIDAT",
+      "type": "CONVERSION_REUSSIE",
+      "priorite": "NORMALE",
+      "titre": "Candidat converti avec succès",
+      "message": "Le prospect {{ $json.prenom }} {{ $json.nom }} a été converti en candidat.",
+      "audience": "ADMIN",
+      "lienAction": "/admin/candidats"
+    }
+  }
+}
+```
+
+**Principe** : Une notification dans la cloche = une action **confirmée par n8n**. C'est le rôle de n8n de créer cette notification, pas du CRM.
+
+---
+
+### Fix — Race condition popup pending/success (use-callback-listener)
+
+**Symptôme** : Le popup "en cours..." apparaissait une fraction de seconde APRÈS le popup "succès", ou n'apparaissait pas du tout. L'ordre logique (pending → success) était inversé visuellement.
+
+**Cause racine** : `useCallbackListener` connecte le SSE dès le montage du modal, avant même la soumission. Si n8n répond très vite, `setActionStatus('pending')` et `setActionStatus('success')` arrivent dans le même cycle de rendu React — React les batchifie et ne rend que le dernier état (`success`), sautant `pending` complètement.
+
+**Fix appliqué** : Ajout d'un `setTimeout(0)` dans `use-callback-listener.ts` autour de l'appel `onCallbackRef.current`. Ce délai nul sort le callback du cycle de rendu courant, garantissant que React a le temps de rendre `pending` avant de traiter `success`/`error`.
+
+```typescript
+// use-callback-listener.ts — avant
+cleanup()
+onCallbackRef.current(status, data)
+
+// après
+cleanup()
+setTimeout(() => {
+  onCallbackRef.current(status, data)
+}, 0)
+```
+
+**Fichier modifié** : `src/hooks/use-callback-listener.ts`
+
+---
+
+### Fix — Compteur "Total prospects" figé après conversion
+
+**Symptôme** : Après conversion d'un prospect en candidat, la ligne disparaissait bien de la liste, mais la card "Total prospects : 3" restait à 3 au lieu de passer à 2.
+
+**Cause racine** : La card "Total prospects" était rendue dans `ProspectsPage` (Server Component). La valeur `{total}` était calculée une seule fois au chargement de la page et ne pouvait pas réagir aux changements d'état gérés côté client dans `ProspectsPageClient`.
+
+**Fix appliqué** :
+- Déplacement de la card "Total prospects" depuis le Server Component vers `ProspectsPageClient`
+- Compteur calculé dynamiquement depuis la liste locale : `initialTotal - (initialProspects.length - prospects.length)`
+- Chaque appel à `handleProspectConverti` filtre la liste → `prospects.length` diminue → `total` se décrémente automatiquement
+
+```typescript
+// ProspectsPageClient.tsx
+const total = initialTotal - (initialProspects.length - prospects.length)
+```
+
+**Fichiers modifiés** : `src/components/admin/ProspectsPageClient.tsx`, `src/app/admin/prospects/page.tsx`
+**Commit** : `3eea377` — `fix: race condition popup pending/success + compteur prospects réactif`
 
 ---
 
