@@ -157,6 +157,8 @@ export function ConvertirCandidatModal({
     }
 
     setSubmitting(true)
+    // Passer en pending AVANT l'envoi pour afficher le spinner immédiatement
+    setActionStatus('pending')
 
     try {
       const payload = {
@@ -205,19 +207,21 @@ export function ConvertirCandidatModal({
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Demande envoyée — en attente de confirmation n8n via SSE
-        setActionStatus('pending')
+        // Demande envoyée — on reste en pending, le callback SSE passera à success
       } else if (response.status === 409) {
         // Conversion déjà en cours
+        setActionStatus('idle')
         setConversionEnCours(true)
         setConversionMessage(result.message || 'Une conversion est déjà en cours')
         setSubmitting(false)
       } else {
+        setActionStatus('idle')
         setSubmitting(false)
         alert(result.error || 'Erreur lors de la conversion')
       }
     } catch (error) {
       console.error('Erreur:', error)
+      setActionStatus('idle')
       setSubmitting(false)
       alert('Erreur lors de la conversion en candidat')
     }

@@ -74,6 +74,22 @@
 
 ---
 
+## 📅 JOURNAL — 2026-02-20 (suite)
+
+### Fix — Ordre inversé popup "en cours" / popup vert (ConvertirCandidatModal)
+
+**Symptôme** : Le popup vert "Candidat créé" apparaissait AVANT le popup "Conversion en cours..." — ordre inversé. Sans wait n8n : popup vert en flash puis spinner. Avec wait : spinner visible mais popup vert jamais affiché.
+
+**Cause racine** : `setActionStatus('pending')` était appelé **après** le `await fetch` (ligne 209). Si n8n répond rapidement, le callback SSE `action_completed` arrivait pendant ou juste après la réponse HTTP. React batchifiait alors `setActionStatus('pending')` et `setActionStatus('success')` dans le même cycle de rendu → ne rendait que `success`, sautant `pending` complètement.
+
+**Fix appliqué** : Déplacement de `setActionStatus('pending')` **avant** le `await fetch`. React rend d'abord le spinner, puis quand le SSE arrive, passe à `success`. Ajout de `setActionStatus('idle')` dans les branches erreur/409 pour revenir au formulaire si l'envoi échoue.
+
+**Fichier modifié** : `src/components/admin/ConvertirCandidatModal.tsx`
+
+**Séquence correcte après fix** : Formulaire → Spinner "en cours" → Popup vert "Candidat créé" → Éjection prospect + compteur + notification cloche ✅
+
+---
+
 ## 📅 JOURNAL — 2026-02-20
 
 ### Fix — Popup succès invisible après callback n8n (ConvertirCandidatModal)
