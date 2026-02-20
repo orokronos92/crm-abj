@@ -92,11 +92,13 @@ export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }:
   }, [prospectId])
 
   const handleConversionSuccess = () => {
-    // Notifier le parent pour éjecter la ligne + fermer le panel
-    if (onProspectConverti) {
-      onProspectConverti(prospectId)
-    }
-    onClose()
+    // Délai pour laisser le modal afficher le popup succès 5s avant de démonter le panel
+    setTimeout(() => {
+      if (onProspectConverti) {
+        onProspectConverti(prospectId)
+      }
+      onClose()
+    }, 5500)
   }
 
   const handleEnvoiDossierSuccess = async () => {
