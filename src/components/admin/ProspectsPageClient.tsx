@@ -47,8 +47,14 @@ const STATUT_COLORS: Record<string, string> = {
   CONTACT: 'badge-info',
 }
 
-export function ProspectsPageClient({ prospects, total }: ProspectsPageClientProps) {
+export function ProspectsPageClient({ prospects: initialProspects, total }: ProspectsPageClientProps) {
+  const [prospects, setProspects] = useState<Prospect[]>(initialProspects)
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null)
+
+  const handleProspectConverti = (prospectId: string) => {
+    setProspects(prev => prev.filter(p => p.id !== prospectId))
+    setSelectedProspectId(null)
+  }
 
   return (
     <div className="flex">
@@ -141,6 +147,7 @@ export function ProspectsPageClient({ prospects, total }: ProspectsPageClientPro
         <ProspectDetailPanel
           prospectId={selectedProspectId}
           onClose={() => setSelectedProspectId(null)}
+          onProspectConverti={handleProspectConverti}
         />
       )}
     </div>

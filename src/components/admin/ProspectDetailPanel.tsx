@@ -29,6 +29,7 @@ import {
 interface ProspectDetailPanelProps {
   prospectId: string
   onClose: () => void
+  onProspectConverti?: (prospectId: string) => void
 }
 
 interface ProspectDetail {
@@ -63,7 +64,7 @@ const STATUT_COLORS: Record<string, string> = {
   EN_ATTENTE_DOSSIER: 'badge-warning',
 }
 
-export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanelProps) {
+export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }: ProspectDetailPanelProps) {
   const [prospect, setProspect] = useState<ProspectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [showHistorique, setShowHistorique] = useState(false)
@@ -90,13 +91,12 @@ export function ProspectDetailPanel({ prospectId, onClose }: ProspectDetailPanel
     fetchProspect()
   }, [prospectId])
 
-  const handleConversionSuccess = async () => {
-    // Recharger les données du prospect après conversion
-    const res = await fetch(`/api/prospects/${prospectId}`)
-    if (res.ok) {
-      const data = await res.json()
-      setProspect(data)
+  const handleConversionSuccess = () => {
+    // Notifier le parent pour éjecter la ligne + fermer le panel
+    if (onProspectConverti) {
+      onProspectConverti(prospectId)
     }
+    onClose()
   }
 
   const handleEnvoiDossierSuccess = async () => {
