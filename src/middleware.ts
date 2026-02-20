@@ -55,6 +55,20 @@ export default withAuth(
         // Laisser passer les webhooks n8n sans authentification
         // La sécurité est gérée par API Key dans la route elle-même
         const path = req.nextUrl.pathname
+        const publicRoutes = [
+          '/connexion',
+          '/api/auth',
+          '/api/notifications',
+          '/api/salles',
+          '/api/evenements',
+          '/api/formateurs',
+          '/api/sessions',
+          '/api/webhook/callback',
+          '/api/actions/trigger',
+          '/_next',
+          '/favicon.ico'
+        ]
+        if (publicRoutes.some(route => path.startsWith(route))) return true
         if (path.startsWith('/api/webhook/')) return true
         if (path.startsWith('/api/notifications/ingest')) return true
         return !!token

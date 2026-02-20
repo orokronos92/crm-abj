@@ -1,54 +1,16 @@
-version: '3.8'
-
 services:
-  # Base de données PostgreSQL 16
-  postgres:
-    image: postgres:16-alpine
-    container_name: abj_crm_postgres
+  crm:
+    build: .
+    container_name: crm-abj
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DATABASE_USER:-abj_admin}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-abj_dev_password_2024}
-      POSTGRES_DB: ${DATABASE_NAME:-abj_crm_dev}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=fr_FR.UTF-8"
     ports:
-      - "${DATABASE_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./prisma/seed.sql:/docker-entrypoint-initdb.d/seed.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-abj_admin} -d ${DATABASE_NAME:-abj_crm_dev}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - abj_network
-
-  # pgAdmin pour l'administration graphique (optionnel)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: abj_crm_pgadmin
-    restart: unless-stopped
+      - "3000:3000"
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@abj.local}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - postgres
-    networks:
-      - abj_network
-
-volumes:
-  postgres_data:
-    name: abj_crm_postgres_data
-  pgadmin_data:
-    name: abj_crm_pgadmin_data
-
-networks:
-  abj_network:
-    name: abj_crm_network
-    driver: bridge
+      - DATABASE_URL=postgresql://crm_dev:CrmAbj2026Secure@host.docker.internal:5432/crm_abj_dev
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NOTIFICATIONS_API_KEY=dev-key
+      - N8N_WEBHOOK_URL=http://host.docker.internal:5678/webhook
+      - N8N_API_KEY=n8n-abj-secret-2026
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
