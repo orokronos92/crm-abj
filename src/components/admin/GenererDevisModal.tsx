@@ -49,10 +49,7 @@ export function GenererDevisModal({
       setSubmitting(false)
       setActionStatus(status)
       if (status === 'success') {
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 5000)
+        setTimeout(() => { onSuccess() }, 1000)
       }
     },
     timeoutSeconds: 60
@@ -80,6 +77,8 @@ export function GenererDevisModal({
 
   const handleSubmit = async () => {
     setSubmitting(true)
+    // Passer en pending AVANT l'envoi pour afficher le spinner immédiatement
+    setActionStatus('pending')
 
     try {
       const payload = {
@@ -132,20 +131,23 @@ export function GenererDevisModal({
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Demande envoyée → état pending en attente du callback n8n
-        setActionStatus('pending')
+        // Demande envoyée — on reste en pending, le callback SSE passera à success
       } else if (response.status === 409) {
         // Génération déjà en cours
+        setActionStatus('idle')
+        setSubmitting(false)
         alert(result.message || 'Une génération de devis est déjà en cours pour ce prospect')
         onClose()
       } else {
+        setActionStatus('idle')
+        setSubmitting(false)
         alert(result.error || 'Erreur lors de la génération du devis')
       }
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Erreur lors de la génération du devis')
-    } finally {
+      setActionStatus('idle')
       setSubmitting(false)
+      alert('Erreur lors de la génération du devis')
     }
   }
 
