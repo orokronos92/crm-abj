@@ -5,7 +5,7 @@
 
 import prisma from '@/lib/prisma'
 
-const N8N_BASE_URL = process.env.N8N_WEBHOOK_BASE_URL || 'http://localhost:5678/webhook'
+const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook'
 const N8N_API_KEY = process.env.N8N_API_KEY || ''
 
 export interface WebhookResponse {
