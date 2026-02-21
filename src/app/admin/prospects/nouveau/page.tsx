@@ -125,13 +125,20 @@ export default function NouveauProspectPage() {
           </div>
         </div>
 
-        {/* Messages feedback */}
+        {/* Popup succès */}
         {successMessage && (
-          <div className="mb-4 p-4 bg-[rgba(var(--success),0.1)] border border-[rgba(var(--success),0.3)] rounded-xl flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0" />
-            <p className="text-sm text-[rgb(var(--success))]">{successMessage}</p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--success),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn pointer-events-auto">
+              <div className="w-14 h-14 rounded-full bg-[rgba(var(--success),0.15)] flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
+              </div>
+              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Prospect créé avec succès</p>
+              <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie prend en charge le suivi. Redirection...</p>
+            </div>
           </div>
         )}
+
+        {/* Message erreur inline */}
         {errorMessage && (
           <div className="mb-4 p-4 bg-[rgba(var(--error),0.1)] border border-[rgba(var(--error),0.3)] rounded-xl flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-[rgb(var(--error))] flex-shrink-0" />
