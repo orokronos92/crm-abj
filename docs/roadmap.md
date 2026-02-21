@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-21 (fix webhook creerProspect → dispatcher /crm-action)
+**Dernière mise à jour** : 2026-02-21 (fix popups succès + blocage formulaire nouveau prospect)
 
 ---
 
@@ -293,6 +293,29 @@ Le champ `suggestions` est optionnel — s'il est présent, des boutons cliquabl
 - `src/lib/webhook-client.ts` : `creerProspect()` appelle désormais `callWebhook('/crm-action', { actionType: 'CREER_PROSPECT', ...data })` — aligné sur le même dispatcher que toutes les autres actions.
 
 **Commit** : `85b8a9d` — `fix: aligner creerProspect sur le dispatcher /crm-action avec actionType`
+
+---
+
+## 📅 JOURNAL — 2026-02-21 (suite 5)
+
+### Fix — Popups succès sans fermeture + blocage UI formulaire nouveau prospect
+
+**Symptôme 1** : Sur les modals EnvoyerDossier, GenererDevis et EnvoyerEmail, le popup vert de succès s'affichait mais ne se fermait jamais — l'utilisateur devait cliquer manuellement pour sortir.
+
+**Cause** : Les handlers `handleEnvoiDossierSuccess`, `handleGenererDevisSuccess`, `handleEnvoyerEmailSuccess` dans `ProspectDetailPanel` rechargaient les données du prospect mais n'appelaient jamais `setShowXxxModal(false)`.
+
+**Fix** : Ajout d'un `setTimeout(() => setShowXxxModal(false), 1500)` dans chaque handler — 1.5s pour laisser le popup vert visible avant fermeture automatique.
+
+---
+
+**Symptôme 2** : Sur le formulaire `/admin/prospects/nouveau`, le popup "Création en cours…" s'affichait en overlay `fixed inset-0` avec `backdrop-blur-sm` — bloquant toute interaction sur la page. Si n8n ne répondait pas, l'utilisateur était bloqué sans échappatoire.
+
+**Cause** : Les 3 popups (pending/success/error) étaient rendus en inline `{actionStatus === 'pending' && (...)}` à l'intérieur du `return` principal — le formulaire continuait d'exister derrière l'overlay.
+
+**Fix** : Remplacement par des `return` anticipés (pattern identique à `ConvertirCandidatModal`) — quand `actionStatus !== 'idle'`, le composant retourne uniquement le popup, le formulaire n'est plus rendu du tout. Suppression des `disabled={actionStatus === 'pending'}` devenus inutiles sur les boutons.
+
+**Fichiers modifiés** : `src/components/admin/ProspectDetailPanel.tsx`, `src/app/admin/prospects/nouveau/page.tsx`
+**Commit** : `96ccba5` — `fix: fermeture auto popups succès + suppression blocage formulaire nouveau prospect`
 
 ---
 
