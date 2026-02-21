@@ -59,6 +59,8 @@ export default function NouveauProspectPage() {
         setFormData(FORM_INITIAL_STATE)
         // Regénérer correlationId pour la prochaine saisie
         correlationId.current = crypto.randomUUID()
+        // Rafraîchir silencieusement la liste prospects en arrière-plan
+        router.refresh()
         // Fermer le popup succès après 3s
         setTimeout(() => setActionStatus('idle'), 3000)
       } else {
