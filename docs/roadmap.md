@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-20 (T2 terminée + correctif popup succès)
+**Dernière mise à jour** : 2026-02-21 (branchement formulaire nouveau prospect → n8n)
 
 ---
 
@@ -193,6 +193,52 @@ const total = initialTotal - (initialProspects.length - prospects.length)
 
 **Fichiers modifiés** : `src/components/admin/ProspectsPageClient.tsx`, `src/app/admin/prospects/page.tsx`
 **Commit** : `3eea377` — `fix: race condition popup pending/success + compteur prospects réactif`
+
+---
+
+## 📅 JOURNAL — 2026-02-21
+
+### T3 — Branchement formulaire "Nouveau prospect" → n8n
+
+**But** : Relier le bouton "Créer le prospect" du formulaire `/admin/prospects/nouveau` à Marjorie via n8n. Avant ce changement, le `handleSubmit()` était un faux `setTimeout` de 1.5s qui ne faisait rien.
+
+**Flux implémenté** : CRM → `POST /api/prospects/creer` → webhook n8n `/prospect/creer` → Marjorie crée le prospect en BDD et gère le suivi.
+
+**Actions mises en œuvre** :
+
+- `src/lib/webhook-client.ts` : ajout de `prospectWebhooks.creerProspect()` qui appelle le chemin `/prospect/creer` sur n8n. Le payload inclut `sourceOrigine: "CRM_ADMIN"` pour distinguer une création manuelle admin d'un email entrant.
+
+- `src/app/api/prospects/creer/route.ts` *(nouveau fichier)* : route `POST` Fire-and-Forget (pattern identique à `convertir-candidat`). Valide les 5 champs obligatoires (nom, prenom, email, telephone, formationPrincipale). Crée un verrou `ConversionEnCours` avec `typeAction: 'CREER_PROSPECT'` avant de lancer le webhook. Retourne `202 Accepted` immédiatement. Si le webhook échoue, le verrou passe à `ERREUR` et l'exception est loggée en `JournalErreur`.
+
+- `src/app/admin/prospects/nouveau/page.tsx` : suppression du `setTimeout` fictif. `handleSubmit()` appelle désormais `fetch('POST /api/prospects/creer')` avec le mapping des champs (`code_postal` → `codePostal`, `formation_souhaitee` → `formationPrincipale`, `financement` → `modeFinancement`). Sur `response.ok` → message vert + redirection vers `/admin/prospects` après 1.5s. Sur erreur → message rouge affiché, bouton réactivé, pas de redirection.
+
+**Commit** : `45bc849` — `feat: branchement formulaire nouveau prospect vers n8n via Marjorie`
+
+---
+
+## 📅 JOURNAL — 2026-02-21 (suite)
+
+### T4 — Câblage bulle flottante Marjorie → chat conversationnel réel
+
+**But** : Relier la bulle flottante (bas droite) à un vrai chat avec historique, bulles de messages et envoi réel vers n8n. Avant ce changement, `handleSendMessage()` était un faux `setTimeout` + `alert()` qui ne faisait rien.
+
+**Flux implémenté** : Bulle → bannière chat → `useMarjorieChat()` → `POST /api/marjorie/chat` → webhook n8n `marjorie-chat` → agent IA → réponse JSON `{ reply, suggestions }` → bulle Marjorie dans le chat.
+
+**Actions mises en œuvre** :
+
+- `src/components/shared/marjorie-chat-banner.tsx` *(nouveau fichier)* : composant bannière pleine largeur (420px). Affiche l'historique de conversation sous forme de bulles scrollables (or = user, gris = Marjorie). Message de bienvenue automatique à l'ouverture. Indicateur typing (3 points animés) pendant l'attente de réponse. Bouton corbeille pour effacer la conversation. Support des suggestions cliquables retournées par n8n. Entrée pour envoyer, Shift+Entrée pour nouvelle ligne. Utilise le hook `useMarjorieChat()` déjà existant.
+
+- `src/components/layout/dashboard-layout.tsx` : suppression du faux `handleSendMessage()` et de l'état `marjorieMessage`. Remplacement du bloc JSX bannière (78 lignes) par `<MarjorieChatBanner onClose={...} />`. Import du nouveau composant.
+
+- `.env.local` : ajout de `N8N_MARJORIE_CHAT_WEBHOOK_URL=http://localhost:5678/webhook/marjorie-chat` (à adapter au chemin réel du workflow n8n de l'agent).
+
+**Format réponse attendu côté n8n** :
+```json
+{ "reply": "Voici ce que j'ai fait...", "suggestions": ["Voir le candidat"] }
+```
+Le champ `suggestions` est optionnel — s'il est présent, des boutons cliquables apparaissent sous la réponse pour enchaîner rapidement.
+
+**Commit** : `1a0cb31` — `feat: câblage bulle Marjorie → chat conversationnel réel avec historique et typing indicator`
 
 ---
 
