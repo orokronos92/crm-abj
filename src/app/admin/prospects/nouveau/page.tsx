@@ -128,6 +128,56 @@ export default function NouveauProspectPage() {
     }
   }
 
+  if (actionStatus === 'pending') {
+    return (
+      <DashboardLayout>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.3)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-[rgba(var(--accent),0.1)] flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-[rgb(var(--accent))] animate-spin" />
+            </div>
+            <p className="text-base font-semibold text-[rgb(var(--foreground))]">Création en cours…</p>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie traite la demande</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (actionStatus === 'success') {
+    return (
+      <DashboardLayout>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-[rgb(var(--card))] border border-[rgba(var(--success),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-[rgba(var(--success),0.15)] flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
+            </div>
+            <p className="text-base font-semibold text-[rgb(var(--foreground))]">Prospect créé avec succès</p>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie prend en charge le suivi</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (actionStatus === 'error') {
+    return (
+      <DashboardLayout>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-[rgb(var(--card))] border border-[rgba(var(--error),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-[rgba(var(--error),0.1)] flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-[rgb(var(--error))]" />
+            </div>
+            <p className="text-base font-semibold text-[rgb(var(--foreground))]">Échec de la création</p>
+            <p className="text-sm text-[rgb(var(--muted-foreground))] text-center max-w-xs">
+              {errorMessage || 'Une erreur est survenue. Veuillez réessayer.'}
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto">
@@ -168,47 +218,6 @@ export default function NouveauProspectPage() {
             </p>
           </div>
         </div>
-
-        {/* Popup "En cours de création" */}
-        {actionStatus === 'pending' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.3)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn">
-              <div className="w-14 h-14 rounded-full bg-[rgba(var(--accent),0.1)] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-[rgb(var(--accent))] animate-spin" />
-              </div>
-              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Création en cours…</p>
-              <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie traite la demande</p>
-            </div>
-          </div>
-        )}
-
-        {/* Popup succès */}
-        {actionStatus === 'success' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--success),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn">
-              <div className="w-14 h-14 rounded-full bg-[rgba(var(--success),0.15)] flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
-              </div>
-              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Prospect créé avec succès</p>
-              <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie prend en charge le suivi</p>
-            </div>
-          </div>
-        )}
-
-        {/* Popup erreur */}
-        {actionStatus === 'error' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--error),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn">
-              <div className="w-14 h-14 rounded-full bg-[rgba(var(--error),0.1)] flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-[rgb(var(--error))]" />
-              </div>
-              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Échec de la création</p>
-              <p className="text-sm text-[rgb(var(--muted-foreground))] text-center max-w-xs">
-                {errorMessage || 'Une erreur est survenue. Veuillez réessayer.'}
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Formulaire */}
         <form onSubmit={handleSubmit} className="space-y-2">
@@ -406,27 +415,18 @@ export default function NouveauProspectPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              disabled={actionStatus === 'pending'}
-              className="px-6 py-2.5 rounded-lg border border-[rgba(var(--border),0.5)] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--secondary))] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 rounded-lg border border-[rgba(var(--border),0.5)] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--secondary))] transition-all"
             >
               Annuler
             </button>
             <button
               type="submit"
-              disabled={actionStatus === 'pending'}
-              className="btn-gold px-6 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-gold px-6 py-2.5 rounded-lg flex items-center gap-2"
             >
-              {actionStatus === 'pending' ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Création en cours…
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Créer le prospect
-                </>
-              )}
+              <>
+                <Save className="w-5 h-5" />
+                Créer le prospect
+              </>
             </button>
           </div>
         </form>

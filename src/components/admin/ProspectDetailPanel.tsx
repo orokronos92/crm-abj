@@ -108,6 +108,8 @@ export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }:
       const data = await res.json()
       setProspect(data)
     }
+    // Laisser le popup vert visible 1.5s avant de fermer le modal
+    setTimeout(() => setShowEnvoyerDossierModal(false), 1500)
   }
 
   const handleGenererDevisSuccess = async () => {
@@ -117,6 +119,8 @@ export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }:
       const data = await res.json()
       setProspect(data)
     }
+    // Laisser le popup vert visible 1.5s avant de fermer le modal
+    setTimeout(() => setShowGenererDevisModal(false), 1500)
   }
 
   const handleEnvoyerEmailSuccess = async () => {
@@ -126,6 +130,8 @@ export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }:
       const data = await res.json()
       setProspect(data)
     }
+    // Laisser le popup vert visible 1.5s avant de fermer le modal
+    setTimeout(() => setShowEnvoyerEmailModal(false), 1500)
   }
 
   if (loading) {
