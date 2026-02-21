@@ -45,15 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Récupérer la conversion
     const conversion = await prisma.conversionEnCours.findUnique({
-      where: { idConversion: parseInt(idConversion, 10) },
-      include: {
-        prospect: {
-          select: {
-            nom: true,
-            prenom: true
-          }
-        }
-      }
+      where: { idConversion: parseInt(idConversion, 10) }
     })
 
     if (!conversion) {
@@ -81,8 +73,7 @@ export async function POST(request: NextRequest) {
     console.log(`[API] 🔓 Conversion déverrouillée - ID: ${idConversion}, Succès: ${success}, Durée: ${dureeMs}ms`)
 
     // === NOTIFICATION SSE ===
-    const prospect = conversion.prospect
-    const prospectName = `${prospect?.prenom} ${prospect?.nom}`
+    const prospectName = conversion.idProspect
 
     if (success) {
       // Notification de succès

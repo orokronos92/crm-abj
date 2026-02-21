@@ -72,7 +72,6 @@ model Prospect {
   candidats          Candidat[]
   documentsCandidat  DocumentCandidat[]
   historiqueEmails   HistoriqueEmail[]
-  conversionsEnCours ConversionEnCours[]
 
   @@index([emails], type: Gin)
   @@index([telephones], type: Gin)
@@ -845,9 +844,6 @@ model ConversionEnCours {
   dateDebut           DateTime @default(now()) @map("date_debut") @db.Timestamptz(6)
   dateFin             DateTime? @map("date_fin") @db.Timestamptz(6)
   dureeMs             Int?     @map("duree_ms") // Durée en millisecondes
-
-  // Relations
-  prospect Prospect @relation(fields: [idProspect], references: [idProspect], onDelete: Cascade)
 
   // Index pour performances
   @@index([idProspect, typeAction]) // Recherche rapide par prospect et action
