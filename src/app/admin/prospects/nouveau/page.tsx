@@ -1,13 +1,14 @@
 /**
  * Page Nouveau prospect
  * Formulaire de création manuelle d'un prospect
+ * Pattern : Fire-and-Forget + callback SSE via correlationId
  */
 
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useCallback } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { useCallbackListener } from '@/hooks/use-callback-listener'
 import {
   User,
   Mail,
@@ -21,23 +22,55 @@ import {
   Sparkles,
   CheckCircle,
   AlertCircle,
+  Loader2,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
+type ActionStatus = 'idle' | 'pending' | 'success' | 'error'
+
+const FORM_INITIAL_STATE = {
+  nom: '',
+  prenom: '',
+  email: '',
+  telephone: '',
+  adresse: '',
+  code_postal: '',
+  ville: '',
+  formation_souhaitee: '',
+  financement: '',
+}
 
 export default function NouveauProspectPage() {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [actionStatus, setActionStatus] = useState<ActionStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
-    email: '',
-    telephone: '',
-    adresse: '',
-    code_postal: '',
-    ville: '',
-    formation_souhaitee: '',
-    financement: '',
+  const [formData, setFormData] = useState(FORM_INITIAL_STATE)
+
+  // correlationId unique par tentative — regénéré après chaque succès
+  const correlationId = useRef(crypto.randomUUID())
+
+  // Écoute le callback n8n via SSE — 50s timeout
+  useCallbackListener({
+    correlationId: actionStatus === 'pending' ? correlationId.current : null,
+    onCallback: useCallback((status) => {
+      if (status === 'success') {
+        setActionStatus('success')
+        // Reset formulaire pour permettre saisie en série
+        setFormData(FORM_INITIAL_STATE)
+        // Regénérer correlationId pour la prochaine saisie
+        correlationId.current = crypto.randomUUID()
+        // Fermer le popup succès après 3s
+        setTimeout(() => setActionStatus('idle'), 3000)
+      } else {
+        setActionStatus('error')
+        setErrorMessage('Marjorie n\'a pas pu créer le prospect. Veuillez réessayer.')
+        setTimeout(() => {
+          setActionStatus('idle')
+          setErrorMessage(null)
+        }, 5000)
+      }
+    }, []),
+    timeoutSeconds: 50,
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -49,9 +82,13 @@ export default function NouveauProspectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    if (actionStatus === 'pending') return
+
     setErrorMessage(null)
-    setSuccessMessage(null)
+
+    // IMPORTANT : setActionStatus AVANT le fetch pour éviter la race condition
+    // (si n8n répond très vite, React batch les 2 états sinon)
+    setActionStatus('pending')
 
     try {
       const response = await fetch('/api/prospects/creer', {
@@ -67,20 +104,27 @@ export default function NouveauProspectPage() {
           ville: formData.ville || undefined,
           formationPrincipale: formData.formation_souhaitee,
           modeFinancement: formData.financement || undefined,
+          correlationId: correlationId.current,
         }),
       })
 
-      if (response.ok) {
-        setSuccessMessage('Prospect envoyé à Marjorie. Redirection en cours...')
-        setTimeout(() => router.push('/admin/prospects'), 1500)
-      } else {
+      if (!response.ok) {
         const data = await response.json()
+        setActionStatus('error')
         setErrorMessage(data.error || 'Une erreur est survenue. Veuillez réessayer.')
-        setIsSubmitting(false)
+        setTimeout(() => {
+          setActionStatus('idle')
+          setErrorMessage(null)
+        }, 5000)
       }
+      // Si response.ok : on reste en 'pending', on attend le callback SSE de n8n
     } catch {
+      setActionStatus('error')
       setErrorMessage('Impossible de contacter le serveur. Vérifiez votre connexion.')
-      setIsSubmitting(false)
+      setTimeout(() => {
+        setActionStatus('idle')
+        setErrorMessage(null)
+      }, 5000)
     }
   }
 
@@ -125,24 +169,44 @@ export default function NouveauProspectPage() {
           </div>
         </div>
 
-        {/* Popup succès */}
-        {successMessage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--success),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn pointer-events-auto">
-              <div className="w-14 h-14 rounded-full bg-[rgba(var(--success),0.15)] flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
+        {/* Popup "En cours de création" */}
+        {actionStatus === 'pending' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.3)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn">
+              <div className="w-14 h-14 rounded-full bg-[rgba(var(--accent),0.1)] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-[rgb(var(--accent))] animate-spin" />
               </div>
-              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Prospect créé avec succès</p>
-              <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie prend en charge le suivi. Redirection...</p>
+              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Création en cours…</p>
+              <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie traite la demande</p>
             </div>
           </div>
         )}
 
-        {/* Message erreur inline */}
-        {errorMessage && (
-          <div className="mb-4 p-4 bg-[rgba(var(--error),0.1)] border border-[rgba(var(--error),0.3)] rounded-xl flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-[rgb(var(--error))] flex-shrink-0" />
-            <p className="text-sm text-[rgb(var(--error))]">{errorMessage}</p>
+        {/* Popup succès */}
+        {actionStatus === 'success' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--success),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn">
+              <div className="w-14 h-14 rounded-full bg-[rgba(var(--success),0.15)] flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-[rgb(var(--success))]" />
+              </div>
+              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Prospect créé avec succès</p>
+              <p className="text-sm text-[rgb(var(--muted-foreground))]">Marjorie prend en charge le suivi</p>
+            </div>
+          </div>
+        )}
+
+        {/* Popup erreur */}
+        {actionStatus === 'error' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="bg-[rgb(var(--card))] border border-[rgba(var(--error),0.4)] rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fadeIn">
+              <div className="w-14 h-14 rounded-full bg-[rgba(var(--error),0.1)] flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-[rgb(var(--error))]" />
+              </div>
+              <p className="text-base font-semibold text-[rgb(var(--foreground))]">Échec de la création</p>
+              <p className="text-sm text-[rgb(var(--muted-foreground))] text-center max-w-xs">
+                {errorMessage || 'Une erreur est survenue. Veuillez réessayer.'}
+              </p>
+            </div>
           </div>
         )}
 
@@ -342,19 +406,20 @@ export default function NouveauProspectPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2.5 rounded-lg border border-[rgba(var(--border),0.5)] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--secondary))] transition-all"
+              disabled={actionStatus === 'pending'}
+              className="px-6 py-2.5 rounded-lg border border-[rgba(var(--border),0.5)] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--secondary))] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Annuler
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={actionStatus === 'pending'}
               className="btn-gold px-6 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
+              {actionStatus === 'pending' ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin" />
-                  Enregistrement...
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Création en cours…
                 </>
               ) : (
                 <>

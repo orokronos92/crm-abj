@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       ville,
       formationPrincipale,
       modeFinancement,
+      correlationId,
     } = body
 
     // Validation des champs obligatoires
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       formationPrincipale,
       modeFinancement: modeFinancement || undefined,
       sourceOrigine: 'CRM_ADMIN',
+      correlationId: correlationId || undefined,
     }
 
     // ===== FIRE-AND-FORGET : Lancer webhook n8n de manière asynchrone =====

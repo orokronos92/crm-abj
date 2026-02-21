@@ -220,6 +220,7 @@ export const prospectWebhooks = {
     formationPrincipale: string
     modeFinancement?: string
     sourceOrigine: string
+    correlationId?: string
   }): Promise<WebhookResponse> {
     return callWebhook('/prospect/creer', data)
   }
