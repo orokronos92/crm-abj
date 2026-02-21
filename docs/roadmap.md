@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-21 (pattern callback SSE sur formulaire nouveau prospect)
+**Dernière mise à jour** : 2026-02-21 (fix FK conversions_en_cours → formulaire nouveau prospect opérationnel)
 
 ---
 
@@ -261,6 +261,23 @@ Le champ `suggestions` est optionnel — s'il est présent, des boutons cliquabl
 - `src/lib/webhook-client.ts` : signature de `creerProspect()` étendue avec `correlationId?: string`.
 
 **Commit** : `7bc0c21` — `feat: branchement formulaire nouveau prospect vers n8n via callback SSE`
+
+---
+
+## 📅 JOURNAL — 2026-02-21 (suite 3)
+
+### Fix — Contrainte FK bloquant la création de prospect (conversions_en_cours)
+
+**Symptôme** : Le formulaire `/admin/prospects/nouveau` retournait une erreur 500 au clic sur "Créer le prospect". L'endpoint `/api/prospects/creer` échouait dès la création du verrou `ConversionEnCours`.
+
+**Cause racine** : Le modèle `ConversionEnCours` avait une relation Prisma `@relation` vers `Prospect` sur le champ `idProspect`. PostgreSQL imposait donc une contrainte FK — `conversions_en_cours.id_prospect` devait référencer un `prospects.id_prospect` existant. Or pour `CREER_PROSPECT`, le prospect **n'existe pas encore** en BDD au moment de l'envoi : c'est Marjorie qui le crée côté n8n. L'ID temporaire `creer-email@x.fr-1234567890` provoquait une violation de clé étrangère.
+
+**Fix appliqué** :
+- `prisma/schema.prisma` : suppression de la relation `prospect Prospect @relation(...)` sur `ConversionEnCours` et retrait de `conversionsEnCours ConversionEnCours[]` sur `Prospect`. Le champ `idProspect` reste en tant que simple `String` libre, sans contrainte FK.
+- `src/app/api/prospects/conversion-complete/route.ts` : retrait de l'`include: { prospect: ... }` rendu invalide par la suppression de la relation. Le nom du prospect dans les messages de notification utilise désormais `conversion.idProspect` directement.
+- BDD synchronisée via `npx prisma db push` (le migrate dev échoue sur la shadow database en raison d'une vieille migration, db push s'applique directement).
+
+**Commit** : `6de779a` — `fix: suppression FK conversions_en_cours → prospects pour permettre CREER_PROSPECT`
 
 ---
 
