@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-21 (branchement formulaire nouveau prospect → n8n)
+**Dernière mise à jour** : 2026-02-21 (pattern callback SSE sur formulaire nouveau prospect)
 
 ---
 
@@ -239,6 +239,28 @@ const total = initialTotal - (initialProspects.length - prospects.length)
 Le champ `suggestions` est optionnel — s'il est présent, des boutons cliquables apparaissent sous la réponse pour enchaîner rapidement.
 
 **Commit** : `1a0cb31` — `feat: câblage bulle Marjorie → chat conversationnel réel avec historique et typing indicator`
+
+---
+
+## 📅 JOURNAL — 2026-02-21 (suite 2)
+
+### T5 — Pattern callback SSE sur formulaire "Nouveau prospect"
+
+**But** : Ajouter la confirmation réelle de n8n sur le formulaire `/admin/prospects/nouveau`. Avant ce changement, le succès était affiché dès que l'API répondait `202` — sans attendre que Marjorie ait réellement créé le prospect.
+
+**Flux implémenté** : Clic "Créer le prospect" → popup spinner "Création en cours…" → webhook n8n traite → callback SSE avec `correlationId` → popup succès + reset formulaire (prêt pour saisie suivante). Timeout 50s → popup erreur si n8n ne répond pas.
+
+**Même pattern que `ConvertirCandidatModal`** pour la cohérence du comportement utilisateur.
+
+**Actions mises en œuvre** :
+
+- `src/app/admin/prospects/nouveau/page.tsx` : refactoré pour utiliser `useCallbackListener`. `correlationId = useRef(crypto.randomUUID())` généré au montage. `setActionStatus('pending')` placé **avant** le `await fetch` (fix race condition). Trois popups overlay distincts : spinner doré (`pending`), vert (`success`), rouge (`error`). Après succès : **reset formulaire** vers les valeurs vides (pas de redirection) + regénération du `correlationId` pour permettre la saisie en série (ex : 10 prospects saisis à la volée lors d'une journée portes ouvertes). Timeout 50s avant popup erreur automatique.
+
+- `src/app/api/prospects/creer/route.ts` : accepte et transmet le champ `correlationId` dans le payload envoyé à n8n.
+
+- `src/lib/webhook-client.ts` : signature de `creerProspect()` étendue avec `correlationId?: string`.
+
+**Commit** : `7bc0c21` — `feat: branchement formulaire nouveau prospect vers n8n via callback SSE`
 
 ---
 
