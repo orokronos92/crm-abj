@@ -259,6 +259,58 @@ Le champ `suggestions` est optionnel — s'il est présent, des boutons cliquabl
 
 ---
 
+## 📐 ARCHITECTURE — Webhooks CRM ↔ n8n
+
+### Deux webhooks distincts et indépendants
+
+Le CRM communique avec n8n via **deux webhooks séparés**, chacun avec un rôle précis.
+
+#### Webhook 1 — Dispatcher actions directes
+**Endpoint CRM** : `POST /api/actions/trigger`
+**Cible n8n** : `N8N_WEBHOOK_BASE_URL` + chemin spécifique par type d'action
+
+Toutes les actions métier déclenchées depuis les modals du CRM (envoyer devis, convertir candidat, envoyer email, demander document, etc.) arrivent sur ce webhook. Le payload contient un champ `actionType` qui permet à un Switch node n8n de router vers le bon agent spécialisé.
+
+```
+CRM /api/actions/trigger
+        ↓
+n8n /webhook/crm-dispatcher
+        Switch sur actionType
+        ├─→ Agent "Envoyer devis"
+        ├─→ Agent "Convertir candidat"
+        ├─→ Agent "Envoyer email"
+        └─→ etc.
+```
+
+Le callback de confirmation retourne via `POST /api/webhook/callback` avec le `correlationId` — ce qui déclenche le popup succès/erreur dans le modal côté CRM.
+
+#### Webhook 2 — Chat Marjorie (conversationnel)
+**Endpoint CRM** : `POST /api/marjorie/chat`
+**Cible n8n** : `N8N_MARJORIE_CHAT_WEBHOOK_URL` = `/webhook/marjorie-chat`
+
+Le chat conversationnel de la bulle flottante utilise ce webhook **séparé**. Le payload contient `{ userId, userRole, message, conversationHistory }`. n8n retourne une réponse synchrone `{ reply, suggestions }` affichée directement dans la bulle de chat.
+
+```
+CRM /api/marjorie/chat
+        ↓
+n8n /webhook/marjorie-chat
+        Agent conversationnel (mémoire longue, rôle adaptatif)
+        ↓
+{ "reply": "...", "suggestions": ["..."] }
+```
+
+### Résumé
+
+| | Webhook dispatcher | Webhook chat |
+|---|---|---|
+| **Endpoint CRM** | `/api/actions/trigger` | `/api/marjorie/chat` |
+| **Chemin n8n** | `/webhook/crm-dispatcher` | `/webhook/marjorie-chat` |
+| **Mode** | Fire-and-Forget + callback SSE | Requête/réponse synchrone |
+| **Retour** | Via `POST /api/webhook/callback` (correlationId) | JSON direct dans la réponse HTTP |
+| **Usage** | Actions métier (modals) | Chat conversationnel (bulle) |
+
+---
+
 **Légende** :
 - ✅ Terminé et committé
 - 🔄 En cours ou prêt à démarrer
