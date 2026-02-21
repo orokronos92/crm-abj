@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-21 (fix FK conversions_en_cours → formulaire nouveau prospect opérationnel)
+**Dernière mise à jour** : 2026-02-21 (fix webhook creerProspect → dispatcher /crm-action)
 
 ---
 
@@ -278,6 +278,21 @@ Le champ `suggestions` est optionnel — s'il est présent, des boutons cliquabl
 - BDD synchronisée via `npx prisma db push` (le migrate dev échoue sur la shadow database en raison d'une vieille migration, db push s'applique directement).
 
 **Commit** : `6de779a` — `fix: suppression FK conversions_en_cours → prospects pour permettre CREER_PROSPECT`
+
+---
+
+## 📅 JOURNAL — 2026-02-21 (suite 4)
+
+### Fix — creerProspect envoyait sur un chemin webhook inexistant en prod
+
+**Symptôme** : Le formulaire `/admin/prospects/nouveau` retournait 500 en prod. Le webhook `/prospect/creer` n'existait pas dans n8n.
+
+**Cause racine** : `creerProspect()` dans `webhook-client.ts` appelait `callWebhook('/prospect/creer', data)` — un chemin dédié qui n'a jamais été créé côté n8n. Toutes les autres actions (CONVERTIR_CANDIDAT, ENVOYER_EMAIL, etc.) passent par le dispatcher unique `/crm-action` avec un champ `actionType` dans le payload, routé par un Switch n8n.
+
+**Fix appliqué** :
+- `src/lib/webhook-client.ts` : `creerProspect()` appelle désormais `callWebhook('/crm-action', { actionType: 'CREER_PROSPECT', ...data })` — aligné sur le même dispatcher que toutes les autres actions.
+
+**Commit** : `85b8a9d` — `fix: aligner creerProspect sur le dispatcher /crm-action avec actionType`
 
 ---
 
