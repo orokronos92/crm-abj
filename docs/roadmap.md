@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-21 (fix popups succès + blocage formulaire nouveau prospect)
+**Dernière mise à jour** : 2026-02-21 (fix router.refresh() — liste prospects mise à jour sans F5)
 
 ---
 
@@ -316,6 +316,30 @@ Le champ `suggestions` est optionnel — s'il est présent, des boutons cliquabl
 
 **Fichiers modifiés** : `src/components/admin/ProspectDetailPanel.tsx`, `src/app/admin/prospects/nouveau/page.tsx`
 **Commit** : `96ccba5` — `fix: fermeture auto popups succès + suppression blocage formulaire nouveau prospect`
+
+---
+
+## 📅 JOURNAL — 2026-02-21 (suite 6)
+
+### Fix — Nouveau prospect créé non visible sans F5
+
+**Symptôme** : Après création d'un prospect via le formulaire, le prospect n'apparaissait pas dans la liste `/admin/prospects` sans recharger manuellement la page (F5 ou navigation vers un autre onglet puis retour).
+
+**Cause** : La page Prospects est un Server Component — ses données sont chargées une seule fois au rendu initial. Quand Marjorie crée le prospect côté n8n, le CRM n'est pas notifié et la liste reste figée.
+
+**Fix** : Ajout de `router.refresh()` dans le callback SSE de succès, juste après le reset du formulaire. Next.js revalide silencieusement les Server Components en arrière-plan sans changer de page ni interrompre la saisie. Le prospect apparaît dans la liste dès que l'utilisateur y retourne, sans aucune action manuelle.
+
+```typescript
+if (status === 'success') {
+  setFormData(FORM_INITIAL_STATE)
+  correlationId.current = crypto.randomUUID()
+  router.refresh() // ← revalide la liste prospects en arrière-plan
+  setTimeout(() => setActionStatus('idle'), 3000)
+}
+```
+
+**Fichier modifié** : `src/app/admin/prospects/nouveau/page.tsx`
+**Commit** : `c3efc75` — `fix: router.refresh() après succès création prospect — liste mise à jour sans F5`
 
 ---
 
