@@ -222,7 +222,7 @@ export const prospectWebhooks = {
     sourceOrigine: string
     correlationId?: string
   }): Promise<WebhookResponse> {
-    return callWebhook('/prospect/creer', data)
+    return callWebhook('/crm-action', { actionType: 'CREER_PROSPECT', ...data })
   }
 }
 
