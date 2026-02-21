@@ -203,6 +203,25 @@ export const prospectWebhooks = {
     contenu: string
   }): Promise<WebhookResponse> {
     return callWebhook('/prospect/envoyer-email', data)
+  },
+
+  /**
+   * Créer un nouveau prospect manuellement depuis le CRM
+   * Marjorie prend en charge la création en BDD et le suivi
+   */
+  async creerProspect(data: {
+    nom: string
+    prenom: string
+    email: string
+    telephone: string
+    adresse?: string
+    codePostal?: string
+    ville?: string
+    formationPrincipale: string
+    modeFinancement?: string
+    sourceOrigine: string
+  }): Promise<WebhookResponse> {
+    return callWebhook('/prospect/creer', data)
   }
 }
 

@@ -19,11 +19,15 @@ import {
   ArrowLeft,
   Save,
   Sparkles,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react'
 
 export default function NouveauProspectPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     nom: '',
     prenom: '',
@@ -46,14 +50,38 @@ export default function NouveauProspectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setErrorMessage(null)
+    setSuccessMessage(null)
 
-    // TODO: Appel API pour créer le prospect
-    // await fetch('/api/prospects', { method: 'POST', body: JSON.stringify(formData) })
+    try {
+      const response = await fetch('/api/prospects/creer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          telephone: formData.telephone,
+          adresse: formData.adresse || undefined,
+          codePostal: formData.code_postal || undefined,
+          ville: formData.ville || undefined,
+          formationPrincipale: formData.formation_souhaitee,
+          modeFinancement: formData.financement || undefined,
+        }),
+      })
 
-    setTimeout(() => {
+      if (response.ok) {
+        setSuccessMessage('Prospect envoyé à Marjorie. Redirection en cours...')
+        setTimeout(() => router.push('/admin/prospects'), 1500)
+      } else {
+        const data = await response.json()
+        setErrorMessage(data.error || 'Une erreur est survenue. Veuillez réessayer.')
+        setIsSubmitting(false)
+      }
+    } catch {
+      setErrorMessage('Impossible de contacter le serveur. Vérifiez votre connexion.')
       setIsSubmitting(false)
-      router.push('/admin/prospects')
-    }, 1500)
+    }
   }
 
   return (
@@ -96,6 +124,20 @@ export default function NouveauProspectPage() {
             </p>
           </div>
         </div>
+
+        {/* Messages feedback */}
+        {successMessage && (
+          <div className="mb-4 p-4 bg-[rgba(var(--success),0.1)] border border-[rgba(var(--success),0.3)] rounded-xl flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0" />
+            <p className="text-sm text-[rgb(var(--success))]">{successMessage}</p>
+          </div>
+        )}
+        {errorMessage && (
+          <div className="mb-4 p-4 bg-[rgba(var(--error),0.1)] border border-[rgba(var(--error),0.3)] rounded-xl flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-[rgb(var(--error))] flex-shrink-0" />
+            <p className="text-sm text-[rgb(var(--error))]">{errorMessage}</p>
+          </div>
+        )}
 
         {/* Formulaire */}
         <form onSubmit={handleSubmit} className="space-y-2">
