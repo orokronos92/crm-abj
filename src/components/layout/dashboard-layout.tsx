@@ -12,6 +12,7 @@ import { Bell, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle,
 import { usePathname } from 'next/navigation'
 import { useNotifications } from '@/hooks/use-notifications'
 import { NotificationSkeleton } from '@/components/ui/notification-skeleton'
+import { MarjorieChatBanner } from '@/components/shared/marjorie-chat-banner'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -74,7 +75,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showMarjorieChat, setShowMarjorieChat] = useState(false)
   const [showSettingsCanvas, setShowSettingsCanvas] = useState(false)
-  const [marjorieMessage, setMarjorieMessage] = useState('')
 
   // Déterminer le rôle basé sur le path
   const getRoleFromPath = () => {
@@ -107,19 +107,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Masquer le bouton Marjorie sur la page Marjorie elle-même
   const showMarjorieButton = !pathname?.includes('/marjorie')
-
-  const handleSendMessage = () => {
-    if (marjorieMessage.trim()) {
-      // TODO: Envoyer le message à Marjorie via webhook n8n
-      console.log('Message envoyé à Marjorie:', marjorieMessage)
-      setMarjorieMessage('')
-      // Simuler une réponse
-      setTimeout(() => {
-        alert('Marjorie a bien reçu votre demande. Vous recevrez une notification dès qu\'elle aura traité votre requête.')
-        setShowMarjorieChat(false)
-      }, 500)
-    }
-  }
 
   const getNotificationIcon = (iconType: string) => {
     switch (iconType) {
@@ -445,70 +432,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Bannière chat Marjorie */}
       {showMarjorieChat && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 animate-slideUp">
-          <div className="bg-[rgb(var(--card))] border-t-2 border-[rgb(var(--accent))] shadow-2xl">
-            <div className="max-w-4xl mx-auto p-4">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-[rgb(var(--primary))]" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[rgb(var(--foreground))]">Marjorie</h3>
-                    <p className="text-xs text-[rgb(var(--muted-foreground))]">Assistante IA • En ligne</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowMarjorieChat(false)}
-                  className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-                </button>
-              </div>
-
-              {/* Message d'aide */}
-              <div className="mb-3 p-3 bg-gradient-to-r from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
-                <p className="text-sm text-[rgb(var(--foreground))]">
-                  💬 <strong>Demandez-moi n'importe quoi !</strong>
-                </p>
-                <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
-                  Envoi de devis, génération de documents, création de sessions, relance candidats, etc.
-                </p>
-              </div>
-
-              {/* Input message */}
-              <div className="flex items-end gap-3">
-                <div className="flex-1">
-                  <textarea
-                    value={marjorieMessage}
-                    onChange={(e) => setMarjorieMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleSendMessage()
-                      }
-                    }}
-                    placeholder="Ex: Envoie un devis à Juliette Rimbo (JURI102025)..."
-                    rows={3}
-                    className="w-full px-4 py-3 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-xl text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)] resize-none"
-                  />
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1 ml-1">
-                    Entrée pour envoyer • Shift+Entrée pour nouvelle ligne
-                  </p>
-                </div>
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!marjorieMessage.trim()}
-                  className="px-6 py-3 h-[76px] bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] text-[rgb(var(--primary))] rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Send className="w-5 h-5" />
-                  Envoyer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MarjorieChatBanner onClose={() => setShowMarjorieChat(false)} />
       )}
 
       {/* Canvas Paramètres */}
