@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-21 (fix router.refresh() — liste prospects mise à jour sans F5)
+**Dernière mise à jour** : 2026-02-22 (seed catalogue formations ABJ 2025-26)
 
 ---
 
@@ -340,6 +340,48 @@ if (status === 'success') {
 
 **Fichier modifié** : `src/app/admin/prospects/nouveau/page.tsx`
 **Commit** : `c3efc75` — `fix: router.refresh() après succès création prospect — liste mise à jour sans F5`
+
+---
+
+## 📅 JOURNAL — 2026-02-22
+
+### T6 — Catalogue formations ABJ 2025-26 seedé en base
+
+**But** : Peupler la table `formations` avec toutes les formations officielles ABJ (tarifs TTC, durées, descriptions, prérequis, objectifs, programme) à partir du catalogue PDF 2025-26.
+
+**Contexte** : Le catalogue PDF `docs/Catalogue ABJ 2025-26.pdf` (images scannées, non extractible en texte) a été converti manuellement en Markdown par l'utilisateur. La session précédente avait aussi scrapé le site academiedebijouteriejoaillerie.fr pour récupérer les descriptions.
+
+**Actions mises en œuvre** :
+
+- Ajout du champ `idFormateurAttire Int? @map("id_formateur_attire")` sur le modèle `Formation` dans `prisma/schema.prisma` (session précédente).
+- Retrait de la fonction statique `getFormationLabel()` dans `CandidatService` — remplacement par une requête BDD dynamique sur la table `formations` (formations réelles au lieu d'un dictionnaire hardcodé).
+- `src/components/admin/ProspectsFilters.tsx` : désormais alimenté dynamiquement depuis la BDD (`formations` props passées depuis le Server Component parent) au lieu de valeurs hardcodées.
+- `scripts/seed-formations.ts` *(nouveau fichier, 921 lignes)* : script de seed complet en upsert (findUnique → update ou create). Couvre 40 formations dans 15 disciplines :
+
+| Discipline | Codes | Tarif | Durée |
+|---|---|---|---|
+| CAP ATBJ | CAP_BJ | 15 000€ | 800h |
+| Bijouterie Créateur | BIJ_CR_N1/N2/N3 | 1 130€ | 30h |
+| Bijouterie Technique | BIJ_TECH_N1/N2/N3 | 1 130€ | 30h |
+| Joaillerie | JOAILL_N1/N2/N3 | 1 130€ | 30h |
+| Sertissage | SERTI_N1/N2/N3 | 1 130€→1 330€ | 30h |
+| Ciselure | CISEL_N1/N2/N3 | 1 130€ | 30h |
+| Émail Grand Feu | EMAIL_N1/N2_CLOIS/N2_CHAMP/N3 | 1 280€→1 380€ | 30h |
+| Gemmologie | GEMMO_N1/N2 | 1 050€→1 250€ | 30h |
+| Taille Lapidaire | LAPID_N1/N2/N3/N4 | 1 630€ | 40h |
+| Maquette de Bijoux | MAQUETTE_N1/N2/N3 | 1 130€ | 30h |
+| CAO/DAO | CAO_DAO | 910€ | 26h |
+| Haute Fantaisie | HAUTE_FANT_N1/N2/N3 | 950€ | 30h |
+| Histoire de l'Art | HIST_ART | 900€ | 30h |
+| Dessin | DESSIN_TECH / DESSIN_GOUACHE | 900€ | 30h |
+| Douane & Garantie | DOUANE_GARANTIE | 180€ | 4h |
+| Ateliers Découverte | DECOUV_BIJ_EMAIL / DECOUV_BIJ_LAPID / DECOUV_CIS_EMAIL | 1 130€ | 30h |
+
+**Résultat en base** : 43 formations totales (40 mises à jour par le script + 3 qui existaient déjà).
+
+**Utilisation** : Ces formations alimentent dynamiquement les filtres de la page Prospects, les dropdowns de création de candidat, et partout où les formations sont référencées dans le CRM.
+
+**Commit** : `aebd298` — `feat: seed complet du catalogue formations ABJ 2025-26`
 
 ---
 
