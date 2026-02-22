@@ -1,103 +1,91 @@
 'use client'
 
-import { useState } from 'react'
-import { GraduationCap, Euro, AlertTriangle, Send, CheckCircle } from 'lucide-react'
-import { useActionNotification } from '@/hooks/use-action-notification'
+import { useState, useRef } from 'react'
+import { GraduationCap, Euro, AlertTriangle, Send, CheckCircle, Loader2, AlertCircle } from 'lucide-react'
+import { useCallbackListener } from '@/hooks/use-callback-listener'
 
 interface TabSyntheseProps {
   eleve: any
 }
 
+type ActionStatus = 'idle' | 'pending' | 'success' | 'error'
+
 export function TabSynthese({ eleve }: TabSyntheseProps) {
   const hasAlert = eleve.alertes && eleve.alertes.length > 0
-  const [sendingRappel, setSendingRappel] = useState(false)
-  const [rappelSent, setRappelSent] = useState(false)
-  const { createActionNotification } = useActionNotification()
+  const [actionStatus, setActionStatus] = useState<ActionStatus>('idle')
+  const [actionMessage, setActionMessage] = useState('')
+  const correlationId = useRef(crypto.randomUUID())
+
+  // Écoute le callback n8n via SSE (actif seulement quand pending)
+  useCallbackListener({
+    correlationId: actionStatus === 'pending' ? correlationId.current : null,
+    onCallback: (status) => {
+      if (status === 'success') {
+        setActionStatus('success')
+        setActionMessage('Rappel de paiement envoyé avec succès.')
+      } else {
+        setActionStatus('error')
+        setActionMessage('Erreur lors de l\'envoi du rappel. Veuillez réessayer.')
+      }
+      setTimeout(() => setActionStatus('idle'), 5000)
+    },
+    timeoutSeconds: 30
+  })
 
   const handleEnvoyerRappel = async () => {
-    if (!eleve) return
+    if (actionStatus !== 'idle') return
 
-    setSendingRappel(true)
+    // Générer un nouveau correlationId pour chaque tentative
+    correlationId.current = crypto.randomUUID()
+    setActionStatus('pending')
+    setActionMessage('Envoi du rappel en cours...')
+
     try {
-      // 1. Créer vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'ELEVE',
-        type: 'RAPPEL_PAIEMENT',
-        priorite: 'HAUTE',
-        titre: `Rappel de paiement envoyé à ${eleve.prenom} ${eleve.nom}`,
-        message: `Reste à payer: ${eleve.reste_a_payer.toLocaleString('fr-FR')}€ - Dossier ${eleve.numero_dossier}`,
-        entiteType: 'eleve',
-        entiteId: eleve.id.toString(),
-        actionRequise: true,
-        typeAction: 'RELANCER'
-      })
-
-      // 2. Construire le payload enrichi
-      const payload = {
-        // === IDENTIFICATION ACTION ===
-        actionType: 'ENVOYER_RAPPEL_PAIEMENT_ELEVE',
-        actionSource: 'admin.eleves.synthese',
-        actionButton: 'envoyer_rappel_paiement',
-
-        // === CONTEXTE MÉTIER ===
-        entiteType: 'eleve',
-        entiteId: eleve.id.toString(),
-        entiteData: {
-          idEleve: eleve.id,
-          numeroDossier: eleve.numero_dossier,
-          nom: eleve.nom,
-          prenom: eleve.prenom,
-          email: eleve.email,
-          telephone: eleve.telephone,
-          formation: eleve.formation
-        },
-
-        // === DÉCISION UTILISATEUR ===
-        decidePar: currentUserId,
-        decisionType: 'relance_paiement',
-        commentaire: `Rappel de paiement pour ${eleve.prenom} ${eleve.nom}`,
-
-        // === MÉTADONNÉES SPÉCIFIQUES ===
-        metadonnees: {
-          numeroDossier: eleve.numero_dossier,
-          montantTotal: eleve.montant_total,
-          montantPaye: eleve.montant_paye,
-          resteAPayer: eleve.reste_a_payer,
-          modeFinancement: eleve.financement
-        },
-
-        // === CONFIGURATION RÉPONSE ===
-        responseConfig: {
-          callbackUrl: `${window.location.origin}/api/webhook/callback`,
-          updateNotification: true,
-          expectedResponse: 'rappel_sent',
-          timeoutSeconds: 30
-        }
-      }
-
-      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+      const response = await fetch('/api/actions/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          actionType: 'ENVOYER_RAPPEL_PAIEMENT_ELEVE',
+          actionSource: 'admin.eleves.synthese',
+          correlationId: correlationId.current,
+          entiteType: 'eleve',
+          entiteId: eleve.id.toString(),
+          entiteData: {
+            idEleve: eleve.id,
+            numeroDossier: eleve.numero_dossier,
+            nom: eleve.nom,
+            prenom: eleve.prenom,
+            email: eleve.email,
+            telephone: eleve.telephone,
+            formation: eleve.formation
+          },
+          metadonnees: {
+            numeroDossier: eleve.numero_dossier,
+            montantTotal: eleve.montant_total,
+            montantPaye: eleve.montant_paye,
+            resteAPayer: eleve.reste_a_payer,
+            modeFinancement: eleve.financement
+          },
+          responseConfig: {
+            callbackUrl: `${window.location.origin}/api/webhook/callback`,
+            expectedResponse: 'rappel_sent',
+            timeoutSeconds: 30
+          }
+        })
       })
 
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        // Demande envoyée avec succès
-        setRappelSent(true)
-        setTimeout(() => setRappelSent(false), 5000) // Reset après 5 secondes
-      } else if (response.status === 409) {
-        // Envoi déjà en cours
-        alert(result.message || 'Un rappel de paiement est déjà en cours pour cet élève')
-      } else {
-        alert(result.error || 'Erreur lors de l\'envoi du rappel de paiement')
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        setActionStatus('error')
+        setActionMessage(data.error || 'Erreur lors de l\'envoi du rappel.')
+        setTimeout(() => setActionStatus('idle'), 5000)
       }
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Erreur lors de l\'envoi du rappel de paiement')
-    } finally {
-      setSendingRappel(false)
+      // Si response.ok → on attend le callback SSE via useCallbackListener
+
+    } catch {
+      setActionStatus('error')
+      setActionMessage('Impossible de contacter le serveur.')
+      setTimeout(() => setActionStatus('idle'), 5000)
     }
   }
 
@@ -189,29 +177,49 @@ export function TabSynthese({ eleve }: TabSyntheseProps) {
             </p>
           </div>
         </div>
+
+        {/* Bouton rappel paiement — visible uniquement si reste à payer */}
         {eleve.reste_a_payer > 0 && (
-          <button
-            onClick={handleEnvoyerRappel}
-            disabled={sendingRappel || rappelSent}
-            className="w-full mt-4 px-4 py-2.5 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {sendingRappel ? (
-              <>
-                <div className="w-4 h-4 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin"></div>
-                Envoi en cours...
-              </>
-            ) : rappelSent ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                Rappel envoyé !
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                Envoyer rappel de paiement
-              </>
+          <div className="mt-4">
+            {/* Popup statut */}
+            {actionStatus !== 'idle' && (
+              <div className={`mb-3 px-4 py-2.5 rounded-lg flex items-center gap-3 text-sm ${
+                actionStatus === 'pending'
+                  ? 'bg-[rgba(var(--accent),0.1)] border border-[rgba(var(--accent),0.3)] text-[rgb(var(--accent))]'
+                  : actionStatus === 'success'
+                  ? 'bg-[rgba(var(--success),0.1)] border border-[rgba(var(--success),0.3)] text-[rgb(var(--success))]'
+                  : 'bg-[rgba(var(--error),0.1)] border border-[rgba(var(--error),0.3)] text-[rgb(var(--error))]'
+              }`}>
+                {actionStatus === 'pending' && <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />}
+                {actionStatus === 'success' && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+                {actionStatus === 'error' && <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+                <span>{actionMessage}</span>
+              </div>
             )}
-          </button>
+
+            <button
+              onClick={handleEnvoyerRappel}
+              disabled={actionStatus !== 'idle'}
+              className="w-full px-4 py-2.5 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {actionStatus === 'pending' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Envoi en cours...
+                </>
+              ) : actionStatus === 'success' ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Rappel envoyé !
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Envoyer rappel de paiement
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
 
