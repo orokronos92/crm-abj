@@ -637,7 +637,7 @@ interface CandidatData {
 const CANDIDATS_DATA: CandidatData[] = [
   {
     prospectIdx: 0, // Émilie Leduc
-    numeroDossier: 'LEDU-EMIL-010126',
+    numeroDossier: 'LEEM01012026',
     formationRetenue: 'BIJ_CR_N1', idFormationRetenue: ID_FORMATION_BIJ_N1,
     sessionVisee: 'Mars 2026',
     modeFinancement: 'Personnel',
@@ -653,7 +653,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 1, // Raphaël Bertrand
-    numeroDossier: 'BERT-RAPH-180126',
+    numeroDossier: 'BERA18012026',
     formationRetenue: 'SERTI_N1', idFormationRetenue: ID_FORMATION_SERTI_N1,
     sessionVisee: 'Avril 2026',
     modeFinancement: 'CPF',
@@ -669,7 +669,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 2, // Ingrid Joly
-    numeroDossier: 'JOLY-INGR-101225',
+    numeroDossier: 'JOIN10122025',
     formationRetenue: 'JOAILL_N1', idFormationRetenue: ID_FORMATION_JOAILL_N1,
     sessionVisee: 'Mars 2026',
     modeFinancement: 'OPCO',
@@ -685,7 +685,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 3, // Xavier Brun
-    numeroDossier: 'BRUN-XAVI-201125',
+    numeroDossier: 'BRXA20112025',
     formationRetenue: 'CAP_BJ', idFormationRetenue: ID_FORMATION_CAP,
     sessionVisee: 'Septembre 2026',
     modeFinancement: 'France Travail',
@@ -701,7 +701,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 4, // Adrienne Robin
-    numeroDossier: 'ROBI-ADRI-080126',
+    numeroDossier: 'ROAD08012026',
     formationRetenue: 'GEMMO_N1', idFormationRetenue: ID_FORMATION_GEMMO_N1,
     sessionVisee: 'Avril 2026',
     modeFinancement: 'Personnel',
@@ -717,7 +717,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 0, // on crée un 6e candidat lié au même type de prospect
-    numeroDossier: 'LEDO-THEO-150126',
+    numeroDossier: 'LETH15012026',
     formationRetenue: 'BIJ_CR_N2', idFormationRetenue: ID_FORMATION_BIJ_N2,
     sessionVisee: 'Juin 2026',
     modeFinancement: 'OPCO',
@@ -733,7 +733,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 1,
-    numeroDossier: 'DEVA-MATH-050226',
+    numeroDossier: 'DEMA05022026',
     formationRetenue: 'SERTI_N2', idFormationRetenue: ID_FORMATION_SERTI_N2,
     sessionVisee: 'Mai 2026',
     modeFinancement: 'Personnel',
@@ -749,7 +749,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 2,
-    numeroDossier: 'CHAM-PIER-120126',
+    numeroDossier: 'CHPI12012026',
     formationRetenue: 'JOAILL_N2', idFormationRetenue: ID_FORMATION_JOAILL_N2,
     sessionVisee: 'Avril 2026',
     modeFinancement: 'OPCO',
@@ -765,7 +765,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 3,
-    numeroDossier: 'THOM-ALEX-120126',
+    numeroDossier: 'THAL12012026',
     formationRetenue: 'CAP_BJ', idFormationRetenue: ID_FORMATION_CAP,
     sessionVisee: 'Septembre 2026',
     modeFinancement: 'CPF',
@@ -781,7 +781,7 @@ const CANDIDATS_DATA: CandidatData[] = [
   },
   {
     prospectIdx: 4,
-    numeroDossier: 'PELL-SARA-150126',
+    numeroDossier: 'PESA15012026',
     formationRetenue: 'EMAIL_N1', idFormationRetenue: ID_FORMATION_EMAIL_N1,
     sessionVisee: 'Juin 2026',
     modeFinancement: 'Personnel',
@@ -819,7 +819,7 @@ interface EleveData {
 const ELEVES_DATA: EleveData[] = [
   {
     prospectIdx: 0, idUtilisateur: 12, // Léa Blanc
-    numeroDossier: 'BLAN-LEA-010925',
+    numeroDossier: 'BLLE01092025',
     formationSuivie: 'CAP_BJ', idFormation: ID_FORMATION_CAP, idSession: ID_SESSION_CAP, idFormateur: ID_FORMATEUR_PHILIPPE,
     dateDebut: date(2025, 9, 1), dateFinPrevue: date(2026, 6, 30),
     statutFormation: 'EN_COURS',
@@ -828,7 +828,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 1, idUtilisateur: 13, // Hugo Guérin
-    numeroDossier: 'GUER-HUGO-010925',
+    numeroDossier: 'GUHU01092025',
     formationSuivie: 'CAP_BJ', idFormation: ID_FORMATION_CAP, idSession: ID_SESSION_CAP, idFormateur: ID_FORMATEUR_PHILIPPE,
     dateDebut: date(2025, 9, 1), dateFinPrevue: date(2026, 6, 30),
     statutFormation: 'EN_COURS',
@@ -837,7 +837,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 2, idUtilisateur: 14, // Alice Faure
-    numeroDossier: 'FAUR-ALIC-011025',
+    numeroDossier: 'FAAL01102025',
     formationSuivie: 'BIJ_CR_N1', idFormation: ID_FORMATION_BIJ_N1, idSession: ID_SESSION_INIT, idFormateur: ID_FORMATEUR_SOPHIE,
     dateDebut: date(2025, 10, 6), dateFinPrevue: date(2025, 11, 14),
     statutFormation: 'EN_COURS',
@@ -846,7 +846,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 3, idUtilisateur: 15, // Louis André
-    numeroDossier: 'ANDR-LOUI-150925',
+    numeroDossier: 'ANLO15092025',
     formationSuivie: 'SERTI_N1', idFormation: ID_FORMATION_SERTI_N1, idSession: ID_SESSION_PERF, idFormateur: ID_FORMATEUR_JEAN_PIERRE,
     dateDebut: date(2025, 9, 15), dateFinPrevue: date(2025, 10, 24),
     statutFormation: 'EN_COURS',
@@ -855,7 +855,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 4, idUtilisateur: 16, // Inès Chevalier
-    numeroDossier: 'CHEV-INES-200825',
+    numeroDossier: 'CHIN20082025',
     formationSuivie: 'JOAILL_N1', idFormation: ID_FORMATION_JOAILL_N1, idSession: ID_SESSION_PERF, idFormateur: ID_FORMATEUR_CATHERINE,
     dateDebut: date(2025, 10, 6), dateFinPrevue: date(2025, 11, 7),
     statutFormation: 'EN_COURS',
@@ -864,7 +864,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 5, idUtilisateur: 17, // Tom François
-    numeroDossier: 'FRAN-TOM-010925',
+    numeroDossier: 'FRTO01092025',
     formationSuivie: 'CISEL_N1', idFormation: ID_FORMATION_CISEL_N1, idSession: ID_SESSION_PERF, idFormateur: ID_FORMATEUR_FRANCOIS,
     dateDebut: date(2025, 10, 13), dateFinPrevue: date(2025, 11, 21),
     statutFormation: 'EN_COURS',
@@ -873,7 +873,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 6, idUtilisateur: 18, // Manon Lambert
-    numeroDossier: 'LAMB-MANO-050925',
+    numeroDossier: 'LAMA05092025',
     formationSuivie: 'EMAIL_N1', idFormation: ID_FORMATION_EMAIL_N1, idSession: ID_SESSION_PERF, idFormateur: ID_FORMATEUR_ISABELLE,
     dateDebut: date(2025, 10, 20), dateFinPrevue: date(2025, 11, 28),
     statutFormation: 'EN_COURS',
@@ -882,7 +882,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 7, idUtilisateur: 19, // Victor Perrin
-    numeroDossier: 'PERR-VICT-010425',
+    numeroDossier: 'PEVI01042025',
     formationSuivie: 'GEMMO_N1', idFormation: ID_FORMATION_GEMMO_N1, idSession: ID_SESSION_INIT, idFormateur: ID_FORMATEUR_MICHEL,
     dateDebut: date(2025, 4, 7), dateFinPrevue: date(2025, 5, 9),
     dateFinReelle: date(2025, 5, 9),
@@ -892,7 +892,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 8, idUtilisateur: 20, // Zoé Morel
-    numeroDossier: 'MORE-ZOE-010525',
+    numeroDossier: 'MOZO01052025',
     formationSuivie: 'BIJ_CR_N2', idFormation: ID_FORMATION_BIJ_N2, idSession: ID_SESSION_INIT, idFormateur: ID_FORMATEUR_SOPHIE,
     dateDebut: date(2025, 5, 5), dateFinPrevue: date(2025, 6, 13),
     dateFinReelle: date(2025, 6, 13),
@@ -902,7 +902,7 @@ const ELEVES_DATA: EleveData[] = [
   },
   {
     prospectIdx: 9, idUtilisateur: 21, // Mathis Simon
-    numeroDossier: 'SIMO-MATH-010625',
+    numeroDossier: 'SIMA01062025',
     formationSuivie: 'SERTI_N2', idFormation: ID_FORMATION_SERTI_N2, idSession: ID_SESSION_PERF, idFormateur: ID_FORMATEUR_JEAN_PIERRE,
     dateDebut: date(2025, 6, 2), dateFinPrevue: date(2025, 7, 11),
     dateFinReelle: date(2025, 6, 27),
