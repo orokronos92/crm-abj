@@ -450,3 +450,22 @@ n8n /webhook/marjorie-chat
 
 **Fichiers** : `ValiderEtapeModal.tsx` *(nouveau)*, `CandidatDetailModal.tsx`, `/api/candidats/valider-etape/route.ts`, `/api/candidats/[id]/route.ts`, `prisma/schema.prisma`
 **Commit** : `aa579b3`
+
+---
+
+### T10 — Bouton Exempter sur étapes parcours candidat
+
+**But** : Permettre à l'admin d'exempter une étape (sans la passer physiquement) avec une valeur fonctionnelle identique à "Validé" mais un badge distinct.
+
+**Contexte** : Certains candidats n'ont pas besoin de passer toutes les étapes (ex : candidat déjà connu, profil évident). L'exemption marque l'étape comme faite sans créer de procédure formelle.
+
+**Actions** :
+- Ajout de **4 champs** dans `prisma/schema.prisma` : `exemptEntretienTelephonique`, `exemptRdvPresentiel`, `exemptTestTechnique`, `exemptValidationPedagogique` (Boolean, default false)
+- BDD synchronisée via `npx prisma db push`
+- Route `/api/candidats/valider-etape` : accepte `exempt: boolean` — quand `true`, pose `booleen=true` + `exemptXxx=true` simultanément
+- Route GET `/api/candidats/[id]` : retourne les 4 champs `exempt_xxx` dans la réponse
+- `CandidatDetailModal` : bouton **"Exempter"** (orange, bordure warning) côte à côte avec "Valider" sur chaque étape non faite. Click = appel API direct sans modal (pas de popup intermédiaire). Badge **"Exempté"** orange distinct du badge vert "Validée". Icône CheckCircle orange au lieu de vert quand exempté. État `disabled` pendant l'appel avec indicateur `...`
+- `npx tsc --noEmit` : 0 erreurs TypeScript
+
+**Fichiers** : `prisma/schema.prisma`, `CandidatDetailModal.tsx`, `/api/candidats/valider-etape/route.ts`, `/api/candidats/[id]/route.ts`
+**Commit** : `0ecbca6`
