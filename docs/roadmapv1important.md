@@ -469,3 +469,59 @@ n8n /webhook/marjorie-chat
 
 **Fichiers** : `prisma/schema.prisma`, `CandidatDetailModal.tsx`, `/api/candidats/valider-etape/route.ts`, `/api/candidats/[id]/route.ts`
 **Commit** : `0ecbca6`
+
+---
+
+### T11 — Convertir candidat en élève + Refuser candidat
+
+**But** : Permettre à l'admin de finaliser le parcours d'un candidat directement depuis le modal — soit en le convertissant en élève, soit en refusant sa candidature.
+
+**Actions** :
+- Bouton **"Convertir en élève"** dans le footer du `CandidatDetailModal` : appel POST `/api/candidats/[id]/convertir-eleve`. Crée l'enregistrement `Eleve`, met à jour `statutDossier = 'INSCRIT'` et `statutProspect = 'ELEVE'`. Après succès, éjecte le candidat de la liste via `onCandidatEjecte()`.
+- Bouton **"Refuser"** dans le footer : appel POST `/api/candidats/[id]/refuser`. Met à jour `statutDossier = 'REFUSE'` et `statutProspect = 'ANCIEN_CANDIDAT'`. Après succès, éjecte également de la liste.
+- `CandidatsPageClient.tsx` : ajout de `handleCandidatEjecte(candidatId)` — filtre la liste locale et décrémente le compteur (même pattern que prospects).
+- Modal footer : boutons conditionnels selon statut actuel (pas de "Convertir" si déjà INSCRIT, pas de "Refuser" si déjà REFUSE).
+
+**Fichiers** : `CandidatDetailModal.tsx`, `CandidatsPageClient.tsx`, `/api/candidats/[id]/convertir-eleve/route.ts` *(nouveau)*, `/api/candidats/[id]/refuser/route.ts` *(nouveau)*
+**Commit** : `3aeba65`
+
+---
+
+### T12 — Seed élèves propre avec documents, présences et évaluations réels
+
+**But** : Remplacer les données élèves de test par un dataset cohérent avec la structure réelle des tables `Presence` et `Evaluation` (champs obligatoires `idSession`, `demiJournee`, `statutPresence`).
+
+**Contexte** : Le seed précédent créait des présences avec une ancienne structure (champ `statut` au lieu de `statutPresence`, pas d'`idSession`). Les onglets `TabPresences` et `TabEvaluations` du modal élève affichaient du vide ou plantaient.
+
+**Actions** :
+- Script **`scripts/seed-eleves.ts`** *(nouveau)* : nettoyage ciblé des tables élève-dépendantes uniquement (ne touche pas formateurs/formations/sessions). Crée 10 élèves liés aux candidats INSCRIT existants. Génère **84 documents** (6 par élève, liés par `numeroDossier`), **200 présences** (20 par élève avec `demiJournee` + `statutPresence` + `idSession`) et **40 évaluations** (4 par élève avec `idFormateur` + `idSession`).
+- Fix structure `genererPresences` : ajout du paramètre `idSession` (obligatoire en BDD non-nullable). Auto-création d'une session de référence si aucune session n'existe en base.
+- Fix `genererEvaluations` : `idSession: number | null` → `idSession: number` avec fallback `?? 1`.
+
+**Fichiers** : `scripts/seed-eleves.ts` *(nouveau)*
+**Commits** : `d277d43`, `178af88`
+
+---
+
+### T13 — Flux Analyse Marjorie pour les élèves
+
+**But** : Implémenter le bouton "Demander analyse Marjorie" dans le modal élève — envoi vers n8n, popup inline de statut, stockage de l'analyse en BDD, affichage dans l'onglet Analyse IA.
+
+**Actions** :
+- **`src/services/eleve.service.ts`** : ajout de `analyse_ia` et `date_analyse_ia` dans le retour de `getEleveDetail()` — l'onglet `TabAnalyseIA` peut désormais afficher l'analyse stockée.
+- **`PATCH /api/eleves/[id]`** : endpoint implémenté (était 501). Permet à n8n de stocker l'analyse via `{ analyse_ia: "..." }`. Sécurisé par header `X-API-Key`. Met à jour `analyseIa` + `dateAnalyseIa` en BDD.
+- **`EleveDetailModal.tsx`** : refonte de `handleDemanderAnalyse` — suppression du système `useActionNotification` complexe. Appel direct vers `/api/eleves/demander-analyse` (fire-and-forget, 202). Popup inline au-dessus des boutons avec 4 états : `loading` (spinner), `success` (vert), `conflict` (409 — analyse déjà en cours), `error`. Bascule automatique vers l'onglet **Analyse IA** après envoi. Rechargement auto après 3s si la réponse arrive vite.
+
+**Payload n8n** (pour stocker l'analyse) :
+```
+PATCH /api/eleves/{idEleve}
+X-API-Key: {NOTIFICATIONS_API_KEY}
+{ "analyse_ia": "Texte de l'analyse..." }
+```
+
+**Fichiers** : `src/services/eleve.service.ts`, `/api/eleves/[id]/route.ts`, `EleveDetailModal.tsx`
+**Commit** : `e8e6b38`
+
+---
+
+**Dernière mise à jour** : 2026-02-22
