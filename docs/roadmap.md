@@ -1,6 +1,6 @@
 # Roadmap CRM ABJ — Tâches en cours et à venir
 
-**Dernière mise à jour** : 2026-02-22 (seed catalogue formations ABJ 2025-26)
+**Dernière mise à jour** : 2026-02-22 (référentiels documents + documents_requis par formation)
 
 ---
 
@@ -382,6 +382,54 @@ if (status === 'success') {
 **Utilisation** : Ces formations alimentent dynamiquement les filtres de la page Prospects, les dropdowns de création de candidat, et partout où les formations sont référencées dans le CRM.
 
 **Commit** : `aebd298` — `feat: seed complet du catalogue formations ABJ 2025-26`
+
+---
+
+## 📅 JOURNAL — 2026-02-22 (suite)
+
+### T7 — Référentiels documents : statuts, types et documents_requis par formation
+
+**But** : Compléter les tables de référence documentaire et peupler `documents_requis` avec les exigences réelles par formation, en s'appuyant sur le catalogue ABJ 2025-26.
+
+**Contexte** : Analyse des tables existantes (`statuts_documents`, `types_documents`, `documents_requis`) → 3 lacunes identifiées :
+1. Statuts incomplets (manquait EXEMPTE, EXPIRE, REJETE)
+2. Type `ASSURANCE_CIVILE` absent malgré son caractère obligatoire (catalogue page 9)
+3. Table `documents_requis` vide — aucune relation formation ↔ document en base
+
+**Actions mises en œuvre** :
+
+**Statuts documents** → 7 statuts au total (4 existants + 3 nouveaux) :
+
+| Code | Couleur | Signification |
+|------|---------|---------------|
+| `ATTENDU` | Gris | Document demandé, pas encore reçu |
+| `RECU` | Bleu | Reçu, en attente de validation |
+| `VALIDE` | Vert | Validé par l'équipe ABJ |
+| `REFUSE` | Rouge | Non conforme, à renvoyer |
+| `EXEMPTE` | 🟣 Violet | **Nouveau** — Exemption manuelle admin. Compte comme VALIDE et débloque le dossier. Porte de sortie intentionnelle pour ne pas bloquer un dossier sur un document difficile à obtenir. |
+| `EXPIRE` | 🟠 Orange | **Nouveau** — Document reçu mais dont la date de validité est dépassée (CNI, assurance). Action requise : renouvellement. |
+| `REJETE` | 🔴 Rouge foncé | **Nouveau** — Rejet définitif après plusieurs tentatives. Requiert contact manuel. |
+
+**Types documents** → 27 types au total (25 ajustés/existants + 2 nouveaux) :
+
+| Code | Catégorie | Obligatoire | Note |
+|------|-----------|-------------|------|
+| `ASSURANCE_CIVILE` | administratif | Oui | **Nouveau** — Obligatoire pour accéder aux ateliers (catalogue page 9). Valable pour CAP et toutes les formations courtes. |
+| `PORTFOLIO_REALISATIONS` | candidature | Non | **Nouveau** — Recommandé pour les candidats avec expérience professionnelle. Obligatoire uniquement pour certaines voies pros. |
+
+**Documents requis** → 251 relations formation ↔ document créées selon 3 niveaux tirés du catalogue :
+
+| Niveau | Formations | Documents | Obligatoires |
+|--------|-----------|-----------|-------------|
+| **A — CAP diplômant** | CAP_BJ (1) | 11 (CV, lettre motivation, bulletins, diplômes, portfolio optionnel, CNI recto/verso, devis signé, assurance civile, contrat formation, règlement intérieur) | 10 |
+| **B — Formations courtes** | N1/N2/N3 toutes disciplines (38) | 6 (CV, portfolio optionnel, CNI recto/verso, devis signé, assurance civile) | 5 |
+| **C — Ultra-courtes** | Douane 4h + 3 ateliers découverte (4) | 3 (CNI recto/verso, devis signé) | 3 |
+
+**Logique EXEMPTE** : Un document avec statut `EXEMPTE` est traité comme `VALIDE` dans tous les calculs de complétude du dossier. Il ne bloque pas l'avancement du candidat. L'exemption est manuelle, traçable (admin + date), et intentionnelle — pas une erreur.
+
+**Script** : `scripts/seed-documents-reference.ts` *(nouveau fichier, 327 lignes)* — upsert idempotent sur les 3 tables.
+
+**Commit** : `c92b77d` — `feat: seed référentiels documents + documents_requis par formation`
 
 ---
 
