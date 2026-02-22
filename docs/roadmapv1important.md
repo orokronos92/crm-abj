@@ -524,4 +524,39 @@ X-API-Key: {NOTIFICATIONS_API_KEY}
 
 ---
 
+### T14 — Suppression onglet "Notes IA" du modal candidat
+
+**But** : Retirer l'onglet Notes IA du `CandidatDetailModal` — jugé trop intrusif et gadget à ce stade pour les candidats. L'analyse IA reste pertinente pour les élèves (T13) mais pas pendant la phase de candidature.
+
+**Actions** :
+- **`CandidatDetailModal.tsx`** : suppression de `Sparkles` des imports, retrait du champ `notes_ia` de l'interface `CandidatDetail`, suppression de l'entrée `{ id: 'notes_ia', label: 'Notes IA', icon: Sparkles }` du tableau `tabs`, suppression du bloc JSX de l'onglet Notes IA.
+- Modal désormais à **4 onglets** : Général, Parcours, Documents, Financement.
+
+**Fichiers** : `CandidatDetailModal.tsx`
+**Commit** : inclus dans `e8e6b38`
+
+---
+
+### T15 — Refactor bouton "Rappel paiement" élève — pattern T2
+
+**But** : Aligner le bouton "Envoyer rappel de paiement" de l'onglet Synthèse du modal élève sur le pattern T2 établi (correlationId + SSE callback), en remplacement de l'ancien pattern useActionNotification.
+
+**Contexte** : `TabSynthese.tsx` utilisait `useActionNotification` + `createActionNotification()` (écriture BDD préalable) + `POST /api/notifications/[id]/action` + `alert()` pour le feedback — architecture T1 dépréciée.
+
+**Actions** :
+- Suppression de `useActionNotification` et `createActionNotification`
+- Suppression de tous les `alert()` (erreur, conflit, succès)
+- Suppression des états `sendingRappel` / `rappelSent`
+- Ajout `correlationId = useRef(crypto.randomUUID())` régénéré à chaque tentative
+- Ajout `useCallbackListener` (actif uniquement quand `pending`, corrélé par UUID)
+- Appel `POST /api/actions/trigger` (direct n8n, sans écriture BDD préalable)
+- États `idle → pending → success/error` avec popup inline au-dessus du bouton (Loader2 / CheckCircle / AlertCircle)
+- Auto-reset après 5s, bouton désactivé pendant `pending`
+- n8n envoie la notification cloche via `/api/notifications/ingest` (pas le CRM)
+
+**Fichiers** : `src/components/admin/eleve-tabs/TabSynthese.tsx`
+**Commit** : `e95e4df`
+
+---
+
 **Dernière mise à jour** : 2026-02-22
