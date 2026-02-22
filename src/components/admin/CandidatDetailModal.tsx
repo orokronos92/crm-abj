@@ -23,15 +23,19 @@ import {
   Calendar,
   Download,
   Send,
-  User
+  User,
+  GraduationCap
 } from 'lucide-react'
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { EnvoyerMessageCandidatModal } from './EnvoyerMessageCandidatModal'
 import { GenererDevisCandidatModal } from './GenererDevisCandidatModal'
 import { ValiderEtapeModal, type EtapeType } from './ValiderEtapeModal'
+import { ConvertirEleveModal } from './ConvertirEleveModal'
+import { RefuserCandidatModal } from './RefuserCandidatModal'
 
 interface CandidatDetail {
   id: number
+  id_prospect: string
   numero_dossier: string
   nom: string
   prenom: string
@@ -86,6 +90,7 @@ interface CandidatDetail {
 interface CandidatDetailModalProps {
   candidatId: number
   onClose: () => void
+  onCandidatEjecte?: (candidatId: number) => void
 }
 
 const STATUT_DOCUMENT_COLORS: Record<string, string> = {
@@ -96,12 +101,17 @@ const STATUT_DOCUMENT_COLORS: Record<string, string> = {
   REFUSE: 'text-[rgb(var(--error))]'
 }
 
-export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModalProps) {
+// Statuts pour lesquels les actions Refuser/Convertir sont masquées
+const STATUTS_TERMINES = ['REFUSE', 'INSCRIT']
+
+export function CandidatDetailModal({ candidatId, onClose, onCandidatEjecte }: CandidatDetailModalProps) {
   const [candidat, setCandidat] = useState<CandidatDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('general')
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
   const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
+  const [showConvertirEleveModal, setShowConvertirEleveModal] = useState(false)
+  const [showRefuserCandidatModal, setShowRefuserCandidatModal] = useState(false)
   const [etapeAValider, setEtapeAValider] = useState<EtapeType | null>(null)
   const [exemptEnCours, setExemptEnCours] = useState<EtapeType | null>(null)
 
@@ -123,17 +133,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
     fetchCandidat()
   }, [candidatId])
 
-  const handleEnvoyerMessageSuccess = async () => {
-    // Recharger les données du candidat après envoi message
-    const res = await fetch(`/api/candidats/${candidatId}`)
-    if (res.ok) {
-      const data = await res.json()
-      setCandidat(data)
-    }
-  }
-
-  const handleGenererDevisSuccess = async () => {
-    // Recharger les données du candidat après génération devis
+  const rechargerCandidat = async () => {
     const res = await fetch(`/api/candidats/${candidatId}`)
     if (res.ok) {
       const data = await res.json()
@@ -142,12 +142,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   }
 
   const handleEtapeSuccess = async () => {
-    // Recharger les données du candidat après validation
-    const res = await fetch(`/api/candidats/${candidatId}`)
-    if (res.ok) {
-      const data = await res.json()
-      setCandidat(data)
-    }
+    await rechargerCandidat()
   }
 
   const handleExempterEtape = async (etape: EtapeType) => {
@@ -165,14 +160,21 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
         }),
       })
       if (res.ok) {
-        const data = await fetch(`/api/candidats/${candidatId}`)
-        if (data.ok) setCandidat(await data.json())
+        await rechargerCandidat()
       }
     } catch (err) {
       console.error('Erreur exemption:', err)
     } finally {
       setExemptEnCours(null)
     }
+  }
+
+  // Appelé quand la conversion ou le refus est confirmé → éjecter de la liste
+  const handleActionSuccess = () => {
+    if (onCandidatEjecte) {
+      onCandidatEjecte(candidatId)
+    }
+    onClose()
   }
 
   const getScoreColor = (score: number) => {
@@ -194,6 +196,28 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   if (!candidat) {
     return null
   }
+
+  // Construire la liste des étapes avec leur état pour ConvertirEleveModal
+  const etapesStatus = [
+    {
+      label: '📞 Entretien téléphonique',
+      done: candidat.entretien_telephonique
+    },
+    {
+      label: '🤝 RDV présentiel',
+      done: candidat.rdv_presentiel
+    },
+    {
+      label: '🔧 Test technique',
+      done: candidat.test_technique
+    },
+    {
+      label: '🎓 Validation pédagogique',
+      done: candidat.validation_pedagogique
+    }
+  ]
+
+  const statutTermine = STATUTS_TERMINES.includes(candidat.statut_dossier)
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -557,21 +581,44 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
 
         {/* Footer */}
         <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setShowEnvoyerMessageModal(true)}
-              className="px-4 py-2 bg-[rgb(var(--warning))] text-[rgb(var(--primary))] rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
-            >
-              <MessageSquare className="w-4 h-4" />
-              Envoyer un mail
-            </button>
-            <button
-              onClick={() => setShowGenererDevisModal(true)}
-              className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              Envoyer devis
-            </button>
+          <div className="flex items-center justify-between gap-2">
+            {/* Gauche : Envoyer mail + Envoyer devis */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEnvoyerMessageModal(true)}
+                className="px-4 py-2 bg-[rgb(var(--warning))] text-[rgb(var(--primary))] rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Envoyer un mail
+              </button>
+              <button
+                onClick={() => setShowGenererDevisModal(true)}
+                className="px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] text-[rgb(var(--foreground))] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.05)] transition-colors flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Envoyer devis
+              </button>
+            </div>
+
+            {/* Droite : Refuser + Convertir en élève (masqués si statut terminé) */}
+            {!statutTermine && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowRefuserCandidatModal(true)}
+                  className="px-4 py-2 bg-[rgb(var(--error))] text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Refuser
+                </button>
+                <button
+                  onClick={() => setShowConvertirEleveModal(true)}
+                  className="px-4 py-2 bg-[rgb(var(--success))] text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  Convertir en élève
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -589,7 +636,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
             formation: candidat.formation
           }}
           onClose={() => setShowEnvoyerMessageModal(false)}
-          onSuccess={handleEnvoyerMessageSuccess}
+          onSuccess={rechargerCandidat}
         />
       )}
 
@@ -606,7 +653,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
             formation: candidat.formation
           }}
           onClose={() => setShowGenererDevisModal(false)}
-          onSuccess={handleGenererDevisSuccess}
+          onSuccess={rechargerCandidat}
         />
       )}
 
@@ -623,6 +670,40 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
           etape={etapeAValider}
           onClose={() => setEtapeAValider(null)}
           onSuccess={handleEtapeSuccess}
+        />
+      )}
+
+      {/* Modal Convertir en Élève */}
+      {showConvertirEleveModal && candidat && (
+        <ConvertirEleveModal
+          candidat={{
+            idCandidat: candidat.id,
+            numeroDossier: candidat.numero_dossier,
+            nom: candidat.nom,
+            prenom: candidat.prenom,
+            email: candidat.email,
+            formation: candidat.formation,
+            etapes: etapesStatus
+          }}
+          onClose={() => setShowConvertirEleveModal(false)}
+          onSuccess={handleActionSuccess}
+        />
+      )}
+
+      {/* Modal Refuser Candidat */}
+      {showRefuserCandidatModal && candidat && (
+        <RefuserCandidatModal
+          candidat={{
+            idCandidat: candidat.id,
+            numeroDossier: candidat.numero_dossier,
+            nom: candidat.nom,
+            prenom: candidat.prenom,
+            email: candidat.email,
+            formation: candidat.formation,
+            idProspect: candidat.id_prospect
+          }}
+          onClose={() => setShowRefuserCandidatModal(false)}
+          onSuccess={handleActionSuccess}
         />
       )}
     </div>

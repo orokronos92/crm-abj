@@ -29,7 +29,9 @@ interface CandidatsPageClientProps {
   total: number
 }
 
-export function CandidatsPageClient({ candidats, total }: CandidatsPageClientProps) {
+export function CandidatsPageClient({ candidats: initialCandidats, total: initialTotal }: CandidatsPageClientProps) {
+  const [candidats, setCandidats] = useState<Candidat[]>(initialCandidats)
+  const [total, setTotal] = useState(initialTotal)
   const [selectedCandidatId, setSelectedCandidatId] = useState<number | null>(null)
 
   const getScoreColor = (score: number) => {
@@ -38,8 +40,22 @@ export function CandidatsPageClient({ candidats, total }: CandidatsPageClientPro
     return 'text-[rgb(var(--error))]'
   }
 
+  // Éjecter un candidat de la liste locale (après conversion élève ou refus)
+  const handleCandidatEjecte = (candidatId: number) => {
+    setCandidats(prev => prev.filter(c => c.id !== candidatId))
+    setTotal(prev => Math.max(0, prev - 1))
+    setSelectedCandidatId(null)
+  }
+
   return (
     <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl overflow-hidden">
+      {/* Compteur */}
+      {total > 0 && (
+        <div className="px-6 py-3 border-b border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))] text-sm text-[rgb(var(--muted-foreground))]">
+          {total} candidat{total > 1 ? 's' : ''}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -145,6 +161,7 @@ export function CandidatsPageClient({ candidats, total }: CandidatsPageClientPro
         <CandidatDetailModal
           candidatId={selectedCandidatId}
           onClose={() => setSelectedCandidatId(null)}
+          onCandidatEjecte={handleCandidatEjecte}
         />
       )}
     </div>

@@ -25,6 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       include: {
         prospect: {
           select: {
+            idProspect: true,
             nom: true,
             prenom: true,
             emails: true,
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Formater pour le frontend
     const formatted = {
       id: candidat.idCandidat,
+      id_prospect: candidat.idProspect || '',
       numero_dossier: candidat.numeroDossier,
       nom: candidat.prospect?.nom || '',
       prenom: candidat.prospect?.prenom || '',
