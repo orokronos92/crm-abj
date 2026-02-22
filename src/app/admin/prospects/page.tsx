@@ -9,6 +9,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { ProspectsPageClient } from '@/components/admin/ProspectsPageClient'
 import { ProspectsFilters } from '@/components/admin/ProspectsFilters'
 import { ProspectService } from '@/services/prospect.service'
+import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
@@ -27,6 +28,14 @@ export default async function ProspectsPage({ searchParams }: ProspectsPageProps
   // Récupération des paramètres de recherche
   const params = await searchParams
   const { statut, formation, financement, search } = params
+
+  // Récupération des formations actives depuis la BDD
+  const formationsRef = await prisma.formation.findMany({
+    where: { actif: true },
+    select: { codeFormation: true, nom: true },
+    orderBy: { nom: 'asc' }
+  })
+  const formations = formationsRef.map(f => ({ code: f.codeFormation, label: f.nom }))
 
   // Récupération des données depuis la BDD avec filtres
   const { prospects, total } = await prospectService.getProspects({
@@ -53,7 +62,7 @@ export default async function ProspectsPage({ searchParams }: ProspectsPageProps
           </div>
 
           {/* Filtres de recherche */}
-          <ProspectsFilters />
+          <ProspectsFilters formations={formations} />
         </div>
 
         {/* Contenu scrollable */}

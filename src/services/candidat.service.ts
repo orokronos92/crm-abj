@@ -48,6 +48,13 @@ export class CandidatService {
   }) {
     const { statutDossier, statutFinancement, formation, search, take = 100 } = params
 
+    // Chargement du référentiel formations depuis la BDD
+    const formationsRef = await prisma.formation.findMany({
+      where: { actif: true },
+      select: { codeFormation: true, nom: true }
+    })
+    const formationsMap = new Map(formationsRef.map(f => [f.codeFormation, f.nom]))
+
     // Construction des filtres
     const where: any = {}
 
@@ -92,7 +99,7 @@ export class CandidatService {
       prenom: candidat.prospect?.prenom || '',
       email: candidat.prospect?.emails?.[0] || '',
       telephone: candidat.prospect?.telephones?.[0] || '',
-      formation: this.getFormationLabel(candidat.formationRetenue || ''),
+      formation: formationsMap.get(candidat.formationRetenue || '') ?? (candidat.formationRetenue || ''),
       session: candidat.sessionVisee || 'Non définie',
       statut_dossier: candidat.statutDossier || 'RECU',
       statut_financement: candidat.statutFinancement || 'EN_ATTENTE',
@@ -322,10 +329,10 @@ export class CandidatService {
         select: { statutFinancement: true },
         orderBy: { statutFinancement: 'asc' }
       }),
-      prisma.candidat.findMany({
-        distinct: ['formationRetenue'],
-        select: { formationRetenue: true },
-        orderBy: { formationRetenue: 'asc' }
+      prisma.formation.findMany({
+        where: { actif: true },
+        select: { codeFormation: true, nom: true },
+        orderBy: { nom: 'asc' }
       })
     ])
 
@@ -336,33 +343,10 @@ export class CandidatService {
       statutsFinancement: statutsFinancement
         .map(s => s.statutFinancement)
         .filter((s): s is string => s !== null),
-      formations: formations
-        .map(f => f.formationRetenue)
-        .filter((f): f is string => f !== null)
-        .map(f => ({
-          code: f,
-          label: this.getFormationLabel(f)
-        }))
+      formations: formations.map(f => ({
+        code: f.codeFormation,
+        label: f.nom
+      }))
     }
-  }
-
-  /**
-   * Mapper les codes formation vers des labels lisibles
-   */
-  private getFormationLabel(code: string): string {
-    const labels: Record<string, string> = {
-      'CAP_BJ': 'CAP Bijouterie-Joaillerie',
-      'INIT_BJ': 'Initiation Bijouterie',
-      'PERF_SERTI': 'Perfectionnement Sertissage',
-      'CAO_DAO': 'CAO/DAO Bijouterie',
-      'GEMMO': 'Gemmologie',
-      'SERTI_N1': 'Sertissage Niveau 1',
-      'SERTI_N2': 'Sertissage Niveau 2',
-      'JOAILLERIE': 'Joaillerie Création',
-      'LAPIDAIRE': 'Taille Lapidaire',
-      'POLISSAGE': 'Polissage'
-    }
-
-    return labels[code] || code
   }
 }

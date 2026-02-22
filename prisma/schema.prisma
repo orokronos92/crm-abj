@@ -386,13 +386,15 @@ model Formation {
   prerequis      String[] @default([])
   objectifs      String[] @default([])
   programme      String?
-  actif          Boolean  @default(true)
-  creeLe         DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe      DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  actif             Boolean  @default(true)
+  idFormateurAttire Int?     @map("id_formateur_attire") // Formateur attitré optionnel (formations courtes)
+  creeLe            DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe         DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 
   // Relations
-  sessions        Session[]
-  documentsRequis DocumentRequis[]
+  sessions          Session[]
+  documentsRequis   DocumentRequis[]
+  formateurAttire   Formateur? @relation("FormationsAttirees", fields: [idFormateurAttire], references: [idFormateur])
 
   @@map("formations")
 }
@@ -524,6 +526,7 @@ model Formateur {
   competencesTech          FormateurCompetenceTechnique[]
   formationsCont           FormateurFormationContinue[]
   veillePro                FormateurVeilleProfessionnelle[]
+  formationsAttirees       Formation[] @relation("FormationsAttirees")
 
   @@map("formateurs")
 }

@@ -10,7 +10,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { useState } from 'react'
 
-export function ProspectsFilters() {
+interface ProspectsFiltersProps {
+  formations: Array<{ code: string; label: string }>
+}
+
+export function ProspectsFilters({ formations }: ProspectsFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -82,11 +86,9 @@ export function ProspectsFilters() {
         className="px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--accent),0.1)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
       >
         <option value="">Toutes les formations</option>
-        <option value="CAP_BJ">CAP Bijouterie-Joaillerie</option>
-        <option value="INIT_BJ">Initiation Bijouterie</option>
-        <option value="PERF_SERTI">Perfectionnement Sertissage</option>
-        <option value="CAO_DAO">CAO/DAO Bijouterie</option>
-        <option value="GEMMO">Gemmologie</option>
+        {formations.map(f => (
+          <option key={f.code} value={f.code}>{f.label}</option>
+        ))}
       </select>
 
       {/* Filtre Financement */}
