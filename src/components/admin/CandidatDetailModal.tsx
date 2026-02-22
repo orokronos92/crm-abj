@@ -50,18 +50,22 @@ interface CandidatDetail {
   date_entretien_tel: string | null
   valide_par_entretien_tel: string | null
   observation_entretien_tel: string | null
+  exempt_entretien_telephonique: boolean
   rdv_presentiel: boolean
   date_rdv_presentiel: string | null
   valide_par_rdv_presentiel: string | null
   observation_rdv_presentiel: string | null
+  exempt_rdv_presentiel: boolean
   test_technique: boolean
   date_test_technique: string | null
   valide_par_test_technique: string | null
   observation_test_technique: string | null
+  exempt_test_technique: boolean
   validation_pedagogique: boolean
   date_validation_pedagogique: string | null
   valide_par_validation_pedagogique: string | null
   observation_validation_pedagogique: string | null
+  exempt_validation_pedagogique: boolean
   // Financement
   mode_financement: string
   montant_total: number
@@ -99,6 +103,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
   const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
   const [etapeAValider, setEtapeAValider] = useState<EtapeType | null>(null)
+  const [exemptEnCours, setExemptEnCours] = useState<EtapeType | null>(null)
 
   useEffect(() => {
     async function fetchCandidat() {
@@ -142,6 +147,31 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
     if (res.ok) {
       const data = await res.json()
       setCandidat(data)
+    }
+  }
+
+  const handleExempterEtape = async (etape: EtapeType) => {
+    if (!candidat) return
+    setExemptEnCours(etape)
+    try {
+      const res = await fetch('/api/candidats/valider-etape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idCandidat: candidat.id,
+          etape,
+          dateValidation: new Date().toISOString().split('T')[0],
+          exempt: true,
+        }),
+      })
+      if (res.ok) {
+        const data = await fetch(`/api/candidats/${candidatId}`)
+        if (data.ok) setCandidat(await data.json())
+      }
+    } catch (err) {
+      console.error('Erreur exemption:', err)
+    } finally {
+      setExemptEnCours(null)
     }
   }
 
@@ -318,41 +348,50 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
                 {
                   etapeType: 'entretienTelephonique' as EtapeType,
                   key: 'entretien_telephonique',
+                  exemptKey: 'exempt_entretien_telephonique',
                   label: 'Entretien téléphonique',
                   icon: '📞',
                   date: candidat.date_entretien_tel,
                   validePar: candidat.valide_par_entretien_tel,
                   observation: candidat.observation_entretien_tel,
+                  exempt: candidat.exempt_entretien_telephonique,
                 },
                 {
                   etapeType: 'rdvPresentiel' as EtapeType,
                   key: 'rdv_presentiel',
+                  exemptKey: 'exempt_rdv_presentiel',
                   label: 'RDV présentiel',
                   icon: '🤝',
                   date: candidat.date_rdv_presentiel,
                   validePar: candidat.valide_par_rdv_presentiel,
                   observation: candidat.observation_rdv_presentiel,
+                  exempt: candidat.exempt_rdv_presentiel,
                 },
                 {
                   etapeType: 'testTechnique' as EtapeType,
                   key: 'test_technique',
+                  exemptKey: 'exempt_test_technique',
                   label: 'Test technique',
                   icon: '🔧',
                   date: candidat.date_test_technique,
                   validePar: candidat.valide_par_test_technique,
                   observation: candidat.observation_test_technique,
+                  exempt: candidat.exempt_test_technique,
                 },
                 {
                   etapeType: 'validationPedagogique' as EtapeType,
                   key: 'validation_pedagogique',
+                  exemptKey: 'exempt_validation_pedagogique',
                   label: 'Validation pédagogique',
                   icon: '🎓',
                   date: candidat.date_validation_pedagogique,
                   validePar: candidat.valide_par_validation_pedagogique,
                   observation: candidat.observation_validation_pedagogique,
+                  exempt: candidat.exempt_validation_pedagogique,
                 },
               ] as const).map((etape) => {
                 const done = candidat[etape.key as keyof CandidatDetail] as boolean
+                const isExempt = etape.exempt
                 return (
                   <div
                     key={etape.key}
@@ -361,7 +400,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
                         {done ? (
-                          <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0 mt-0.5" />
+                          <CheckCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isExempt ? 'text-[rgb(var(--warning))]' : 'text-[rgb(var(--success))]'}`} />
                         ) : (
                           <Clock className="w-5 h-5 text-[rgb(var(--muted-foreground))] flex-shrink-0 mt-0.5" />
                         )}
@@ -376,7 +415,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
                             </div>
                           )}
                           {/* Validateur et observation */}
-                          {done && etape.validePar && (
+                          {done && etape.validePar && !isExempt && (
                             <div className="mt-2 space-y-1">
                               <div className="flex items-center gap-1.5 text-xs text-[rgb(var(--foreground))]">
                                 <User className="w-3 h-3 text-[rgb(var(--accent))]" />
@@ -394,20 +433,39 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
                       </div>
 
                       {done ? (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)] flex-shrink-0">
-                          <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
-                          <span className="text-sm font-medium text-[rgb(var(--success))]">
-                            Validée
-                          </span>
-                        </div>
+                        isExempt ? (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(var(--warning),0.1)] rounded-lg border border-[rgba(var(--warning),0.3)] flex-shrink-0">
+                            <XCircle className="w-4 h-4 text-[rgb(var(--warning))]" />
+                            <span className="text-sm font-medium text-[rgb(var(--warning))]">
+                              Exempté
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)] flex-shrink-0">
+                            <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
+                            <span className="text-sm font-medium text-[rgb(var(--success))]">
+                              Validée
+                            </span>
+                          </div>
+                        )
                       ) : (
-                        <button
-                          onClick={() => setEtapeAValider(etape.etapeType)}
-                          className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2 flex-shrink-0"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Valider
-                        </button>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleExempterEtape(etape.etapeType)}
+                            disabled={exemptEnCours === etape.etapeType}
+                            className="px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--warning),0.5)] text-[rgb(var(--warning))] rounded-lg text-sm font-medium hover:bg-[rgba(var(--warning),0.1)] transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            {exemptEnCours === etape.etapeType ? '...' : 'Exempter'}
+                          </button>
+                          <button
+                            onClick={() => setEtapeAValider(etape.etapeType)}
+                            className="px-3 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-1.5"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Valider
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

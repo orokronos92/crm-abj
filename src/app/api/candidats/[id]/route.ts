@@ -86,24 +86,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         : null,
       valide_par_entretien_tel: candidat.valideParEntretienTel || null,
       observation_entretien_tel: candidat.observationEntretienTel || null,
+      exempt_entretien_telephonique: candidat.exemptEntretienTelephonique || false,
       rdv_presentiel: candidat.rdvPresentiel || false,
       date_rdv_presentiel: candidat.dateRdvPresentiel
         ? new Date(candidat.dateRdvPresentiel).toLocaleDateString('fr-FR')
         : null,
       valide_par_rdv_presentiel: candidat.valideParRdvPresentiel || null,
       observation_rdv_presentiel: candidat.observationRdvPresentiel || null,
+      exempt_rdv_presentiel: candidat.exemptRdvPresentiel || false,
       test_technique: candidat.testTechnique || false,
       date_test_technique: candidat.dateTestTechnique
         ? new Date(candidat.dateTestTechnique).toLocaleDateString('fr-FR')
         : null,
       valide_par_test_technique: candidat.valideParTestTechnique || null,
       observation_test_technique: candidat.observationTestTechnique || null,
+      exempt_test_technique: candidat.exemptTestTechnique || false,
       validation_pedagogique: candidat.validationPedagogique || false,
       date_validation_pedagogique: candidat.dateValidationPedagogique
         ? new Date(candidat.dateValidationPedagogique).toLocaleDateString('fr-FR')
         : null,
       valide_par_validation_pedagogique: candidat.valideParValidationPedagogique || null,
       observation_validation_pedagogique: candidat.observationValidationPedagogique || null,
+      exempt_validation_pedagogique: candidat.exemptValidationPedagogique || false,
 
       // Financement
       mode_financement: candidat.modeFinancement || 'Non défini',

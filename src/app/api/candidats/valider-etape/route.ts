@@ -13,7 +13,7 @@ import { sseManager } from '@/lib/sse-manager'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { idCandidat, etape, dateValidation, validePar, observation } = body
+    const { idCandidat, etape, dateValidation, validePar, observation, exempt } = body
 
     // Validation
     if (!idCandidat || !etape) {
@@ -59,33 +59,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Mapper le nom de l'étape vers les champs BDD (supporte camelCase et snake_case)
-    type ChampMapping = { booleen: string; date: string; validePar: string; observation: string }
+    type ChampMapping = { booleen: string; date: string; validePar: string; observation: string; exempt: string }
     const champMapping: Record<string, ChampMapping> = {
-      entretien_telephonique:  { booleen: 'entretienTelephonique',  date: 'dateEntretienTel',          validePar: 'valideParEntretienTel',             observation: 'observationEntretienTel' },
-      entretienTelephonique:   { booleen: 'entretienTelephonique',  date: 'dateEntretienTel',          validePar: 'valideParEntretienTel',             observation: 'observationEntretienTel' },
-      rdv_presentiel:          { booleen: 'rdvPresentiel',          date: 'dateRdvPresentiel',         validePar: 'valideParRdvPresentiel',            observation: 'observationRdvPresentiel' },
-      rdvPresentiel:           { booleen: 'rdvPresentiel',          date: 'dateRdvPresentiel',         validePar: 'valideParRdvPresentiel',            observation: 'observationRdvPresentiel' },
-      test_technique:          { booleen: 'testTechnique',          date: 'dateTestTechnique',         validePar: 'valideParTestTechnique',            observation: 'observationTestTechnique' },
-      testTechnique:           { booleen: 'testTechnique',          date: 'dateTestTechnique',         validePar: 'valideParTestTechnique',            observation: 'observationTestTechnique' },
-      validation_pedagogique:  { booleen: 'validationPedagogique',  date: 'dateValidationPedagogique', validePar: 'valideParValidationPedagogique',    observation: 'observationValidationPedagogique' },
-      validationPedagogique:   { booleen: 'validationPedagogique',  date: 'dateValidationPedagogique', validePar: 'valideParValidationPedagogique',    observation: 'observationValidationPedagogique' },
+      entretien_telephonique:  { booleen: 'entretienTelephonique',  date: 'dateEntretienTel',          validePar: 'valideParEntretienTel',             observation: 'observationEntretienTel',             exempt: 'exemptEntretienTelephonique' },
+      entretienTelephonique:   { booleen: 'entretienTelephonique',  date: 'dateEntretienTel',          validePar: 'valideParEntretienTel',             observation: 'observationEntretienTel',             exempt: 'exemptEntretienTelephonique' },
+      rdv_presentiel:          { booleen: 'rdvPresentiel',          date: 'dateRdvPresentiel',         validePar: 'valideParRdvPresentiel',            observation: 'observationRdvPresentiel',            exempt: 'exemptRdvPresentiel' },
+      rdvPresentiel:           { booleen: 'rdvPresentiel',          date: 'dateRdvPresentiel',         validePar: 'valideParRdvPresentiel',            observation: 'observationRdvPresentiel',            exempt: 'exemptRdvPresentiel' },
+      test_technique:          { booleen: 'testTechnique',          date: 'dateTestTechnique',         validePar: 'valideParTestTechnique',            observation: 'observationTestTechnique',            exempt: 'exemptTestTechnique' },
+      testTechnique:           { booleen: 'testTechnique',          date: 'dateTestTechnique',         validePar: 'valideParTestTechnique',            observation: 'observationTestTechnique',            exempt: 'exemptTestTechnique' },
+      validation_pedagogique:  { booleen: 'validationPedagogique',  date: 'dateValidationPedagogique', validePar: 'valideParValidationPedagogique',    observation: 'observationValidationPedagogique',    exempt: 'exemptValidationPedagogique' },
+      validationPedagogique:   { booleen: 'validationPedagogique',  date: 'dateValidationPedagogique', validePar: 'valideParValidationPedagogique',    observation: 'observationValidationPedagogique',    exempt: 'exemptValidationPedagogique' },
     }
 
     const champs = champMapping[etape]
     const dateAEnregistrer = dateValidation ? new Date(dateValidation) : new Date()
+    const isExempt = exempt === true
 
-    // Mettre à jour l'étape avec validateur et observation
+    // Mettre à jour l'étape avec validateur et observation (ou exemption)
     await prisma.candidat.update({
       where: { idCandidat },
       data: {
         [champs.booleen]: true,
         [champs.date]: dateAEnregistrer,
+        [champs.exempt]: isExempt,
         ...(validePar ? { [champs.validePar]: validePar } : {}),
         ...(observation ? { [champs.observation]: observation } : {}),
       }
     })
 
-    console.log(`[API] ✅ Étape "${etape}" validée pour candidat ${candidat.numeroDossier}`)
+    const actionLabel = isExempt ? 'exemptée' : 'validée'
+    console.log(`[API] ✅ Étape "${etape}" ${actionLabel} pour candidat ${candidat.numeroDossier}`)
 
     // Notification SSE temps réel
     sseManager.broadcast({
@@ -94,8 +97,8 @@ export async function POST(request: NextRequest) {
       categorie: 'CANDIDAT',
       type: 'ETAPE_VALIDEE',
       priorite: 'NORMALE',
-      titre: `Étape validée - ${candidat.prospect?.prenom} ${candidat.prospect?.nom}`,
-      message: `L'étape "${etape.replace(/_/g, ' ')}" a été validée pour le candidat ${candidat.numeroDossier}`,
+      titre: `Étape ${isExempt ? 'exemptée' : 'validée'} - ${candidat.prospect?.prenom} ${candidat.prospect?.nom}`,
+      message: `L'étape "${etape.replace(/_/g, ' ')}" a été ${isExempt ? 'exemptée' : 'validée'} pour le candidat ${candidat.numeroDossier}`,
       audience: 'ADMIN',
       lienAction: `/admin/candidats?highlight=${candidat.numeroDossier}`,
       actionRequise: false,
@@ -118,6 +121,7 @@ export async function POST(request: NextRequest) {
         dateValidation: dateAEnregistrer.toISOString(),
         validePar: validePar || null,
         observation: observation || null,
+        exempt: isExempt,
       })
     }).catch(err => {
       console.error(`[API] ⚠️ Webhook n8n échoué (non bloquant):`, err.message)
