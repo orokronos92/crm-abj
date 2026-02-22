@@ -527,3 +527,40 @@ n8n /webhook/marjorie-chat
 
 **Script** : `scripts/reset-seed-prospects-candidats.ts`
 **Commit** : `1856942`
+
+---
+
+### T9 — Mini-formulaire validation étapes parcours candidat
+
+**But** : Permettre à l'admin de valider manuellement chaque étape du parcours d'admission directement depuis le modal candidat, avec date, validateur et observation.
+
+**Actions** :
+- Ajout de **8 nouveaux champs** dans `prisma/schema.prisma` (table `Candidat`) :
+  - `valideParEntretienTel`, `observationEntretienTel`
+  - `valideParRdvPresentiel`, `observationRdvPresentiel`
+  - `valideParTestTechnique`, `observationTestTechnique`
+  - `valideParValidationPedagogique`, `observationValidationPedagogique`
+  - `npx prisma db push` exécuté → BDD en sync
+- Création de **`ValiderEtapeModal.tsx`** : mini-popup avec date (auto = aujourd'hui, modifiable), validateur (champ libre, requis), observation (optionnel), état succès 4s puis fermeture auto
+  - Pattern : appel direct POST `/api/candidats/valider-etape` (pas via `/api/actions/trigger`)
+  - Raison : action locale BDD, n8n notifié en fire-and-forget pour la cloche
+  - Z-index `z-[60]` pour apparaître au-dessus du modal principal (`z-50`)
+- Mise à jour **`CandidatDetailModal.tsx`** :
+  - Onglet Parcours : affiche validateur + observation quand étape déjà validée
+  - Bouton "Valider" sur chaque étape non validée → ouvre `ValiderEtapeModal`
+  - Rafraîchit les données candidat après succès
+- Mise à jour **`/api/candidats/valider-etape/route.ts`** :
+  - Accepte `dateValidation`, `validePar`, `observation` en plus des champs existants
+  - Supporte `snake_case` et `camelCase` pour le nom de l'étape
+  - Enregistre en BDD et transmet à n8n
+- Mise à jour **`/api/candidats/[id]/route.ts`** : retourne les 8 nouveaux champs
+- `npx tsc --noEmit` : **0 erreurs TypeScript**
+
+**Fichiers créés/modifiés** :
+- `src/components/admin/ValiderEtapeModal.tsx` *(nouveau)*
+- `src/components/admin/CandidatDetailModal.tsx`
+- `src/app/api/candidats/valider-etape/route.ts`
+- `src/app/api/candidats/[id]/route.ts`
+- `prisma/schema.prisma`
+
+**Commit** : `aa579b3`
