@@ -28,7 +28,7 @@ import {
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { EnvoyerMessageCandidatModal } from './EnvoyerMessageCandidatModal'
 import { GenererDevisCandidatModal } from './GenererDevisCandidatModal'
-import { useActionNotification } from '@/hooks/use-action-notification'
+import { ValiderEtapeModal, type EtapeType } from './ValiderEtapeModal'
 
 interface CandidatDetail {
   id: number
@@ -48,12 +48,20 @@ interface CandidatDetail {
   // Parcours
   entretien_telephonique: boolean
   date_entretien_tel: string | null
+  valide_par_entretien_tel: string | null
+  observation_entretien_tel: string | null
   rdv_presentiel: boolean
   date_rdv_presentiel: string | null
+  valide_par_rdv_presentiel: string | null
+  observation_rdv_presentiel: string | null
   test_technique: boolean
   date_test_technique: string | null
+  valide_par_test_technique: string | null
+  observation_test_technique: string | null
   validation_pedagogique: boolean
   date_validation_pedagogique: string | null
+  valide_par_validation_pedagogique: string | null
+  observation_validation_pedagogique: string | null
   // Financement
   mode_financement: string
   montant_total: number
@@ -90,8 +98,7 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
   const [activeTab, setActiveTab] = useState('general')
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
   const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
-  const [validatingEtape, setValidatingEtape] = useState<string | null>(null)
-  const { createActionNotification } = useActionNotification()
+  const [etapeAValider, setEtapeAValider] = useState<EtapeType | null>(null)
 
   useEffect(() => {
     async function fetchCandidat() {
@@ -129,89 +136,12 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
     }
   }
 
-  const handleValiderEtape = async (etape: string) => {
-    if (!candidat) return
-
-    setValidatingEtape(etape)
-
-    try {
-      // 1. Créer vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'CANDIDAT',
-        type: 'VALIDATION_ETAPE',
-        priorite: 'NORMALE',
-        titre: `Étape ${etape} validée pour ${candidat.prenom} ${candidat.nom}`,
-        message: `Validation étape ${etape} - Dossier ${candidat.numero_dossier}`,
-        entiteType: 'candidat',
-        entiteId: candidat.id.toString(),
-        actionRequise: true,
-        typeAction: 'VALIDER'
-      })
-
-      // 2. Construire le payload enrichi
-      const payload = {
-        // === IDENTIFICATION ACTION ===
-        actionType: 'VALIDER_ETAPE_CANDIDAT',
-        actionSource: 'admin.candidats.detail',
-        actionButton: 'valider_etape',
-
-        // === CONTEXTE MÉTIER ===
-        entiteType: 'candidat',
-        entiteId: candidat.id.toString(),
-        entiteData: {
-          idCandidat: candidat.id,
-          numeroDossier: candidat.numero_dossier,
-          nom: candidat.nom,
-          prenom: candidat.prenom,
-          email: candidat.email,
-          telephone: candidat.telephone,
-          formation: candidat.formation
-        },
-
-        // === DÉCISION UTILISATEUR ===
-        decidePar: currentUserId,
-        decisionType: 'validation_etape',
-        commentaire: `Validation étape : ${etape}`,
-
-        // === MÉTADONNÉES SPÉCIFIQUES ===
-        metadonnees: {
-          etape: etape,
-          numeroDossier: candidat.numero_dossier,
-          statutDossier: candidat.statut_dossier
-        },
-
-        // === CONFIGURATION RÉPONSE ===
-        responseConfig: {
-          callbackUrl: `${window.location.origin}/api/webhook/callback`,
-          updateNotification: true,
-          expectedResponse: 'etape_validated',
-          timeoutSeconds: 30
-        }
-      }
-
-      const response = await fetch(`/api/notifications/${notificationId}/action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        // Recharger les données du candidat
-        const res = await fetch(`/api/candidats/${candidatId}`)
-        if (res.ok) {
-          const data = await res.json()
-          setCandidat(data)
-        }
-      } else {
-        alert(result.error || 'Erreur lors de la validation de l\'étape')
-      }
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Erreur lors de la validation de l\'étape')
-    } finally {
-      setValidatingEtape(null)
+  const handleEtapeSuccess = async () => {
+    // Recharger les données du candidat après validation
+    const res = await fetch(`/api/candidats/${candidatId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setCandidat(data)
     }
   }
 
@@ -384,63 +314,102 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
               <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-4">
                 Parcours d'admission
               </h3>
-              {[
-                { key: 'entretien_telephonique', label: 'Entretien téléphonique', date: candidat.date_entretien_tel },
-                { key: 'rdv_presentiel', label: 'RDV présentiel', date: candidat.date_rdv_presentiel },
-                { key: 'test_technique', label: 'Test technique', date: candidat.date_test_technique },
-                { key: 'validation_pedagogique', label: 'Validation pédagogique', date: candidat.date_validation_pedagogique }
-              ].map((etape) => {
+              {([
+                {
+                  etapeType: 'entretienTelephonique' as EtapeType,
+                  key: 'entretien_telephonique',
+                  label: 'Entretien téléphonique',
+                  icon: '📞',
+                  date: candidat.date_entretien_tel,
+                  validePar: candidat.valide_par_entretien_tel,
+                  observation: candidat.observation_entretien_tel,
+                },
+                {
+                  etapeType: 'rdvPresentiel' as EtapeType,
+                  key: 'rdv_presentiel',
+                  label: 'RDV présentiel',
+                  icon: '🤝',
+                  date: candidat.date_rdv_presentiel,
+                  validePar: candidat.valide_par_rdv_presentiel,
+                  observation: candidat.observation_rdv_presentiel,
+                },
+                {
+                  etapeType: 'testTechnique' as EtapeType,
+                  key: 'test_technique',
+                  label: 'Test technique',
+                  icon: '🔧',
+                  date: candidat.date_test_technique,
+                  validePar: candidat.valide_par_test_technique,
+                  observation: candidat.observation_test_technique,
+                },
+                {
+                  etapeType: 'validationPedagogique' as EtapeType,
+                  key: 'validation_pedagogique',
+                  label: 'Validation pédagogique',
+                  icon: '🎓',
+                  date: candidat.date_validation_pedagogique,
+                  validePar: candidat.valide_par_validation_pedagogique,
+                  observation: candidat.observation_validation_pedagogique,
+                },
+              ] as const).map((etape) => {
                 const done = candidat[etape.key as keyof CandidatDetail] as boolean
                 return (
                   <div
                     key={etape.key}
-                    className="flex items-center justify-between p-4 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]"
+                    className="p-4 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]"
                   >
-                    <div className="flex items-center gap-3">
-                      {done ? (
-                        <CheckCircle className="w-5 h-5 text-[rgb(var(--success))]" />
-                      ) : (
-                        <Clock className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-                      )}
-                      <div>
-                        <span className="text-sm font-medium text-[rgb(var(--foreground))]">
-                          {etape.label}
-                        </span>
-                        {etape.date && (
-                          <div className="flex items-center gap-2 text-xs text-[rgb(var(--muted-foreground))] mt-1">
-                            <Calendar className="w-3 h-3" />
-                            {etape.date}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {done ? (
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)]">
-                        <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
-                        <span className="text-sm font-medium text-[rgb(var(--success))]">
-                          Étape validée
-                        </span>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleValiderEtape(etape.key)}
-                        disabled={validatingEtape === etape.key}
-                        className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        {validatingEtape === etape.key ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin"></div>
-                            Validation...
-                          </>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1">
+                        {done ? (
+                          <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0 mt-0.5" />
                         ) : (
-                          <>
-                            <CheckCircle className="w-4 h-4" />
-                            Valider l'étape
-                          </>
+                          <Clock className="w-5 h-5 text-[rgb(var(--muted-foreground))] flex-shrink-0 mt-0.5" />
                         )}
-                      </button>
-                    )}
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-[rgb(var(--foreground))]">
+                            {etape.icon} {etape.label}
+                          </span>
+                          {etape.date && (
+                            <div className="flex items-center gap-2 text-xs text-[rgb(var(--muted-foreground))] mt-1">
+                              <Calendar className="w-3 h-3" />
+                              {etape.date}
+                            </div>
+                          )}
+                          {/* Validateur et observation */}
+                          {done && etape.validePar && (
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1.5 text-xs text-[rgb(var(--foreground))]">
+                                <User className="w-3 h-3 text-[rgb(var(--accent))]" />
+                                <span>Validé par : <strong>{etape.validePar}</strong></span>
+                              </div>
+                              {etape.observation && (
+                                <div className="flex items-start gap-1.5 text-xs text-[rgb(var(--muted-foreground))]">
+                                  <Download className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                  <span>{etape.observation}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {done ? (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(var(--success),0.1)] rounded-lg border border-[rgba(var(--success),0.3)] flex-shrink-0">
+                          <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
+                          <span className="text-sm font-medium text-[rgb(var(--success))]">
+                            Validée
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEtapeAValider(etape.etapeType)}
+                          className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center gap-2 flex-shrink-0"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Valider
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -580,6 +549,22 @@ export function CandidatDetailModal({ candidatId, onClose }: CandidatDetailModal
           }}
           onClose={() => setShowGenererDevisModal(false)}
           onSuccess={handleGenererDevisSuccess}
+        />
+      )}
+
+      {/* Modal Valider Étape */}
+      {etapeAValider && candidat && (
+        <ValiderEtapeModal
+          candidat={{
+            idCandidat: candidat.id,
+            numeroDossier: candidat.numero_dossier,
+            nom: candidat.nom,
+            prenom: candidat.prenom,
+            formation: candidat.formation
+          }}
+          etape={etapeAValider}
+          onClose={() => setEtapeAValider(null)}
+          onSuccess={handleEtapeSuccess}
         />
       )}
     </div>

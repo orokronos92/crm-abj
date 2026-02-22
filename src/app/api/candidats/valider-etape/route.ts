@@ -13,7 +13,7 @@ import { sseManager } from '@/lib/sse-manager'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { idCandidat, etape } = body
+    const { idCandidat, etape, dateValidation, validePar, observation } = body
 
     // Validation
     if (!idCandidat || !etape) {
@@ -23,12 +23,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vérifier que l'étape est valide
+    // Vérifier que l'étape est valide (accepte les deux formats)
     const etapesValides = [
-      'entretien_telephonique',
-      'rdv_presentiel',
-      'test_technique',
-      'validation_pedagogique'
+      'entretien_telephonique', 'rdv_presentiel', 'test_technique', 'validation_pedagogique',
+      'entretienTelephonique', 'rdvPresentiel', 'testTechnique', 'validationPedagogique'
     ]
     if (!etapesValides.includes(etape)) {
       return NextResponse.json(
@@ -60,22 +58,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Mapper le nom de l'étape vers les champs BDD
-    const champMapping: Record<string, { booleen: string; date: string }> = {
-      entretien_telephonique: { booleen: 'entretienTelephonique', date: 'dateEntretienTel' },
-      rdv_presentiel: { booleen: 'rdvPresentiel', date: 'dateRdvPresentiel' },
-      test_technique: { booleen: 'testTechnique', date: 'dateTestTechnique' },
-      validation_pedagogique: { booleen: 'validationPedagogique', date: 'dateValidationPedagogique' }
+    // Mapper le nom de l'étape vers les champs BDD (supporte camelCase et snake_case)
+    type ChampMapping = { booleen: string; date: string; validePar: string; observation: string }
+    const champMapping: Record<string, ChampMapping> = {
+      entretien_telephonique:  { booleen: 'entretienTelephonique',  date: 'dateEntretienTel',          validePar: 'valideParEntretienTel',             observation: 'observationEntretienTel' },
+      entretienTelephonique:   { booleen: 'entretienTelephonique',  date: 'dateEntretienTel',          validePar: 'valideParEntretienTel',             observation: 'observationEntretienTel' },
+      rdv_presentiel:          { booleen: 'rdvPresentiel',          date: 'dateRdvPresentiel',         validePar: 'valideParRdvPresentiel',            observation: 'observationRdvPresentiel' },
+      rdvPresentiel:           { booleen: 'rdvPresentiel',          date: 'dateRdvPresentiel',         validePar: 'valideParRdvPresentiel',            observation: 'observationRdvPresentiel' },
+      test_technique:          { booleen: 'testTechnique',          date: 'dateTestTechnique',         validePar: 'valideParTestTechnique',            observation: 'observationTestTechnique' },
+      testTechnique:           { booleen: 'testTechnique',          date: 'dateTestTechnique',         validePar: 'valideParTestTechnique',            observation: 'observationTestTechnique' },
+      validation_pedagogique:  { booleen: 'validationPedagogique',  date: 'dateValidationPedagogique', validePar: 'valideParValidationPedagogique',    observation: 'observationValidationPedagogique' },
+      validationPedagogique:   { booleen: 'validationPedagogique',  date: 'dateValidationPedagogique', validePar: 'valideParValidationPedagogique',    observation: 'observationValidationPedagogique' },
     }
 
     const champs = champMapping[etape]
+    const dateAEnregistrer = dateValidation ? new Date(dateValidation) : new Date()
 
-    // Mettre à jour l'étape
+    // Mettre à jour l'étape avec validateur et observation
     await prisma.candidat.update({
       where: { idCandidat },
       data: {
         [champs.booleen]: true,
-        [champs.date]: new Date()
+        [champs.date]: dateAEnregistrer,
+        ...(validePar ? { [champs.validePar]: validePar } : {}),
+        ...(observation ? { [champs.observation]: observation } : {}),
       }
     })
 
@@ -109,7 +115,9 @@ export async function POST(request: NextRequest) {
         idProspect: candidat.idProspect,
         nom: candidat.prospect?.nom,
         prenom: candidat.prospect?.prenom,
-        dateValidation: new Date().toISOString()
+        dateValidation: dateAEnregistrer.toISOString(),
+        validePar: validePar || null,
+        observation: observation || null,
       })
     }).catch(err => {
       console.error(`[API] ⚠️ Webhook n8n échoué (non bloquant):`, err.message)

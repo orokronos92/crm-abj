@@ -126,6 +126,16 @@ model Candidat {
   validationPedagogique     Boolean   @default(false) @map("validation_pedagogique")
   dateValidationPedagogique DateTime? @map("date_validation_pedagogique") @db.Date
 
+  // Validation étapes — validateur + observation
+  valideParEntretienTel              String?   @map("valide_par_entretien_tel")
+  observationEntretienTel            String?   @map("observation_entretien_tel") @db.Text
+  valideParRdvPresentiel             String?   @map("valide_par_rdv_presentiel")
+  observationRdvPresentiel           String?   @map("observation_rdv_presentiel") @db.Text
+  valideParTestTechnique             String?   @map("valide_par_test_technique")
+  observationTestTechnique           String?   @map("observation_test_technique") @db.Text
+  valideParValidationPedagogique     String?   @map("valide_par_validation_pedagogique")
+  observationValidationPedagogique   String?   @map("observation_validation_pedagogique") @db.Text
+
   // Décision finale
   dateDecision  DateTime? @map("date_decision") @db.Timestamptz(6)
   decision      String?
