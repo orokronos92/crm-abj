@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import {
   X, User, BarChart3, Award, Calendar, FolderOpen, History,
-  Mail, Phone, FileText, MessageSquare, Download, Sparkles
+  MessageSquare, Sparkles, CheckCircle, AlertCircle, Loader2
 } from 'lucide-react'
 import { TabGeneral } from './eleve-tabs/TabGeneral'
 import { TabSynthese } from './eleve-tabs/TabSynthese'
@@ -13,12 +13,13 @@ import { TabDocuments } from './eleve-tabs/TabDocuments'
 import { TabHistorique } from './eleve-tabs/TabHistorique'
 import { TabAnalyseIA } from './eleve-tabs/TabAnalyseIA'
 import { EnvoyerMessageEleveModal } from './EnvoyerMessageEleveModal'
-import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface EleveDetailModalProps {
   eleveId: number
   onClose: () => void
 }
+
+type AnalyseStatus = 'idle' | 'loading' | 'success' | 'conflict' | 'error'
 
 export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
   const [activeTab, setActiveTab] = useState('general')
@@ -26,128 +27,76 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showEnvoyerMessageModal, setShowEnvoyerMessageModal] = useState(false)
-  const [demandingAnalyse, setDemandingAnalyse] = useState(false)
-  const { createActionNotification } = useActionNotification()
+  const [analyseStatus, setAnalyseStatus] = useState<AnalyseStatus>('idle')
+  const [analyseMessage, setAnalyseMessage] = useState('')
+
+  const fetchEleve = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/eleves/${eleveId}`)
+      if (!response.ok) throw new Error('Erreur lors du chargement des données')
+      const data = await response.json()
+      setEleve(data)
+    } catch (err) {
+      console.error('Erreur:', err)
+      setError(err instanceof Error ? err.message : 'Erreur inconnue')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchEleve = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/eleves/${eleveId}`)
-
-        if (!response.ok) {
-          throw new Error('Erreur lors du chargement des données')
-        }
-
-        const data = await response.json()
-        setEleve(data)
-      } catch (err) {
-        console.error('Erreur:', err)
-        setError(err instanceof Error ? err.message : 'Erreur inconnue')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchEleve()
   }, [eleveId])
 
   const handleEnvoyerMessageSuccess = async () => {
-    // Recharger les données de l'élève après envoi message
     const res = await fetch(`/api/eleves/${eleveId}`)
-    if (res.ok) {
-      const data = await res.json()
-      setEleve(data)
-    }
+    if (res.ok) setEleve(await res.json())
   }
 
   const handleDemanderAnalyse = async () => {
-    if (!eleve || demandingAnalyse) return
+    if (!eleve || analyseStatus === 'loading') return
 
-    setDemandingAnalyse(true)
+    setAnalyseStatus('loading')
+    setAnalyseMessage('Demande envoyée à Marjorie...')
+
     try {
-      // 1. Créer vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'ELEVE',
-        type: 'DEMANDE_ANALYSE',
-        priorite: 'NORMALE',
-        titre: `Analyse IA demandée pour ${eleve.prenom} ${eleve.nom}`,
-        message: `Demande d'analyse complète du profil - Dossier ${eleve.numeroDossier}`,
-        entiteType: 'eleve',
-        entiteId: eleve.id.toString(),
-        actionRequise: true,
-        typeAction: 'ANALYSER'
-      })
-
-      // 2. Construire le payload enrichi
-      const payload = {
-        // === IDENTIFICATION ACTION ===
-        actionType: 'DEMANDER_ANALYSE_ELEVE',
-        actionSource: 'admin.eleves.detail',
-        actionButton: 'demander_analyse',
-
-        // === CONTEXTE MÉTIER ===
-        entiteType: 'eleve',
-        entiteId: eleve.id.toString(),
-        entiteData: {
-          idEleve: eleve.id,
-          numeroDossier: eleve.numeroDossier,
-          nom: eleve.nom,
-          prenom: eleve.prenom,
-          email: eleve.email,
-          telephone: eleve.telephone,
-          formation: eleve.formation
-        },
-
-        // === DÉCISION UTILISATEUR ===
-        decidePar: currentUserId,
-        decisionType: 'demande_analyse',
-        commentaire: `Demande d'analyse IA pour ${eleve.prenom} ${eleve.nom}`,
-
-        // === MÉTADONNÉES SPÉCIFIQUES ===
-        metadonnees: {
-          numeroDossier: eleve.numeroDossier,
-          formation: eleve.formation,
-          typeAnalyse: 'profil_complet'
-        },
-
-        // === CONFIGURATION RÉPONSE ===
-        responseConfig: {
-          callbackUrl: `${window.location.origin}/api/webhook/callback`,
-          updateNotification: true,
-          expectedResponse: 'analyse_generated',
-          timeoutSeconds: 120 // Analyse IA peut prendre du temps
-        }
-      }
-
-      const response = await fetch(`/api/notifications/${notificationId}/action`, {
+      const response = await fetch('/api/eleves/demander-analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          idEleve: eleve.id,
+          numeroDossier: eleve.numeroDossier
+        })
       })
 
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        alert('Analyse demandée à Marjorie ! Vous serez notifié lorsqu\'elle sera terminée.')
-        // Optionnel : recharger après quelques secondes pour voir si l'analyse est déjà dispo
+      if (response.ok) {
+        setAnalyseStatus('success')
+        setAnalyseMessage('Analyse en cours — vous serez notifié à la réception.')
+        // Basculer sur l'onglet Analyse IA pour montrer le statut
+        setActiveTab('analyse-ia')
+        // Recharger après 3s au cas où la réponse arrive vite
         setTimeout(async () => {
           const res = await fetch(`/api/eleves/${eleveId}`)
-          if (res.ok) {
-            const data = await res.json()
-            setEleve(data)
-          }
-        }, 5000)
+          if (res.ok) setEleve(await res.json())
+        }, 3000)
+        // Reset popup après 5s
+        setTimeout(() => setAnalyseStatus('idle'), 5000)
       } else if (response.status === 409) {
-        alert(result.message || 'Une analyse est déjà en cours pour cet élève')
+        const data = await response.json()
+        setAnalyseStatus('conflict')
+        setAnalyseMessage(data.message || 'Une analyse est déjà en cours pour cet élève.')
+        setTimeout(() => setAnalyseStatus('idle'), 4000)
       } else {
-        alert(result.error || 'Erreur lors de la demande d\'analyse')
+        const data = await response.json()
+        setAnalyseStatus('error')
+        setAnalyseMessage(data.error || 'Erreur lors de la demande.')
+        setTimeout(() => setAnalyseStatus('idle'), 4000)
       }
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Erreur lors de la demande d\'analyse')
-    } finally {
-      setDemandingAnalyse(false)
+    } catch {
+      setAnalyseStatus('error')
+      setAnalyseMessage('Impossible de contacter Marjorie.')
+      setTimeout(() => setAnalyseStatus('idle'), 4000)
     }
   }
 
@@ -164,6 +113,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl overflow-hidden flex flex-col max-w-6xl w-full h-[90vh]">
+
         {/* Onglets en forme de dossier */}
         <div className="relative flex gap-1 px-4 pt-4 bg-[rgb(var(--background))]">
           {tabs.map((tab) => {
@@ -188,8 +138,6 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
               </button>
             )
           })}
-
-          {/* Bouton fermer */}
           <button
             onClick={onClose}
             className="absolute top-2 right-4 p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors z-10"
@@ -216,13 +164,34 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
               {activeTab === 'presences' && <TabPresences eleve={eleve} />}
               {activeTab === 'documents' && <TabDocuments eleve={eleve} />}
               {activeTab === 'historique' && <TabHistorique eleve={eleve} />}
-              {activeTab === 'analyse-ia' && <TabAnalyseIA eleve={eleve} onDemanderAnalyse={handleDemanderAnalyse} />}
+              {activeTab === 'analyse-ia' && (
+                <TabAnalyseIA eleve={eleve} onDemanderAnalyse={handleDemanderAnalyse} />
+              )}
             </>
           ) : null}
         </div>
 
         {/* Footer avec actions */}
         <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
+
+          {/* Popup statut analyse (au-dessus des boutons) */}
+          {analyseStatus !== 'idle' && (
+            <div className={`mb-3 px-4 py-2.5 rounded-lg flex items-center gap-3 text-sm transition-all ${
+              analyseStatus === 'loading'
+                ? 'bg-[rgba(var(--accent),0.1)] border border-[rgba(var(--accent),0.3)] text-[rgb(var(--accent))]'
+                : analyseStatus === 'success'
+                ? 'bg-[rgba(var(--success),0.1)] border border-[rgba(var(--success),0.3)] text-[rgb(var(--success))]'
+                : 'bg-[rgba(var(--error),0.1)] border border-[rgba(var(--error),0.3)] text-[rgb(var(--error))]'
+            }`}>
+              {analyseStatus === 'loading' && <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />}
+              {analyseStatus === 'success' && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+              {(analyseStatus === 'error' || analyseStatus === 'conflict') && (
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              )}
+              <span>{analyseMessage}</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <button
               onClick={() => setShowEnvoyerMessageModal(true)}
@@ -233,13 +202,13 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
             </button>
             <button
               onClick={handleDemanderAnalyse}
-              disabled={demandingAnalyse}
+              disabled={analyseStatus === 'loading'}
               className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {demandingAnalyse ? (
+              {analyseStatus === 'loading' ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-[rgb(var(--primary))] border-t-transparent rounded-full animate-spin"></div>
-                  Demande en cours...
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  En cours...
                 </>
               ) : (
                 <>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EleveService } from '@/services/eleve.service'
+import prisma from '@/lib/prisma'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -47,7 +48,8 @@ export async function GET(
 
 /**
  * PATCH /api/eleves/[id]
- * Met à jour un élève (pour de futures fonctionnalités)
+ * Appelé par n8n pour stocker l'analyse IA Marjorie
+ * Body: { analyse_ia: string, api_key?: string }
  */
 export async function PATCH(
   request: NextRequest,
@@ -56,23 +58,53 @@ export async function PATCH(
   try {
     const { id } = await params
     const eleveId = parseInt(id, 10)
-    const body = await request.json()
 
     if (isNaN(eleveId)) {
+      return NextResponse.json({ error: 'ID invalide' }, { status: 400 })
+    }
+
+    // Vérification API Key (requête venant de n8n)
+    const apiKey = request.headers.get('x-api-key')
+    const expectedKey = process.env.NOTIFICATIONS_API_KEY
+    if (expectedKey && apiKey !== expectedKey) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { analyse_ia } = body
+
+    if (!analyse_ia || typeof analyse_ia !== 'string') {
       return NextResponse.json(
-        { error: 'ID invalide' },
+        { error: 'Le champ analyse_ia est requis' },
         { status: 400 }
       )
     }
 
-    // TODO: Implémenter la mise à jour avec validation des données
-    // const eleveService = new EleveService()
-    // const updatedEleve = await eleveService.updateEleve(eleveId, body)
+    // Vérifier que l'élève existe
+    const eleve = await prisma.eleve.findUnique({
+      where: { idEleve: eleveId },
+      select: { idEleve: true, numeroDossier: true }
+    })
 
-    return NextResponse.json(
-      { message: 'Fonctionnalité de mise à jour à venir' },
-      { status: 501 }
-    )
+    if (!eleve) {
+      return NextResponse.json({ error: 'Élève non trouvé' }, { status: 404 })
+    }
+
+    // Stocker l'analyse IA
+    await prisma.eleve.update({
+      where: { idEleve: eleveId },
+      data: {
+        analyseIa: analyse_ia,
+        dateAnalyseIa: new Date()
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Analyse IA stockée avec succès',
+      idEleve: eleveId,
+      numeroDossier: eleve.numeroDossier
+    })
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'élève:', error)
     return NextResponse.json(

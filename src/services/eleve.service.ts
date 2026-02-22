@@ -251,7 +251,11 @@ export class EleveService {
       prochaine_eval: this.getNextEvaluation(sessionActive),
 
       // Notes générales
-      notes_generales: eleve.notesGenerales || ''
+      notes_generales: eleve.notesGenerales || '',
+
+      // Analyse IA Marjorie
+      analyse_ia: eleve.analyseIa || null,
+      date_analyse_ia: eleve.dateAnalyseIa ? eleve.dateAnalyseIa.toISOString() : null
     }
   }
 
