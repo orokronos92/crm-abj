@@ -12,7 +12,6 @@ import {
   Target,
   FolderOpen,
   Euro,
-  Sparkles,
   Mail,
   Phone,
   MessageSquare,
@@ -84,7 +83,6 @@ interface CandidatDetail {
     obligatoire: boolean
   }>
   // Notes IA
-  notes_ia: string
 }
 
 interface CandidatDetailModalProps {
@@ -253,7 +251,6 @@ export function CandidatDetailModal({ candidatId, onClose, onCandidatEjecte }: C
               { id: 'parcours', label: 'Parcours', icon: Target },
               { id: 'documents', label: 'Documents', icon: FolderOpen },
               { id: 'financement', label: 'Financement', icon: Euro },
-              { id: 'notes_ia', label: 'Notes IA', icon: Sparkles }
             ].map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -563,20 +560,6 @@ export function CandidatDetailModal({ candidatId, onClose, onCandidatEjecte }: C
             </div>
           )}
 
-          {/* Tab Notes IA */}
-          {activeTab === 'notes_ia' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[rgb(var(--accent))]" />
-                Analyse Marjorie
-              </h3>
-              <div className="p-4 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
-                <p className="text-sm text-[rgb(var(--foreground))] leading-relaxed">
-                  {candidat.notes_ia || 'Aucune analyse disponible pour ce candidat.'}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
