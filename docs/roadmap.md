@@ -506,3 +506,24 @@ n8n /webhook/marjorie-chat
 - ✅ Terminé et committé
 - 🔄 En cours ou prêt à démarrer
 - 📋 Backlog (identifié, pas encore planifié)
+
+---
+
+## Journal de session — 2026-02-22
+
+### T8 — Reset et seed réaliste prospects / candidats / élèves
+
+**But** : Remplacer les anciennes données de test par un dataset cohérent avec les nouvelles tables (formations, documents_requis, etc.)
+
+**Actions** :
+- Suppression des données existantes dans l'ordre FK : `presences` → `evaluations` → `inscriptions_sessions` → `eleves` → `documents_candidat` → `candidats` → `historique_emails` → `prospects`
+- Création de **39 prospects** avec profils réalistes (noms, villes, situations, projets, résumés IA, nb échanges, dates)
+  - 6 NOUVEAU, 6 EN_ATTENTE_DOSSIER, 6 ANCIEN_CANDIDAT, 9 ANCIEN_ELEVE → **27 visibles** page Prospects
+  - 5 CANDIDAT, 7 ELEVE → **12 masqués** (actifs, conformes à la règle métier)
+- Création de **10 candidats actifs** avec pipeline varié : 3 DOSSIER_EN_COURS, 2 DOSSIER_COMPLET, 2 ENTRETIEN_PLANIFIE, 2 DEVIS_ENVOYE, 1 ACCEPTE
+- Création de **10 candidats INSCRIT** (intermédiaires pour les élèves)
+- Création de **10 élèves** : 7 EN_COURS, 2 TERMINE, 1 ABANDONNE
+- 20 évaluations et 44 présences créées
+
+**Script** : `scripts/reset-seed-prospects-candidats.ts`
+**Commit** : `1856942`
