@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { useCallbackListener } from '@/hooks/use-callback-listener'
 import {
@@ -40,11 +40,27 @@ const FORM_INITIAL_STATE = {
   financement: '',
 }
 
+interface Formation {
+  idFormation: number
+  codeFormation: string
+  nom: string
+  dureeHeures?: number
+}
+
 export default function NouveauProspectPage() {
   const router = useRouter()
   const [actionStatus, setActionStatus] = useState<ActionStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [formData, setFormData] = useState(FORM_INITIAL_STATE)
+  const [formations, setFormations] = useState<Formation[]>([])
+  const [loadingFormations, setLoadingFormations] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/formations?actif=true')
+      .then(r => r.ok ? r.json() : { formations: [] })
+      .then(data => setFormations(data.formations || []))
+      .finally(() => setLoadingFormations(false))
+  }, [])
 
   // correlationId unique par tentative — regénéré après chaque succès
   const correlationId = useRef(crypto.randomUUID())
@@ -375,17 +391,17 @@ export default function NouveauProspectPage() {
                   value={formData.formation_souhaitee}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
+                  disabled={loadingFormations}
+                  className="w-full px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)] disabled:opacity-50"
                 >
-                  <option value="">Sélectionnez une formation</option>
-                  <option value="CAP Bijouterie-Joaillerie">CAP Bijouterie-Joaillerie</option>
-                  <option value="Sertissage Niveau 1">Sertissage Niveau 1</option>
-                  <option value="Sertissage Niveau 2">Sertissage Niveau 2</option>
-                  <option value="Joaillerie Création">Joaillerie Création</option>
-                  <option value="Taille Lapidaire">Taille Lapidaire</option>
-                  <option value="CAO/DAO Bijouterie">CAO/DAO Bijouterie</option>
-                  <option value="Gemmologie">Gemmologie</option>
-                  <option value="Polissage">Polissage</option>
+                  <option value="">
+                    {loadingFormations ? 'Chargement...' : 'Sélectionnez une formation'}
+                  </option>
+                  {formations.map(f => (
+                    <option key={f.codeFormation} value={f.codeFormation}>
+                      {f.nom}{f.dureeHeures ? ` (${f.dureeHeures}h)` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
