@@ -99,20 +99,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const {
-      idConversion,
-      success,
-      numeroDossier,
-      lienDossierDrive,
-      workflowId,
-      executionId,
-      error
-    } = body
+    // n8n envoie correlationId + status + data.numeroDossier
+    const idConversion = body.idConversion || body.correlationId
+    const success = body.success ?? (body.status === 'success')
+    const numeroDossier = body.numeroDossier || body.data?.numeroDossier
+    const lienDossierDrive = body.lienDossierDrive || body.data?.lienDossierDrive
+    const workflowId = body.workflowId
+    const executionId = body.executionId || body.data?.executionId
+    const error = body.error
 
     // Validation
     if (!idConversion) {
       return NextResponse.json(
-        { success: false, error: 'idConversion requis' },
+        { success: false, error: 'idConversion ou correlationId requis' },
         { status: 400 }
       )
     }
