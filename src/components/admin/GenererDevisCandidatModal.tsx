@@ -77,6 +77,8 @@ export function GenererDevisCandidatModal({
 
   const handleSubmit = async () => {
     setSubmitting(true)
+    // Passer en pending AVANT l'envoi pour afficher le spinner immédiatement
+    setActionStatus('pending')
 
     try {
       const payload = {
@@ -132,8 +134,7 @@ export function GenererDevisCandidatModal({
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Demande envoyée — en attente de confirmation n8n via SSE
-        setActionStatus('pending')
+        // Demande envoyée — on reste en pending, le callback SSE passera à success
       } else if (response.status === 409) {
         // Génération déjà en cours
         alert(result.message || 'Une génération de devis est déjà en cours pour ce candidat')
