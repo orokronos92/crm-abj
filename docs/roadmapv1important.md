@@ -343,6 +343,21 @@ if (status === 'success') {
 
 ---
 
+## 📅 JOURNAL — 2026-02-23
+
+### Fix — Formulaire nouveau prospect : formation connectée au catalogue API
+
+**Symptôme** : Dans le formulaire `/admin/prospects/nouveau`, le sélecteur "Formation souhaitée" affichait une liste fixe de 7 formations codées en dur avec le texte du libellé comme valeur (ex: `value="CAP Bijouterie-Joaillerie"` au lieu de `value="CAP_ATBJ"`). Le catalogue formations géré dans la BDD n'était pas utilisé — les nouvelles formations ajoutées via le seed n8n n'apparaissaient jamais dans ce formulaire.
+
+**Cause racine** : Le composant contenait des `<option>` HTML statiques au lieu d'un fetch dynamique. Les valeurs envoyées à n8n étaient donc des libellés texte et non des codes formation (`codeFormation`), créant une incohérence avec le catalogue.
+
+**Fix appliqué** :
+- `src/app/admin/prospects/nouveau/page.tsx` : remplacement des 7 `<option>` statiques par un `useEffect` qui fetch `/api/formations?actif=true` au montage. Le `value` de chaque option est désormais `f.codeFormation` (ex: `CAP_ATBJ`) et le libellé affiche `f.nom + durée en heures`. Le select est désactivé (`disabled`) pendant le chargement.
+
+**Commit** : `a3b265c` — `fix: formulaire nouveau prospect — formation connectée au catalogue API`
+
+---
+
 ## 🔄 EN COURS / À FAIRE
 
 *(Aucune tâche en cours)*
