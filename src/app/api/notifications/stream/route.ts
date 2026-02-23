@@ -33,10 +33,13 @@ export async function GET(request: NextRequest) {
     role = roleFromHeader as 'admin' | 'professeur' | 'eleve'
   } else {
     // Essayer de détecter depuis le referer
+    // Utiliser une regex pour matcher /eleve/ ou /eleve en fin d'URL
+    // et éviter le faux positif sur /admin/eleves
     const referer = request.headers.get('referer') || ''
-    if (referer.includes('/formateur')) {
+    const pathname = referer ? new URL(referer).pathname : ''
+    if (pathname.startsWith('/formateur')) {
       role = 'professeur'
-    } else if (referer.includes('/eleve')) {
+    } else if (pathname.startsWith('/eleve')) {
       role = 'eleve'
     }
   }
