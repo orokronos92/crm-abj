@@ -14,6 +14,86 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sseManager } from '@/lib/sse-manager'
 
+/**
+ * Crée les documents requis (placeholders ATTENDU) pour un candidat
+ * selon la formation retenue stockée dans ConversionEnCours
+ */
+async function creerDocumentsRequis(numeroDossier: string, correlationId: string): Promise<number> {
+  // Récupérer la formation depuis ConversionEnCours via correlationId
+  const conversion = await prisma.conversionEnCours.findFirst({
+    where: {
+      OR: [
+        { idProspect: { contains: correlationId } },
+      ],
+      typeAction: 'CONVERTIR_CANDIDAT',
+      formationRetenue: { not: null }
+    },
+    orderBy: { dateDebut: 'desc' }
+  })
+
+  // Fallback : chercher via numeroDossier sur le candidat directement
+  const candidat = await prisma.candidat.findUnique({
+    where: { numeroDossier },
+    select: { idCandidat: true, idProspect: true, numeroDossier: true, formationRetenue: true }
+  })
+
+  if (!candidat) {
+    console.log(`[webhook/callback] Candidat "${numeroDossier}" introuvable`)
+    return 0
+  }
+
+  const formationRetenue = candidat.formationRetenue || conversion?.formationRetenue
+  if (!formationRetenue) {
+    console.log(`[webhook/callback] Aucune formation pour "${numeroDossier}"`)
+    return 0
+  }
+
+  const formation = await prisma.formation.findFirst({
+    where: { codeFormation: formationRetenue },
+    select: { idFormation: true }
+  })
+
+  if (!formation) {
+    console.log(`[webhook/callback] Formation "${formationRetenue}" introuvable`)
+    return 0
+  }
+
+  const documentsRequis = await prisma.documentRequis.findMany({
+    where: { idFormation: formation.idFormation },
+    include: { typeDocument: { select: { code: true, categorie: true } } },
+    orderBy: { ordreAffichage: 'asc' }
+  })
+
+  if (documentsRequis.length === 0) return 0
+
+  // Anti-doublon
+  const existants = await prisma.documentCandidat.findMany({
+    where: { numeroDossier },
+    select: { typeDocument: true }
+  })
+  const typesExistants = new Set(existants.map(d => d.typeDocument))
+  const aCreer = documentsRequis.filter(dr => !typesExistants.has(dr.codeTypeDocument))
+
+  if (aCreer.length === 0) {
+    console.log(`[webhook/callback] Documents déjà existants pour "${numeroDossier}"`)
+    return 0
+  }
+
+  await prisma.documentCandidat.createMany({
+    data: aCreer.map(dr => ({
+      idProspect: candidat.idProspect,
+      numeroDossier: candidat.numeroDossier,
+      typeDocument: dr.codeTypeDocument,
+      categorie: dr.typeDocument.categorie,
+      statut: 'ATTENDU',
+      obligatoire: dr.obligatoire
+    }))
+  })
+
+  console.log(`[webhook/callback] ✅ ${aCreer.length} documents créés pour "${numeroDossier}" (formation: ${formationRetenue})`)
+  return aCreer.length
+}
+
 // Même clé API que l'endpoint d'ingestion
 const API_KEY = process.env.NOTIFICATIONS_API_KEY || 'default-api-key-change-me'
 
@@ -75,6 +155,18 @@ export async function POST(request: NextRequest) {
 
     // === MODE T2 : correlationId sans notification en BDD ===
     if (hasCorrelationId && !hasNotificationId) {
+      // Création documents requis si c'est une conversion candidat réussie
+      if (body.status === 'success' && body.response === 'candidat_created') {
+        const numeroDossier = body.data?.numeroDossier as string | undefined
+        if (numeroDossier) {
+          creerDocumentsRequis(numeroDossier, body.correlationId!).catch(err =>
+            console.error('[webhook/callback] Erreur création documents requis:', err)
+          )
+        } else {
+          console.warn('[webhook/callback] candidat_created reçu sans data.numeroDossier')
+        }
+      }
+
       try {
         const targetRole = body.targetRole || 'admin'
         const typeAction = body.typeAction || body.response
