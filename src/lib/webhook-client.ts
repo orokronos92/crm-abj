@@ -212,6 +212,7 @@ export const prospectWebhooks = {
   async creerProspect(data: {
     nom: string
     prenom: string
+    dateNaissance: string
     email: string
     telephone: string
     adresse?: string

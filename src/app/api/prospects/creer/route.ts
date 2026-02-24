@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     const {
       nom,
       prenom,
+      dateNaissance,
       email,
       telephone,
       adresse,
@@ -29,9 +30,9 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validation des champs obligatoires
-    if (!nom || !prenom || !email || !telephone || !formationPrincipale) {
+    if (!nom || !prenom || !dateNaissance || !email || !telephone || !formationPrincipale) {
       return NextResponse.json(
-        { success: false, error: 'Champs obligatoires manquants : nom, prenom, email, telephone, formationPrincipale' },
+        { success: false, error: 'Champs obligatoires manquants : nom, prenom, dateNaissance, email, telephone, formationPrincipale' },
         { status: 400 }
       )
     }
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
     const payload = {
       nom,
       prenom,
+      dateNaissance,
       email,
       telephone,
       adresse: adresse || undefined,

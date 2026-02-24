@@ -31,6 +31,7 @@ type ActionStatus = 'idle' | 'pending' | 'success' | 'error'
 const FORM_INITIAL_STATE = {
   nom: '',
   prenom: '',
+  date_naissance: '',
   email: '',
   telephone: '',
   adresse: '',
@@ -115,6 +116,7 @@ export default function NouveauProspectPage() {
         body: JSON.stringify({
           nom: formData.nom,
           prenom: formData.prenom,
+          dateNaissance: formData.date_naissance,
           email: formData.email,
           telephone: formData.telephone,
           adresse: formData.adresse || undefined,
@@ -272,6 +274,19 @@ export default function NouveauProspectPage() {
                   required
                   className="w-full px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
                   placeholder="Sophie"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
+                  Date de naissance *
+                </label>
+                <input
+                  type="date"
+                  name="date_naissance"
+                  value={formData.date_naissance}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2.5 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent),0.2)]"
                 />
               </div>
             </div>
