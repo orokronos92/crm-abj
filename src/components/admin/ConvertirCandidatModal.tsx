@@ -11,6 +11,7 @@ interface ConvertirCandidatModalProps {
     prenom: string
     email: string
     formationPrincipale?: string
+    modeFinancement?: string
   }
   onClose: () => void
   onSuccess: () => void
@@ -188,7 +189,8 @@ export function ConvertirCandidatModal({
         metadonnees: {
           formationRetenue: formData.formationRetenue,
           sessionVisee: formData.sessionVisee || null,
-          dateDebutSouhaitee: formData.dateDebutSouhaitee || null
+          dateDebutSouhaitee: formData.dateDebutSouhaitee || null,
+          modeFinancement: prospect.modeFinancement || null
         },
 
         // === CONFIGURATION RÉPONSE ===

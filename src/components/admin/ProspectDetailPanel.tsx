@@ -332,7 +332,8 @@ export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }:
             nom: prospect.nom,
             prenom: prospect.prenom,
             email: prospect.email,
-            formationPrincipale: prospect.formationSouhaitee
+            formationPrincipale: prospect.formationSouhaitee,
+            modeFinancement: prospect.financement
           }}
           onClose={() => setShowConvertirModal(false)}
           onSuccess={handleConversionSuccess}
