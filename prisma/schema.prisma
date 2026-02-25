@@ -161,9 +161,10 @@ model Candidat {
   notesIa String? @map("notes_ia") // Notes générées par Marjorie
 
   // Relations
-  prospect          Prospect           @relation(fields: [idProspect], references: [idProspect])
-  documentsCandidat DocumentCandidat[]
-  eleve             Eleve?
+  prospect              Prospect              @relation(fields: [idProspect], references: [idProspect])
+  documentsCandidat     DocumentCandidat[]
+  eleve                 Eleve?
+  inscriptionsSessions  InscriptionSession[]
 
   @@index([numeroDossier])
   @@index([idProspect])
@@ -458,22 +459,28 @@ model Session {
   @@map("sessions")
 }
 
-/// Lien élèves ↔ sessions
+/// Lien candidats/élèves ↔ sessions (avec liste d'attente)
 model InscriptionSession {
   idInscription     Int       @id @default(autoincrement()) @map("id_inscription")
-  idEleve           Int       @map("id_eleve")
+  idEleve           Int?      @map("id_eleve")     // Nullable — peut être candidat pas encore élève
+  idCandidat        Int?      @map("id_candidat")  // Candidat en liste d'attente avant conversion
   idSession         Int       @map("id_session")
   dateInscription   DateTime? @map("date_inscription") @db.Date
   statutInscription String?   @map("statut_inscription") // INSCRIT | EN_ATTENTE | CONFIRME | ANNULE
   dateConfirmation  DateTime? @map("date_confirmation") @db.Date
   motifAnnulation   String?   @map("motif_annulation")
+  priorite          Int       @default(2) // 1=ELEVE (prioritaire), 2=CANDIDAT
+  positionAttente   Int?      @map("position_attente") // Rang dans la file d'attente
+  notifiePar        String?   @map("notifie_par") // "admin" | "auto" (Marjorie)
   creeLe            DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
 
   // Relations
-  eleve   Eleve   @relation(fields: [idEleve], references: [idEleve])
-  session Session @relation(fields: [idSession], references: [idSession])
+  eleve     Eleve?    @relation(fields: [idEleve], references: [idEleve])
+  candidat  Candidat? @relation(fields: [idCandidat], references: [idCandidat])
+  session   Session   @relation(fields: [idSession], references: [idSession])
 
-  @@unique([idEleve, idSession])
+  @@index([idSession, statutInscription])
+  @@index([idSession, priorite, positionAttente])
   @@map("inscriptions_sessions")
 }
 
