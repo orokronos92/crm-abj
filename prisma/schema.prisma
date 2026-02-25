@@ -452,6 +452,7 @@ model Session {
   evaluations          Evaluation[]
   presences            Presence[]
   interventions        InterventionFormateur[]
+  reservationsSalles   ReservationSalle[]
 
   @@index([idFormation])
   @@index([idSalle])
@@ -913,14 +914,45 @@ model Salle {
   modifieLe DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 
   // === RELATIONS ===
-  sessions Session[] @relation("SessionsSalle")
-  // evenements: on garde String pour l'instant, FK plus tard
-  // reservations: table optionnelle pour planning détaillé
+  sessions      Session[]           @relation("SessionsSalle")
+  reservations  ReservationSalle[]
 
   // === INDEX POUR PERFORMANCES ===
   @@index([nom]) // Recherche par nom
   @@index([statut]) // Filtrage salles actives
   @@map("salles")
+}
+
+/// Créneaux horaires d'occupation d'une salle (granularité heure)
+/// Permet de savoir qu'Atelier B est occupé 08h-12h par CAP et 14h-18h par Sertissage N1
+model ReservationSalle {
+  idReservation    Int      @id @default(autoincrement()) @map("id_reservation")
+  idSalle          Int      @map("id_salle")
+  idSession        Int?     @map("id_session")     // Session qui occupe ce créneau (null si événement ponctuel)
+  idEvenement      Int?     @map("id_evenement")   // Événement qui occupe ce créneau (null si session)
+
+  // Créneau horaire précis (Timestamp pour l'heure)
+  dateDebut        DateTime @map("date_debut") @db.Timestamp(6)   // Ex: 2026-03-15 08:00:00
+  dateFin          DateTime @map("date_fin") @db.Timestamp(6)     // Ex: 2026-03-15 12:00:00
+
+  // Infos récurrente : si la session se répète chaque semaine, on crée une entrée par jour
+  // Pour une session CAP 8 mois, le planning_ia de Session.planningIA détaille les créneaux
+
+  statut           String   @default("CONFIRME") // PREVUE | CONFIRME | ANNULE
+  motifAnnulation  String?  @map("motif_annulation")
+  notes            String?
+  creeLe           DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe        DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  // Relations
+  salle            Salle     @relation(fields: [idSalle], references: [idSalle])
+  session          Session?  @relation(fields: [idSession], references: [idSession])
+  evenement        Evenement? @relation(fields: [idEvenement], references: [idEvenement])
+
+  @@index([idSalle, dateDebut, dateFin])
+  @@index([idSession])
+  @@index([idEvenement])
+  @@map("reservations_salles")
 }
 
 /// Événements du planning (portes ouvertes, stages, réunions, etc.)
@@ -960,9 +992,10 @@ model Evenement {
   notes String? @db.Text // Notes internes admin
 
   // === RELATIONS ===
-  createurUtilisateur     Utilisateur? @relation("EvenementsCreated", fields: [creePar], references: [idUtilisateur])
-  modificateurUtilisateur Utilisateur? @relation("EvenementsModified", fields: [modifiePar], references: [idUtilisateur])
-  annulateurUtilisateur   Utilisateur? @relation("EvenementsCancelled", fields: [annulePar], references: [idUtilisateur])
+  createurUtilisateur     Utilisateur?       @relation("EvenementsCreated", fields: [creePar], references: [idUtilisateur])
+  modificateurUtilisateur Utilisateur?       @relation("EvenementsModified", fields: [modifiePar], references: [idUtilisateur])
+  annulateurUtilisateur   Utilisateur?       @relation("EvenementsCancelled", fields: [annulePar], references: [idUtilisateur])
+  reservationsSalles      ReservationSalle[]
 
   // === INDEX POUR PERFORMANCES ===
   @@index([date]) // Recherche par date
