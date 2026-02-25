@@ -111,21 +111,13 @@ export function SessionProposalReview({
                 </div>
               )}
 
-              {/* Durée (CAP) ou Date de fin (COURTE) */}
-              {proposal.type === 'CAP' && proposal.dureeMois ? (
-                <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Durée</p>
-                  <p className="font-medium text-[rgb(var(--foreground))] flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[rgb(var(--accent))]" />
-                    {proposal.dureeMois} mois
-                  </p>
-                </div>
-              ) : proposal.dateFin && (
+              {/* Date de fin */}
+              {(proposal.dateFinGlobale || proposal.dateFin) && (
                 <div>
                   <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Date de fin</p>
                   <p className="font-medium text-[rgb(var(--foreground))] flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-[rgb(var(--accent))]" />
-                    {new Date(proposal.dateFin).toLocaleDateString('fr-FR', {
+                    {new Date(proposal.dateFinGlobale || proposal.dateFin!).toLocaleDateString('fr-FR', {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric'

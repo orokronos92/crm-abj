@@ -51,7 +51,7 @@ export interface FormationCAPData {
   codeFormation: string
   nomSession: string
   dateDebutGlobale: string
-  dureeMois: number
+  dateFinGlobale: string
   nbParticipants: number
   plageHoraire: PlageHoraire // Créneau fixe pour toute la session
   joursActifs: JourSemaine[]
@@ -101,7 +101,7 @@ export interface SessionAIPayload {
     nomSession?: string
     dateDebutGlobale: string
     dateFin?: string
-    dureeMois?: number
+    dateFinGlobale?: string
     nbParticipants: number
   }
   plageHoraire?: PlageHoraire // Créneau quotidien fixe
@@ -147,7 +147,7 @@ export interface SessionProposal {
   nomSession?: string
   dateDebutGlobale?: string
   dateFin?: string
-  dureeMois?: number
+  dateFinGlobale?: string
   joursActifs?: JourSemaine[]
   plageHoraire?: PlageHoraire
   programme?: Matiere[] // Programme détaillé pour CAP

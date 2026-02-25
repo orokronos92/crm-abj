@@ -165,8 +165,8 @@ export function SessionReviewPanel({
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Durée</p>
-                    <p className="font-medium text-[rgb(var(--foreground))]">{data.dataCAP.dureeMois} mois</p>
+                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Date de fin</p>
+                    <p className="font-medium text-[rgb(var(--foreground))]">{data.dataCAP.dateFinGlobale}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Jours actifs</p>

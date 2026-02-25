@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
           codeFormation: data.codeFormation,
           nomSession: data.nomSession,
           dateDebutGlobale: data.dateDebutGlobale,
-          dureeMois: data.dureeMois,
+          dateFinGlobale: data.dateFinGlobale,
           nbParticipants: data.nbParticipants,
         },
         plageHoraire: data.plageHoraire,
@@ -193,8 +193,7 @@ export async function POST(request: NextRequest) {
 
       // Créer la session en BDD
       const dateDebut = new Date(data.dateDebutGlobale)
-      const dateFin = new Date(dateDebut)
-      dateFin.setMonth(dateFin.getMonth() + data.dureeMois)
+      const dateFin = new Date(data.dateFinGlobale)
 
       // Trouver ou créer la formation
       let formation = await prisma.formation.findFirst({
@@ -291,7 +290,7 @@ export async function POST(request: NextRequest) {
         type: 'CAP' as const,
         nomSession: data.nomSession,
         dateDebutGlobale: data.dateDebutGlobale,
-        dureeMois: data.dureeMois,
+        dateFinGlobale: data.dateFinGlobale,
         joursActifs: data.joursActifs,
         plageHoraire: data.plageHoraire,
         programme: data.programme,

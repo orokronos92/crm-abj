@@ -25,7 +25,7 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
     codeFormation: '',
     nomSession: '',
     dateDebutGlobale: '',
-    dureeMois: 10,
+    dateFinGlobale: '',
     nbParticipants: 12,
     joursActifs: ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI'],
     plageHoraire: {
@@ -163,7 +163,10 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
     if (!formData.codeFormation) newErrors.push('Formation CAP requise')
     if (!formData.nomSession.trim()) newErrors.push('Nom de session requis')
     if (!formData.dateDebutGlobale) newErrors.push('Date de début requise')
-    if (formData.dureeMois <= 0) newErrors.push('Durée invalide')
+    if (!formData.dateFinGlobale) newErrors.push('Date de fin requise')
+    if (formData.dateFinGlobale && formData.dateDebutGlobale && formData.dateFinGlobale <= formData.dateDebutGlobale) {
+      newErrors.push('La date de fin doit être après la date de début')
+    }
     if (formData.joursActifs.length === 0) newErrors.push('Au moins un jour actif requis')
     if (formData.nbParticipants <= 0) newErrors.push('Nombre de participants invalide')
     if (formData.programme.length === 0) newErrors.push('Programme vide (ajoutez au moins une matière)')
@@ -271,15 +274,14 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-              Durée (mois) *
+              <Calendar className="w-4 h-4 inline mr-1" />
+              Date de fin *
             </label>
             <input
-              type="number"
-              value={formData.dureeMois}
-              onChange={(e) => setFormData({ ...formData, dureeMois: parseInt(e.target.value) || 0 })}
+              type="date"
+              value={formData.dateFinGlobale}
+              onChange={(e) => setFormData({ ...formData, dateFinGlobale: e.target.value })}
               className="w-full px-4 py-2.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
-              min="1"
-              max="24"
               required
             />
           </div>
