@@ -60,6 +60,11 @@ export class CandidatService {
 
     if (statutDossier && statutDossier !== 'TOUS') {
       where.statutDossier = statutDossier
+    } else {
+      // Par défaut, masquer les candidats déjà convertis en élèves
+      where.statutDossier = {
+        notIn: ['INSCRIT', 'CONVERTI']
+      }
     }
 
     if (statutFinancement && statutFinancement !== 'TOUS') {
