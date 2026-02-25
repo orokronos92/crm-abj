@@ -85,17 +85,17 @@ export default function PlanningPage() {
   const [evenements, setEvenements] = useState<Evenement[]>([])
   const [loadingEvenements, setLoadingEvenements] = useState(false)
 
-  // État salles (données réelles depuis API)
-  const [salles, setSalles] = useState<Salle[]>([])
+  // État salles avec occupation pré-calculée (API planning/salles)
+  const [salles, setSalles] = useState<any[]>([])
   const [loadingSalles, setLoadingSalles] = useState(false)
 
-  // État sessions (données réelles depuis API)
-  const [sessions, setSessions] = useState<any[]>([])
-  const [loadingSessions, setLoadingSessions] = useState(false)
-
-  // État formateurs (données réelles depuis API)
+  // État formateurs avec disponibilités pré-calculées (API planning/formateurs)
   const [formateurs, setFormateurs] = useState<any[]>([])
+  const [alertesDisponibilite, setAlertesDisponibilite] = useState<any[]>([])
   const [loadingFormateurs, setLoadingFormateurs] = useState(false)
+
+  // sessions reste pour compatibilité compteur stats
+  const [sessions, setSessions] = useState<any[]>([])
 
   // Fetch événements depuis l'API
   useEffect(() => {
@@ -116,61 +116,57 @@ export default function PlanningPage() {
     fetchEvenements()
   }, [anneeSelectionnee])
 
-  // Fetch salles depuis l'API
+  // Fetch planning salles (occupation pré-calculée côté serveur)
   useEffect(() => {
-    async function fetchSalles() {
+    async function fetchPlanningSalles() {
       setLoadingSalles(true)
       try {
-        const res = await fetch('/api/salles')
+        const res = await fetch(`/api/planning/salles?annee=${anneeSelectionnee}`)
         const data = await res.json()
         if (data.success) {
           setSalles(data.salles)
         }
       } catch (error) {
-        console.error('Erreur chargement salles:', error)
+        console.error('Erreur chargement planning salles:', error)
       } finally {
         setLoadingSalles(false)
       }
     }
-    fetchSalles()
-  }, [])
-
-  // Fetch sessions depuis l'API
-  useEffect(() => {
-    async function fetchSessions() {
-      setLoadingSessions(true)
-      try {
-        const res = await fetch(`/api/sessions?annee=${anneeSelectionnee}`)
-        const data = await res.json()
-        if (data.success) {
-          setSessions(data.sessions)
-        }
-      } catch (error) {
-        console.error('Erreur chargement sessions:', error)
-      } finally {
-        setLoadingSessions(false)
-      }
-    }
-    fetchSessions()
+    fetchPlanningSalles()
   }, [anneeSelectionnee])
 
-  // Fetch formateurs depuis l'API
+  // Fetch planning formateurs (disponibilités pré-calculées côté serveur)
   useEffect(() => {
-    async function fetchFormateurs() {
+    async function fetchPlanningFormateurs() {
       setLoadingFormateurs(true)
       try {
-        const res = await fetch('/api/formateurs')
+        const res = await fetch(`/api/planning/formateurs?annee=${anneeSelectionnee}`)
         const data = await res.json()
         if (data.success) {
           setFormateurs(data.formateurs)
+          setAlertesDisponibilite(data.alertesDisponibilite || [])
         }
       } catch (error) {
-        console.error('Erreur chargement formateurs:', error)
+        console.error('Erreur chargement planning formateurs:', error)
       } finally {
         setLoadingFormateurs(false)
       }
     }
-    fetchFormateurs()
+    fetchPlanningFormateurs()
+  }, [anneeSelectionnee])
+
+  // Fetch sessions pour le compteur stats
+  useEffect(() => {
+    async function fetchSessions() {
+      try {
+        const res = await fetch(`/api/sessions`)
+        const data = await res.json()
+        if (data.success) setSessions(data.sessions)
+      } catch (error) {
+        console.error('Erreur chargement sessions:', error)
+      }
+    }
+    fetchSessions()
   }, [])
 
   // Refresh événements après création/modification
@@ -387,11 +383,10 @@ export default function PlanningPage() {
                   </div>
                 ) : (
                   salles.map((salle) => {
-                    // Utiliser événements au lieu de MOCK_SESSIONS pour calculer l'occupation
-                    const evenementsSalle = evenements.filter(e => e.salle === salle.nom)
+                    const moisLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
                     return (
-                      <div key={salle.idSalle} className="group hover:bg-[rgba(var(--accent),0.02)] rounded-lg p-3 transition-all border border-transparent hover:border-[rgba(var(--accent),0.1)]">
+                      <div key={salle.id} className="group hover:bg-[rgba(var(--accent),0.02)] rounded-lg p-3 transition-all border border-transparent hover:border-[rgba(var(--accent),0.1)]">
                         {/* Nom de la salle */}
                         <div className="flex items-center gap-3 mb-3">
                           <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg">
@@ -406,63 +401,14 @@ export default function PlanningPage() {
                         {/* Timeline 12 mois avec labels */}
                         <div className="grid grid-cols-12 gap-2">
                           {Array.from({ length: 12 }).map((_, moisIdx) => {
-                            // Vérifier événements pour ce mois
-                            const evenementsCeMois = evenementsSalle.filter(event => {
-                              const eventDate = new Date(event.date)
-                              return eventDate.getFullYear() === anneeSelectionnee && eventDate.getMonth() === moisIdx
-                            })
-
-                            // Vérifier sessions actives pour ce mois
-                            const debutMois = new Date(anneeSelectionnee, moisIdx, 1)
-                            const finMois = new Date(anneeSelectionnee, moisIdx + 1, 0)
-
-                            const sessionsCeMois = sessions.filter(session => {
-                              if (session.salle !== salle.nom) return false
-                              const sessionDebut = new Date(session.dateDebut)
-                              const sessionFin = new Date(session.dateFin)
-                              // Session active si elle chevauche le mois
-                              return sessionDebut <= finMois && sessionFin >= debutMois
-                            })
-
-                            const nbEvenements = evenementsCeMois.length
+                            // Utiliser les données pré-calculées côté serveur
+                            const moisData = salle.mois?.[moisIdx]
+                            const occupation = moisData?.occupation ?? 0
+                            const sessionsCeMois = moisData?.sessions ?? []
+                            const evenementsCeMois = moisData?.evenements ?? []
                             const nbSessions = sessionsCeMois.length
-                            const nbTotal = nbEvenements + nbSessions
-
-                            // Calculer les jours réellement occupés dans le mois
-                            const joursOccupes = new Set<number>()
-
-                            // Ajouter les jours des sessions
-                            sessionsCeMois.forEach(session => {
-                              const sessionDebut = new Date(session.dateDebut)
-                              const sessionFin = new Date(session.dateFin)
-
-                              // Limiter au mois courant
-                              const dateDebutMois = sessionDebut < debutMois ? debutMois : sessionDebut
-                              const dateFinMois = sessionFin > finMois ? finMois : sessionFin
-
-                              // Ajouter chaque jour de la session
-                              const currentDate = new Date(dateDebutMois)
-                              while (currentDate <= dateFinMois) {
-                                joursOccupes.add(currentDate.getDate())
-                                currentDate.setDate(currentDate.getDate() + 1)
-                              }
-                            })
-
-                            // Ajouter les jours des événements
-                            evenementsCeMois.forEach(evt => {
-                              const evtDate = new Date(evt.date)
-                              joursOccupes.add(evtDate.getDate())
-                            })
-
-                            // Calculer le nombre total de jours dans le mois
-                            const nbJoursDansMois = new Date(anneeSelectionnee, moisIdx + 1, 0).getDate()
-
-                            // Calculer le pourcentage réel d'occupation
-                            const occupation = joursOccupes.size > 0
-                              ? Math.round((joursOccupes.size / nbJoursDansMois) * 100)
-                              : 0
-
-                            const moisLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+                            const nbEvenements = evenementsCeMois.length
+                            const nbTotal = nbSessions + nbEvenements
 
                             return (
                               <div
@@ -470,14 +416,14 @@ export default function PlanningPage() {
                                 onClick={() => setModalMoisOuvert({ type: 'salle', titre: salle.nom, mois: moisIdx, salle: salle.nom })}
                                 className="h-20 rounded-lg border-2 relative overflow-hidden group/cell cursor-pointer hover:border-[rgb(var(--accent))] hover:shadow-md transition-all flex flex-col"
                                 style={{
-                                  backgroundColor: occupation === 0 ? 'rgba(34, 197, 94, 0.15)' // Vert pour libre (0%)
-                                    : occupation < 50 ? 'rgba(234, 179, 8, 0.15)' // Jaune pour <50%
-                                    : occupation < 80 ? 'rgba(249, 115, 22, 0.15)' // Orange pour 50-79%
-                                    : 'rgba(239, 68, 68, 0.15)', // Rouge pour ≥80%
-                                  borderColor: occupation === 0 ? 'rgba(34, 197, 94, 0.4)' // Vert
-                                    : occupation < 50 ? 'rgba(234, 179, 8, 0.4)' // Jaune
-                                    : occupation < 80 ? 'rgba(249, 115, 22, 0.4)' // Orange
-                                    : 'rgba(239, 68, 68, 0.4)' // Rouge
+                                  backgroundColor: occupation === 0 ? 'rgba(34, 197, 94, 0.15)'
+                                    : occupation < 50 ? 'rgba(234, 179, 8, 0.15)'
+                                    : occupation < 80 ? 'rgba(249, 115, 22, 0.15)'
+                                    : 'rgba(239, 68, 68, 0.15)',
+                                  borderColor: occupation === 0 ? 'rgba(34, 197, 94, 0.4)'
+                                    : occupation < 50 ? 'rgba(234, 179, 8, 0.4)'
+                                    : occupation < 80 ? 'rgba(249, 115, 22, 0.4)'
+                                    : 'rgba(239, 68, 68, 0.4)'
                                 }}
                               >
                                 {/* Label du mois */}
@@ -495,9 +441,9 @@ export default function PlanningPage() {
                                     </div>
                                   ) : (
                                     <div className="text-3xl font-bold" style={{
-                                      color: occupation < 50 ? 'rgb(234, 179, 8)' // Jaune
-                                        : occupation < 80 ? 'rgb(249, 115, 22)' // Orange
-                                        : 'rgb(239, 68, 68)' // Rouge
+                                      color: occupation < 50 ? 'rgb(234, 179, 8)'
+                                        : occupation < 80 ? 'rgb(249, 115, 22)'
+                                        : 'rgb(239, 68, 68)'
                                     }}>
                                       {occupation}%
                                     </div>
@@ -512,7 +458,7 @@ export default function PlanningPage() {
                                       {nbSessions > 0 && (
                                         <>
                                           <p className="text-xs font-semibold text-[rgb(var(--success))] mb-1">📚 {nbSessions} session(s)</p>
-                                          {sessionsCeMois.slice(0, 2).map((sess, idx) => (
+                                          {sessionsCeMois.slice(0, 2).map((sess: any, idx: number) => (
                                             <p key={idx} className="text-xs text-[rgb(var(--muted-foreground))] ml-3">
                                               • {sess.formation}
                                             </p>
@@ -522,7 +468,7 @@ export default function PlanningPage() {
                                       {nbEvenements > 0 && (
                                         <>
                                           <p className="text-xs font-semibold text-[rgb(var(--accent))] mt-2 mb-1">📅 {nbEvenements} événement(s)</p>
-                                          {evenementsCeMois.slice(0, 2).map((evt, idx) => (
+                                          {evenementsCeMois.slice(0, 2).map((evt: any, idx: number) => (
                                             <p key={idx} className="text-xs text-[rgb(var(--muted-foreground))] ml-3">
                                               • {evt.titre}
                                             </p>
@@ -622,10 +568,10 @@ export default function PlanningPage() {
                   </div>
                 ) : (
                   formateurs.map((formateur) => {
-                    const sessionsFormateur = sessions.filter(s => s.idFormateur === formateur.idFormateur)
+                    const nbSessionsFormateur = formateur.mois?.filter((m: any) => m.statut === 'session').length ?? 0
 
                     return (
-                      <div key={formateur.idFormateur} className="flex items-center group hover:bg-[rgba(var(--accent),0.02)] rounded-lg p-2 transition-all">
+                      <div key={formateur.id} className="flex items-center group hover:bg-[rgba(var(--accent),0.02)] rounded-lg p-2 transition-all">
                         {/* Nom du formateur */}
                         <div className="w-48 flex-shrink-0">
                           <div className="flex items-center gap-2">
@@ -633,8 +579,8 @@ export default function PlanningPage() {
                               <Users className="w-5 h-5 text-[rgba(var(--accent),0.6)]" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">{formateur.nom} {formateur.prenom}</p>
-                              <p className="text-xs text-[rgb(var(--muted-foreground))]">{sessionsFormateur.length} session(s)</p>
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">{formateur.nomComplet}</p>
+                              <p className="text-xs text-[rgb(var(--muted-foreground))]">{nbSessionsFormateur} mois en session</p>
                             </div>
                           </div>
                         </div>
@@ -642,49 +588,48 @@ export default function PlanningPage() {
                       {/* Timeline 12 mois */}
                       <div className="flex-1 grid grid-cols-12 gap-1 relative">
                         {Array.from({ length: 12 }).map((_, moisIdx) => {
-                          // Vérifier si le formateur a une session ce mois
-                          const sessionCeMois = sessionsFormateur.find(session => {
-                            const debut = new Date(session.dateDebut)
-                            const fin = new Date(session.dateFin)
-                            const moisCourant = new Date(anneeSelectionnee, moisIdx, 1)
-                            const finMois = new Date(anneeSelectionnee, moisIdx + 1, 0)
-                            // Session active si elle chevauche le mois
-                            return debut <= finMois && fin >= moisCourant
-                          })
-
-                          // Pour l'instant, considérer tous les formateurs comme disponibles si pas de session
-                          const disponible = !sessionCeMois
+                          // Utiliser les données pré-calculées côté serveur
+                          const moisData = formateur.mois?.[moisIdx]
+                          const statut = moisData?.statut ?? 'libre'
+                          const sessionsCeMois = moisData?.sessions ?? []
 
                           return (
                             <div
                               key={moisIdx}
-                              onClick={() => setModalMoisOuvert({ type: 'formateur', titre: formateur.formateur, mois: moisIdx })}
+                              onClick={() => setModalMoisOuvert({ type: 'formateur', titre: formateur.nomComplet, mois: moisIdx })}
                               className="h-12 rounded border border-[rgba(var(--border),0.3)] relative overflow-hidden group/cell cursor-pointer hover:border-[rgb(var(--accent))] transition-all"
                               style={{
-                                backgroundColor: sessionCeMois
-                                  ? 'rgba(var(--accent), 0.3)'
-                                  : disponible
-                                  ? 'rgba(var(--success), 0.15)'
-                                  : 'rgba(var(--error), 0.1)'
+                                backgroundColor: statut === 'session'
+                                  ? 'rgba(99, 102, 241, 0.2)'
+                                  : statut === 'disponible'
+                                  ? 'rgba(34, 197, 94, 0.15)'
+                                  : statut === 'indisponible'
+                                  ? 'rgba(239, 68, 68, 0.1)'
+                                  : 'rgba(var(--secondary), 0.5)'
                               }}
                             >
                               <div className="absolute inset-0 flex items-center justify-center">
-                                {sessionCeMois ? (
+                                {statut === 'session' ? (
                                   <BookOpen className="w-4 h-4 text-[rgb(var(--accent))]" />
-                                ) : disponible ? (
-                                  <span className="text-xs font-medium text-[rgb(var(--success))]">✓</span>
+                                ) : statut === 'disponible' ? (
+                                  <span className="text-xs font-medium" style={{ color: 'rgb(34, 197, 94)' }}>✓</span>
+                                ) : statut === 'indisponible' ? (
+                                  <span className="text-xs font-medium" style={{ color: 'rgb(239, 68, 68)' }}>✗</span>
                                 ) : (
-                                  <span className="text-xs font-medium text-[rgb(var(--error))]">✗</span>
+                                  <span className="text-xs text-[rgb(var(--muted-foreground))]">—</span>
                                 )}
                               </div>
 
                               {/* Tooltip au survol */}
-                              {sessionCeMois && (
+                              {sessionsCeMois.length > 0 && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/cell:block z-10">
                                   <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg p-3 shadow-lg whitespace-nowrap">
-                                    <p className="text-xs font-bold text-[rgb(var(--foreground))]">{sessionCeMois.formation}</p>
-                                    <p className="text-xs text-[rgb(var(--muted-foreground))]">{sessionCeMois.salle}</p>
-                                    <p className="text-xs text-[rgb(var(--muted-foreground))]">{sessionCeMois.inscrits} élèves</p>
+                                    {sessionsCeMois.slice(0, 2).map((sess: any, idx: number) => (
+                                      <div key={idx}>
+                                        <p className="text-xs font-bold text-[rgb(var(--foreground))]">{sess.formation}</p>
+                                        <p className="text-xs text-[rgb(var(--muted-foreground))]">{sess.nom}</p>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
                               )}
@@ -706,20 +651,13 @@ export default function PlanningPage() {
                 </div>
                 <div className="grid grid-cols-12 gap-1">
                   {Array.from({ length: 12 }).map((_, moisIdx) => {
-                    // Compter les formateurs dispo ce mois (ceux qui n'ont pas de session)
-                    const formateursDispo = formateurs.filter(f => {
-                      const sessionsFormateur = sessions.filter(s => s.idFormateur === f.idFormateur)
-                      const aSessionCeMois = sessionsFormateur.some(session => {
-                        const debut = new Date(session.dateDebut)
-                        const fin = new Date(session.dateFin)
-                        const moisCourant = new Date(anneeSelectionnee, moisIdx, 1)
-                        const finMois = new Date(anneeSelectionnee, moisIdx + 1, 0)
-                        return debut <= finMois && fin >= moisCourant
-                      })
-                      return !aSessionCeMois
+                    // Utiliser les alertes pré-calculées côté serveur
+                    const alerteMois = alertesDisponibilite.find((a: any) => a.moisIndex === moisIdx)
+                    const count = alerteMois?.count ?? formateurs.filter((f: any) => {
+                      const m = f.mois?.[moisIdx]
+                      return m?.statut === 'disponible' || m?.statut === 'libre'
                     }).length
-
-                    const alerte = formateursDispo < 2
+                    const alerte = alerteMois?.alerte ?? count < 2
 
                     return (
                       <div key={moisIdx} className="text-center">
@@ -730,7 +668,7 @@ export default function PlanningPage() {
                               : 'bg-[rgba(var(--success),0.2)] text-[rgb(var(--success))]'
                           }`}
                         >
-                          {formateursDispo}
+                          {count}
                         </div>
                       </div>
                     )
@@ -886,8 +824,16 @@ export default function PlanningPage() {
           mois={modalMoisOuvert.mois}
           annee={anneeSelectionnee}
           onClose={() => setModalMoisOuvert(null)}
-          sessions={sessions}
-          evenements={evenements}
+          sessions={
+            modalMoisOuvert.type === 'salle'
+              ? (salles.find((s: any) => s.nom === modalMoisOuvert.salle)?.mois?.[modalMoisOuvert.mois]?.sessions ?? [])
+              : (formateurs.find((f: any) => f.nomComplet === modalMoisOuvert.titre)?.mois?.[modalMoisOuvert.mois]?.sessions ?? [])
+          }
+          evenements={
+            modalMoisOuvert.type === 'salle'
+              ? (salles.find((s: any) => s.nom === modalMoisOuvert.salle)?.mois?.[modalMoisOuvert.mois]?.evenements ?? [])
+              : []
+          }
           salle={modalMoisOuvert.salle}
         />
       )}
