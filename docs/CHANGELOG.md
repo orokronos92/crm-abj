@@ -1,5 +1,39 @@
 # Changelog — CRM ABJ
 
+## [2026-02-25] Session 10 : Pipeline Conversion Prospect→Candidat→Élève
+
+### Corrections Pipeline n8n → CRM
+
+**Fichiers modifiés** :
+- `src/components/admin/ConvertirCandidatModal.tsx`
+- `src/components/admin/ProspectDetailPanel.tsx`
+- `src/app/api/webhook/callback/route.ts`
+- `src/services/candidat.service.ts`
+- `src/services/eleve.service.ts`
+- `src/app/api/candidats/[id]/route.ts`
+
+**Changements** :
+
+1. **modeFinancement transmis à n8n** : Ajout du champ dans les props du modal et dans le payload `metadonnees` envoyé à n8n lors de la conversion prospect→candidat
+
+2. **tarifFormation transmis à n8n** : Lookup dans le state `formations` pour récupérer `tarifStandard` de la formation sélectionnée et l'inclure dans le payload
+
+3. **Documents requis pour eleve_created** : Le callback webhook gère maintenant `eleve_created` en plus de `candidat_created` pour créer les placeholders de documents
+
+4. **Filtre liste Candidats** : Ajout d'un filtre par défaut `notIn: ['INSCRIT', 'CONVERTI']` pour masquer les candidats déjà convertis en élèves (même logique que Prospects avec `notIn: ['CANDIDAT', 'ELEVE']`)
+
+5. **Fallback formationSuivie** : La liste Élèves utilisait `inscriptionsSessions[0].session.formation` mais n8n écrit directement `formation_suivie` sur la table `eleves` sans créer de jointure `inscriptions_sessions`. Ajout d'un fallback `eleve.formationSuivie`
+
+6. **Calcul reste à charge null** : Remplacement de `|| 0` par `?? (montantTotal - montantPEC)` pour distinguer "pas encore défini" (null → calculer) de "tout payé" (0 → garder 0)
+
+**Commits** :
+- `fix: transmission modeFinancement prospect → n8n lors de la conversion en candidat`
+- `fix: masquer candidats INSCRIT/CONVERTI de la liste candidats par défaut`
+- `fix: calcul reste à charge quand resteACharge est null (montant total - PEC)`
+- `fix: fallback formationSuivie pour élèves créés par n8n sans inscription_session`
+
+---
+
 ## [2026-02-07] Session UI/UX - Logo & Modal Candidat
 
 ### Logo Diamant ABJ
