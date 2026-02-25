@@ -83,15 +83,43 @@ interface Session {
   nb_abandons?: number
   prochaine_eval?: string
   eleves?: Array<{
+    idInscription: number
     id: number
     type: 'eleve' | 'candidat'
     nom: string
     prenom: string
     numeroDossier: string
     statutInscription: string
+    priorite: number
     moyenne: number
     absences: number
     positionAttente?: number | null
+    dateInscription?: string | null
+  }>
+  inscrits?: Array<{
+    idInscription: number
+    id: number
+    type: 'eleve' | 'candidat'
+    nom: string
+    prenom: string
+    numeroDossier: string
+    statutInscription: string
+    priorite: number
+    moyenne: number
+    absences: number
+    dateInscription?: string | null
+  }>
+  listeAttente?: Array<{
+    idInscription: number
+    id: number
+    type: 'eleve' | 'candidat'
+    nom: string
+    prenom: string
+    numeroDossier: string
+    statutInscription: string
+    priorite: number
+    positionAttente: number
+    dateInscription?: string | null
   }>
 }
 
@@ -104,6 +132,8 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingEleves, setLoadingEleves] = useState(false)
+  const [desistementEnCours, setDesistementEnCours] = useState<number | null>(null)
+  const [desistementMessage, setDesistementMessage] = useState<string | null>(null)
 
   // Charger les sessions depuis l'API
   const loadSessions = async () => {
@@ -132,12 +162,49 @@ export default function SessionsPage() {
       const data = await response.json()
 
       if (data.success) {
-        setSelectedSession({ ...session, eleves: data.eleves })
+        setSelectedSession({
+          ...session,
+          eleves: data.eleves,
+          inscrits: data.inscrits,
+          listeAttente: data.listeAttente,
+        })
       }
     } catch (error) {
       console.error('Erreur fetch élèves session:', error)
     } finally {
       setLoadingEleves(false)
+    }
+  }
+
+  // Désister un participant (inscrit ou liste d'attente)
+  const handleDesistement = async (idInscription: number, nomParticipant: string) => {
+    if (!selectedSession) return
+    if (!confirm(`Désister ${nomParticipant} de cette session ?`)) return
+
+    setDesistementEnCours(idInscription)
+    setDesistementMessage(null)
+    try {
+      const response = await fetch(`/api/sessions/${selectedSession.id}/desister`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idInscription })
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setDesistementMessage(data.message)
+        // Recharger les élèves de la session
+        await loadElevesSession(selectedSession)
+        // Aussi rafraîchir les compteurs de la session dans la liste
+        await loadSessions()
+      } else {
+        setDesistementMessage(data.error || 'Erreur lors du désistement')
+      }
+    } catch (error) {
+      console.error('Erreur désistement:', error)
+      setDesistementMessage('Erreur réseau')
+    } finally {
+      setDesistementEnCours(null)
     }
   }
 
@@ -591,7 +658,13 @@ export default function SessionsPage() {
               <div className="flex gap-1 pt-4">
                 {[
                   { key: 'synthese', label: 'Synthèse', icon: FileText },
-                  { key: 'eleves', label: `Élèves (${selectedSession.places_prises})`, icon: Users },
+                  {
+                    key: 'eleves',
+                    label: selectedSession.listeAttente?.length
+                      ? `Élèves (${selectedSession.inscrits?.length ?? selectedSession.places_prises}+${selectedSession.listeAttente.length})`
+                      : `Élèves (${selectedSession.inscrits?.length ?? selectedSession.places_prises})`,
+                    icon: Users
+                  },
                   { key: 'planning', label: 'Planning', icon: Calendar }
                 ].map((tab) => {
                   const Icon = tab.icon
@@ -713,79 +786,158 @@ export default function SessionsPage() {
 
               {/* Tab Élèves */}
               {activeTab === 'eleves' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-                      Élèves inscrits ({selectedSession.places_prises}/{selectedSession.capacite_max})
-                    </h3>
-                    {selectedSession.statut_session === 'INSCRIPTIONS_OUVERTES' && (
-                      <button className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2">
-                        <UserPlus className="w-4 h-4" />
-                        Ajouter un élève
-                      </button>
-                    )}
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
+                        Inscrits : {selectedSession.inscrits?.length ?? selectedSession.places_prises}/{selectedSession.capacite_max}
+                      </h3>
+                      {(selectedSession.listeAttente?.length ?? 0) > 0 && (
+                        <span className="px-2 py-0.5 bg-[rgba(var(--warning),0.1)] text-[rgb(var(--warning))] text-xs font-medium rounded-full border border-[rgba(var(--warning),0.3)]">
+                          {selectedSession.listeAttente!.length} en attente
+                        </span>
+                      )}
+                    </div>
+                    <button className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg hover:bg-[rgb(var(--accent))]/90 transition-all flex items-center gap-2 text-sm font-medium">
+                      <UserPlus className="w-4 h-4" />
+                      Ajouter
+                    </button>
                   </div>
+
+                  {/* Message désistement */}
+                  {desistementMessage && (
+                    <div className="p-3 bg-[rgba(var(--success),0.1)] border border-[rgba(var(--success),0.3)] rounded-lg text-sm text-[rgb(var(--success))] flex items-center justify-between">
+                      <span>{desistementMessage}</span>
+                      <button onClick={() => setDesistementMessage(null)} className="ml-2 hover:opacity-70">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
                   {loadingEleves ? (
                     <div className="flex items-center justify-center py-12">
                       <div className="flex items-center gap-3 text-[rgb(var(--muted-foreground))]">
                         <div className="w-5 h-5 border-2 border-[rgb(var(--accent))] border-t-transparent rounded-full animate-spin" />
-                        <span>Chargement des élèves...</span>
+                        <span>Chargement des participants...</span>
                       </div>
                     </div>
-                  ) : selectedSession.eleves && selectedSession.eleves.length > 0 ? (
-                    <div className="space-y-2">
-                      {selectedSession.eleves.map((eleve) => (
-                        <div
-                          key={eleve.id}
-                          className="p-4 bg-[rgb(var(--secondary))] rounded-lg flex items-center justify-between hover:bg-[rgba(var(--accent),0.05)] transition-all"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                              {eleve.prenom.charAt(0)}{eleve.nom.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-medium text-[rgb(var(--foreground))]">
-                                {eleve.prenom} {eleve.nom}
-                              </p>
-                              <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                                {eleve.numeroDossier && (
-                                  <span className="mr-2 font-mono">{eleve.numeroDossier}</span>
-                                )}
-                                {eleve.absences} absence{eleve.absences !== 1 ? 's' : ''}
-                                {eleve.statutInscription === 'EN_ATTENTE' && (
-                                  <span className="ml-2 text-[rgb(var(--warning))]">— Liste d'attente
-                                    {eleve.positionAttente ? ` #${eleve.positionAttente}` : ''}
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            {eleve.moyenne > 0 && (
-                              <div className="text-right">
-                                <p className="text-sm text-[rgb(var(--muted-foreground))]">Moyenne</p>
-                                <p className="text-xl font-bold text-[rgb(var(--accent))]">
-                                  {eleve.moyenne.toFixed(1)}
-                                </p>
-                              </div>
-                            )}
-                            <button className="p-2 hover:bg-[rgb(var(--card))] rounded-lg transition-colors">
-                              <Eye className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   ) : (
-                    <div className="p-12 text-center bg-[rgb(var(--secondary))] rounded-lg">
-                      <Users className="w-16 h-16 text-[rgb(var(--muted-foreground))] mx-auto mb-4 opacity-50" />
-                      <p className="text-[rgb(var(--muted-foreground))]">
-                        {selectedSession.statut_session === 'INSCRIPTIONS_OUVERTES'
-                          ? 'Aucun élève inscrit pour le moment'
-                          : 'Aucun élève dans cette session'}
-                      </p>
-                    </div>
+                    <>
+                      {/* Section Inscrits */}
+                      <div>
+                        <h4 className="text-sm font-medium text-[rgb(var(--muted-foreground))] mb-2 flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
+                          Inscrits confirmés
+                        </h4>
+                        {(selectedSession.inscrits?.length ?? 0) > 0 ? (
+                          <div className="space-y-2">
+                            {selectedSession.inscrits!.map((p) => (
+                              <div
+                                key={p.idInscription}
+                                className="p-3 bg-[rgb(var(--secondary))] rounded-lg flex items-center justify-between hover:bg-[rgba(var(--accent),0.05)] transition-all"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs ${p.type === 'eleve' ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-gradient-to-br from-orange-400 to-red-500'}`}>
+                                    {p.prenom.charAt(0)}{p.nom.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-sm text-[rgb(var(--foreground))]">
+                                      {p.prenom} {p.nom}
+                                    </p>
+                                    <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                                      {p.numeroDossier && <span className="font-mono mr-2">{p.numeroDossier}</span>}
+                                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.type === 'eleve' ? 'bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))]' : 'bg-[rgba(var(--warning),0.1)] text-[rgb(var(--warning))]'}`}>
+                                        {p.type === 'eleve' ? 'Élève' : 'Candidat'}
+                                      </span>
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {p.moyenne > 0 && (
+                                    <span className="text-sm font-bold text-[rgb(var(--accent))]">{p.moyenne.toFixed(1)}/20</span>
+                                  )}
+                                  <button className="p-1.5 hover:bg-[rgb(var(--card))] rounded-lg transition-colors">
+                                    <Eye className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDesistement(p.idInscription, `${p.prenom} ${p.nom}`)}
+                                    disabled={desistementEnCours === p.idInscription}
+                                    className="p-1.5 hover:bg-[rgba(var(--error),0.1)] text-[rgb(var(--error))] rounded-lg transition-colors disabled:opacity-50"
+                                    title="Désister"
+                                  >
+                                    {desistementEnCours === p.idInscription ? (
+                                      <div className="w-4 h-4 border-2 border-[rgb(var(--error))] border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <X className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-6 text-center bg-[rgb(var(--secondary))] rounded-lg text-sm text-[rgb(var(--muted-foreground))]">
+                            Aucun inscrit confirmé
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section Liste d'attente */}
+                      <div>
+                        <h4 className="text-sm font-medium text-[rgb(var(--muted-foreground))] mb-2 flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-[rgb(var(--warning))]" />
+                          Liste d&apos;attente
+                          <span className="text-xs">(priorité : élèves &gt; candidats)</span>
+                        </h4>
+                        {(selectedSession.listeAttente?.length ?? 0) > 0 ? (
+                          <div className="space-y-2">
+                            {selectedSession.listeAttente!.map((p) => (
+                              <div
+                                key={p.idInscription}
+                                className="p-3 bg-[rgba(var(--warning),0.05)] border border-[rgba(var(--warning),0.2)] rounded-lg flex items-center justify-between hover:bg-[rgba(var(--warning),0.08)] transition-all"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-7 h-7 rounded-full bg-[rgba(var(--warning),0.2)] flex items-center justify-center text-[rgb(var(--warning))] font-bold text-xs">
+                                    #{p.positionAttente}
+                                  </div>
+                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs ${p.type === 'eleve' ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-gradient-to-br from-orange-400 to-red-500'}`}>
+                                    {p.prenom.charAt(0)}{p.nom.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-sm text-[rgb(var(--foreground))]">
+                                      {p.prenom} {p.nom}
+                                    </p>
+                                    <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                                      {p.numeroDossier && <span className="font-mono mr-2">{p.numeroDossier}</span>}
+                                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.type === 'eleve' ? 'bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))]' : 'bg-[rgba(var(--warning),0.1)] text-[rgb(var(--warning))]'}`}>
+                                        {p.type === 'eleve' ? 'Élève' : 'Candidat'}
+                                      </span>
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleDesistement(p.idInscription, `${p.prenom} ${p.nom}`)}
+                                  disabled={desistementEnCours === p.idInscription}
+                                  className="p-1.5 hover:bg-[rgba(var(--error),0.1)] text-[rgb(var(--error))] rounded-lg transition-colors disabled:opacity-50"
+                                  title="Retirer de la liste d'attente"
+                                >
+                                  {desistementEnCours === p.idInscription ? (
+                                    <div className="w-4 h-4 border-2 border-[rgb(var(--error))] border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <X className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center bg-[rgb(var(--secondary))] rounded-lg text-sm text-[rgb(var(--muted-foreground))]">
+                            Aucun participant en liste d&apos;attente
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               )}

@@ -94,6 +94,101 @@ async function creerDocumentsRequis(numeroDossier: string, correlationId: string
   return aCreer.length
 }
 
+/**
+ * Inscrit automatiquement un candidat/élève en liste d'attente
+ * si une session était visée lors de la conversion (ConversionEnCours.sessionVisee)
+ */
+async function inscrireEnListeAttente(numeroDossier: string, responseType: string): Promise<void> {
+  // Chercher si une ConversionEnCours récente a un sessionVisee
+  const candidat = await prisma.candidat.findUnique({
+    where: { numeroDossier },
+    select: { idCandidat: true, idProspect: true }
+  })
+  if (!candidat) return
+
+  // Chercher la conversion récente avec sessionVisee
+  const conversion = await prisma.conversionEnCours.findFirst({
+    where: {
+      idProspect: candidat.idProspect,
+      sessionVisee: { not: null },
+      dateDebut: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // dans les 24h
+    },
+    orderBy: { dateDebut: 'desc' },
+    select: { sessionVisee: true }
+  })
+
+  if (!conversion?.sessionVisee) return
+
+  // Trouver la session par son nom
+  const session = await prisma.session.findFirst({
+    where: { nomSession: conversion.sessionVisee },
+    select: { idSession: true, capaciteMax: true, nbInscrits: true, statutSession: true }
+  })
+
+  if (!session) {
+    console.log(`[webhook/callback] Session "${conversion.sessionVisee}" introuvable pour inscription auto`)
+    return
+  }
+
+  if (session.statutSession === 'ANNULEE' || session.statutSession === 'TERMINEE') {
+    console.log(`[webhook/callback] Session "${conversion.sessionVisee}" non disponible (${session.statutSession})`)
+    return
+  }
+
+  // Vérifier si déjà inscrit
+  const dejaInscrit = await prisma.inscriptionSession.findFirst({
+    where: {
+      idSession: session.idSession,
+      idCandidat: candidat.idCandidat,
+      statutInscription: { notIn: ['ANNULE'] }
+    }
+  })
+  if (dejaInscrit) {
+    console.log(`[webhook/callback] Candidat déjà inscrit/en attente pour session "${conversion.sessionVisee}"`)
+    return
+  }
+
+  // Pour un candidat → toujours EN_ATTENTE (priorité 2)
+  // Pour un élève → INSCRIT si place dispo, sinon EN_ATTENTE
+  const isEleve = responseType === 'eleve_created'
+  const placesDisponibles = (session.capaciteMax || 0) - session.nbInscrits
+  const sessionPleine = placesDisponibles <= 0
+
+  const priorite = isEleve ? 1 : 2
+  const statutInscription = (!sessionPleine && isEleve) ? 'INSCRIT' : 'EN_ATTENTE'
+
+  let positionAttente: number | null = null
+  if (statutInscription === 'EN_ATTENTE') {
+    const dernierePosition = await prisma.inscriptionSession.findFirst({
+      where: { idSession: session.idSession, statutInscription: 'EN_ATTENTE' },
+      orderBy: { positionAttente: 'desc' },
+      select: { positionAttente: true }
+    })
+    positionAttente = (dernierePosition?.positionAttente || 0) + 1
+  }
+
+  await prisma.inscriptionSession.create({
+    data: {
+      idSession: session.idSession,
+      idCandidat: isEleve ? null : candidat.idCandidat,
+      dateInscription: new Date(),
+      statutInscription,
+      priorite,
+      positionAttente,
+      notifiePar: 'auto'
+    }
+  })
+
+  if (statutInscription === 'INSCRIT') {
+    await prisma.session.update({
+      where: { idSession: session.idSession },
+      data: { nbInscrits: { increment: 1 } }
+    })
+  }
+
+  console.log(`[webhook/callback] ✅ ${numeroDossier} ${statutInscription === 'INSCRIT' ? 'inscrit' : `en liste d'attente #${positionAttente}`} pour session "${conversion.sessionVisee}"`)
+}
+
 // Même clé API que l'endpoint d'ingestion
 const API_KEY = process.env.NOTIFICATIONS_API_KEY || 'default-api-key-change-me'
 
@@ -155,12 +250,17 @@ export async function POST(request: NextRequest) {
 
     // === MODE T2 : correlationId sans notification en BDD ===
     if (hasCorrelationId && !hasNotificationId) {
-      // Création documents requis si c'est une conversion candidat ou élève réussie
+      // Traitement post-création candidat ou élève
       if (body.status === 'success' && (body.response === 'candidat_created' || body.response === 'eleve_created')) {
         const numeroDossier = body.data?.numeroDossier as string | undefined
         if (numeroDossier) {
           creerDocumentsRequis(numeroDossier, body.correlationId!).catch(err =>
             console.error('[webhook/callback] Erreur création documents requis:', err)
+          )
+
+          // Inscription en liste d'attente si une session était visée
+          inscrireEnListeAttente(numeroDossier, body.response).catch(err =>
+            console.error('[webhook/callback] Erreur inscription liste attente:', err)
           )
         } else {
           console.warn(`[webhook/callback] ${body.response} reçu sans data.numeroDossier`)

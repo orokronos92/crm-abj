@@ -36,6 +36,8 @@ export async function GET(
         idInscription: true,
         statutInscription: true,
         positionAttente: true,
+        priorite: true,
+        dateInscription: true,
         eleve: {
           select: {
             idEleve: true,
@@ -82,19 +84,20 @@ export async function GET(
           },
         },
       },
-      orderBy: {
-        idInscription: 'asc',
-      },
+      orderBy: [
+        { priorite: 'asc' },
+        { positionAttente: 'asc' },
+        { idInscription: 'asc' },
+      ],
     })
 
-    // Formater les inscriptions en élèves pour le frontend
-    const eleves = inscriptions.map((inscription) => {
-      // Cas 1 : Inscription avec un élève (formé)
+    // Formater les inscriptions
+    const tous = inscriptions.map((inscription) => {
+      // Cas 1 : Inscription avec un élève
       if (inscription.eleve) {
         const eleve = inscription.eleve
         const prospect = eleve.candidat?.prospect
 
-        // Calculer la moyenne des évaluations
         const notes = eleve.evaluations
           .map((e) => (e.note ? Number(e.note) : null))
           .filter((n): n is number => n !== null)
@@ -102,7 +105,6 @@ export async function GET(
           ? notes.reduce((sum, n) => sum + n, 0) / notes.length
           : 0
 
-        // Compter les absences (non justifiées et justifiées)
         const absences = eleve.presences.filter(
           (p) =>
             p.statutPresence === 'ABSENT' ||
@@ -110,44 +112,62 @@ export async function GET(
         ).length
 
         return {
+          idInscription: inscription.idInscription,
           id: eleve.idEleve,
           type: 'eleve' as const,
           nom: prospect?.nom || 'Inconnu',
           prenom: prospect?.prenom || '',
           numeroDossier: eleve.numeroDossier,
           statutInscription: inscription.statutInscription || 'INSCRIT',
+          priorite: inscription.priorite,
+          positionAttente: inscription.positionAttente,
+          dateInscription: inscription.dateInscription,
           moyenne,
           absences,
-          positionAttente: inscription.positionAttente,
         }
       }
 
-      // Cas 2 : Inscription avec un candidat (liste d'attente ou en cours de conversion)
+      // Cas 2 : Inscription avec un candidat
       if (inscription.candidat) {
         const candidat = inscription.candidat
         const prospect = candidat.prospect
 
         return {
+          idInscription: inscription.idInscription,
           id: candidat.idCandidat,
           type: 'candidat' as const,
           nom: prospect?.nom || 'Inconnu',
           prenom: prospect?.prenom || '',
           numeroDossier: candidat.numeroDossier || '',
           statutInscription: inscription.statutInscription || 'EN_ATTENTE',
+          priorite: inscription.priorite,
+          positionAttente: inscription.positionAttente,
+          dateInscription: inscription.dateInscription,
           moyenne: 0,
           absences: 0,
-          positionAttente: inscription.positionAttente,
         }
       }
 
       return null
     }).filter((e): e is NonNullable<typeof e> => e !== null)
 
+    // Séparer inscrits et liste d'attente
+    const inscrits = tous.filter(
+      (e) => e.statutInscription === 'INSCRIT' || e.statutInscription === 'CONFIRME'
+    )
+    const listeAttente = tous.filter(
+      (e) => e.statutInscription === 'EN_ATTENTE'
+    )
+
     return NextResponse.json({
       success: true,
       sessionId,
-      eleves,
-      total: eleves.length,
+      eleves: tous,  // Tous pour compatibilité descendante
+      inscrits,
+      listeAttente,
+      total: tous.length,
+      nbInscrits: inscrits.length,
+      nbAttente: listeAttente.length,
     })
   } catch (error) {
     console.error('❌ Erreur GET /api/sessions/[id]:', error)
