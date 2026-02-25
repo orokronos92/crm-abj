@@ -13,7 +13,6 @@ import { FormationCAPForm } from './session-form/FormationCAPForm'
 import { SessionReviewPanel } from './SessionReviewPanel'
 import { SessionProposalReview } from './SessionProposalReview'
 import type { SessionType, SessionFormData, SessionProposal } from './session-form/session-form.types'
-import { useActionNotification } from '@/hooks/use-action-notification'
 
 interface SessionFormModalProps {
   onClose: () => void
@@ -30,8 +29,6 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
   const [proposal, setProposal] = useState<SessionProposal | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { createActionNotification } = useActionNotification()
-
   // Navigation entre étapes
   const handleTypeSelected = (type: SessionType) => {
     setSessionType(type)
@@ -61,18 +58,32 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
     setError(null)
 
     try {
-      // 1. Créer vraie notification en BDD
-      const { notificationId, userId: currentUserId } = await createActionNotification({
-        categorie: 'SESSION',
-        type: 'CREATION_SESSION',
-        priorite: 'NORMALE',
-        titre: `Nouvelle session ${sessionType} créée`,
-        message: `Validation IA en cours pour ${sessionType === 'CAP' ? 'Formation CAP' : 'Formation courte'}`,
-        entiteType: 'session',
-        entiteId: 'NEW_SESSION', // Sera mis à jour avec l'ID réel après création
-        actionRequise: true,
-        typeAction: 'VALIDER'
+      // 1. Créer notification en BDD côté serveur (sans exposer la clé API au client)
+      const notifResponse = await fetch('/api/notifications/create-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceAgent: 'admin',
+          categorie: 'SESSION',
+          type: 'CREATION_SESSION',
+          priorite: 'NORMALE',
+          titre: `Nouvelle session ${sessionType} créée`,
+          message: `Validation IA en cours pour ${sessionType === 'CAP' ? 'Formation CAP' : 'Formation courte'}`,
+          entiteType: 'session',
+          entiteId: 'NEW_SESSION',
+          actionRequise: true,
+          typeAction: 'VALIDER',
+        })
       })
+
+      if (!notifResponse.ok) {
+        const err = await notifResponse.json()
+        throw new Error(err.error || 'Erreur création notification')
+      }
+
+      const notifData = await notifResponse.json()
+      const notificationId: number = notifData.data.idNotification
+      const currentUserId = 1
 
       // 2. Construire le payload enrichi
       const payload = {
