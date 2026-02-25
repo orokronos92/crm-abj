@@ -313,3 +313,185 @@ Claude Code est capable de :
 **Dernière mise à jour** : 25 février 2026
 **Version** : 1.0
 **Auteur** : Claude Code
+
+---
+
+---
+
+# Session 11 : Connexion BDD — Pages Planning + Sessions
+
+**Date** : 25 février 2026 (suite)
+**Objectif** : Connecter les pages Planning (salles, formateurs) et Sessions à la base de données réelle, supprimer tous les mocks restants.
+
+---
+
+## Vue d'ensemble
+
+1. ✅ Planning Salles : API `/api/planning/salles` + connexion page
+2. ✅ Planning Formateurs : API `/api/planning/formateurs` + connexion page
+3. ✅ Planning Sessions : suppression `MOCK_SESSIONS` + alignement interface avec l'API
+4. ✅ Modal Sessions — onglet Élèves : API `/api/sessions/[id]` + chargement réel des inscrits
+
+---
+
+## Phase 1 : API Planning Salles
+
+**Fichier créé** : `src/app/api/planning/salles/route.ts`
+
+- Récupère toutes les salles `ACTIVE` depuis Prisma
+- Pour chaque salle, calcule sur 12 mois : sessions, événements, réservations
+- Calcule les **jours réellement occupés** via `Set<number>` (évite les doublons si session multi-mois)
+- Calcul occupation : `Math.round((joursOccupes / nbJoursDansMois) * 100)`
+- Retourne : `{ salles: [{ id, nom, code, capaciteMax, mois: [{ occupation, joursOccupes, nbJoursDansMois, sessions, evenements, reservations }] }] }`
+
+---
+
+## Phase 2 : API Planning Formateurs
+
+**Fichier créé** : `src/app/api/planning/formateurs/route.ts`
+
+- Récupère tous les formateurs `ACTIF`
+- Pour chaque formateur et chaque mois : sessions (via `formateurPrincipalId`), disponibilités déclarées
+- Calcule `statut` dominant : `'session' | 'disponible' | 'indisponible' | 'libre'`
+- Calcule alertes : si <2 formateurs disponibles ou libres → `alerte: true`
+- Retourne : `{ formateurs: [...], alertesDisponibilite: [{ moisIndex, count, alerte }] }`
+
+---
+
+## Phase 3 : Connexion Page Planning
+
+**Fichier modifié** : `src/app/admin/planning/page.tsx`
+
+Remplacement des mocks `MOCK_SESSIONS`, `MOCK_DISPONIBILITES`, `MOCK_EVENEMENTS` par :
+
+```typescript
+// Fetch au montage + au changement d'année
+useEffect(() => {
+  fetchSalles()
+  fetchFormateurs()
+}, [anneeSelectionnee])
+
+const fetchSalles = async () => {
+  const res = await fetch(`/api/planning/salles?annee=${anneeSelectionnee}`)
+  const data = await res.json()
+  if (data.success) setSallesData(data.salles)
+}
+const fetchFormateurs = async () => {
+  const res = await fetch(`/api/planning/formateurs?annee=${anneeSelectionnee}`)
+  const data = await res.json()
+  if (data.success) {
+    setFormateursData(data.formateurs)
+    setAlertesDisponibilite(data.alertesDisponibilite)
+  }
+}
+```
+
+Les calculs d'occupation (jours, pourcentages, statuts) sont désormais **pré-calculés côté API** et consommés directement dans la page — plus aucun calcul dans le frontend.
+
+---
+
+## Phase 4 : Connexion Page Sessions
+
+**Fichier modifié** : `src/app/admin/sessions/page.tsx`
+
+- Suppression du tableau `MOCK_SESSIONS` (196 lignes de données hardcodées)
+- La page utilisait déjà `fetch('/api/sessions')` via `useEffect`, mais avec des noms de champs incohérents
+
+**Corrections d'interface** :
+
+| Ancien (camelCase mock) | Nouveau (snake_case API) |
+|-------------------------|--------------------------|
+| `session.capaciteMax` | `session.capacite_max` |
+| `session.nbInscrits` | `session.places_prises` |
+| `session.listeAttente` | `session.liste_attente` |
+
+- Ajout helper `formatDate(isoDate: string)` pour convertir `YYYY-MM-DD` → `DD/MM/YYYY`
+- Correction filtre : `session.statut` (statutValidation) → `session.statut_session` (PREVUE/EN_COURS/TERMINEE)
+- Ajout spinner de chargement
+
+---
+
+## Phase 5 : Modal Sessions — Onglet Élèves
+
+**Fichier créé** : `src/app/api/sessions/[id]/route.ts`
+
+Endpoint `GET /api/sessions/[id]` :
+- Requête `prisma.inscriptionSession.findMany` avec chaîne complète : `Eleve → Candidat → Prospect`
+- Calcule la **moyenne** depuis `evaluations.note` de l'élève
+- Compte les **absences** (`ABSENT` + `ABSENT_JUSTIFIE`) filtrées par `idSession`
+- Gère deux cas :
+  - `inscription.eleve` présent → élève formé (type `'eleve'`)
+  - `inscription.candidat` présent → en liste d'attente (type `'candidat'`)
+- Exclut les inscriptions `ANNULE`
+
+**Fichier modifié** : `src/app/admin/sessions/page.tsx`
+
+- Ajout état `loadingEleves`
+- Nouvelle fonction `loadElevesSession(session)` : fetch `/api/sessions/{id}` → met à jour `selectedSession.eleves`
+- Le click sur une session appelle `loadElevesSession` au lieu de `setSelectedSession` direct
+- Spinner dans l'onglet Élèves pendant le chargement
+- Affichage enrichi : numéro de dossier, badge "Liste d'attente #position", moyenne conditionnelle
+
+---
+
+## Fichiers Créés / Modifiés
+
+| Fichier | Action |
+|---------|--------|
+| `src/app/api/planning/salles/route.ts` | Créé — occupation réelle par mois |
+| `src/app/api/planning/formateurs/route.ts` | Créé — disponibilités et alertes par mois |
+| `src/app/api/sessions/[id]/route.ts` | Créé — détail session avec élèves inscrits |
+| `src/app/admin/planning/page.tsx` | Modifié — suppression mocks, fetch APIs |
+| `src/app/admin/sessions/page.tsx` | Modifié — suppression MOCK_SESSIONS, fix interfaces, onglet Élèves |
+
+---
+
+## Commits
+
+```
+feat: page sessions connectée à la BDD (suppression MOCK_SESSIONS)
+feat: modal sessions — onglet Élèves connecté aux inscriptions réelles de la BDD
+```
+
+---
+
+## Points Clés à Retenir
+
+### Calcul d'occupation avec Set
+Pour éviter les doublons quand une session couvre plusieurs semaines dans un mois :
+```typescript
+const joursOccupes = new Set<number>()
+sessionsCeMois.forEach(session => {
+  const current = new Date(dateDebutEffective)
+  while (current <= dateFinEffective) {
+    joursOccupes.add(current.getDate())
+    current.setDate(current.getDate() + 1)
+  }
+})
+const occupation = Math.round((joursOccupes.size / nbJoursDansMois) * 100)
+```
+
+### Chaîne de relations pour les élèves
+```typescript
+// InscriptionSession → Eleve → Candidat → Prospect
+prisma.inscriptionSession.findMany({
+  include: {
+    eleve: {
+      include: {
+        candidat: { include: { prospect: true } },
+        evaluations: true,
+        presences: { where: { idSession } }
+      }
+    }
+  }
+})
+```
+
+### Pattern load-on-open
+Au lieu de charger toutes les données en amont, charger les détails (élèves) uniquement quand le modal s'ouvre — évite les requêtes N+1 sur la liste.
+
+---
+
+**Dernière mise à jour** : 25 février 2026
+**Version** : 1.1
+**Auteur** : Claude Code
