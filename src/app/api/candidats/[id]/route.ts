@@ -115,7 +115,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       mode_financement: candidat.modeFinancement || 'Non défini',
       montant_total: Number(candidat.montantTotalFormation || 0),
       montant_pec: Number(candidat.montantPriseEnCharge || 0),
-      reste_a_charge: Number(candidat.resteACharge || 0),
+      reste_a_charge: Number(candidat.resteACharge ?? (Number(candidat.montantTotalFormation || 0) - Number(candidat.montantPriseEnCharge || 0))),
 
       // Documents
       documents: candidat.documentsCandidat?.map(doc => ({

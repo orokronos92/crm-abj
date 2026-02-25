@@ -384,7 +384,7 @@ export class EleveService {
 
     const montantTotal = Number(candidat.montantTotalFormation || 0)
     const montantPEC = Number(candidat.montantPriseEnCharge || 0)
-    const resteACharge = Number(candidat.resteACharge || 0)
+    const resteACharge = candidat.resteACharge != null ? Number(candidat.resteACharge) : montantTotal - montantPEC
 
     // Simulation du montant payé (à adapter selon votre logique)
     const montantPaye = montantTotal - resteACharge
