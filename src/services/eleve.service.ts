@@ -80,6 +80,9 @@ export class EleveService {
       const sessionActive = eleve.inscriptionsSessions?.[0]?.session
       const formation = sessionActive?.formation
       const formateur = sessionActive?.formateurPrincipal
+      // Fallback sur formationSuivie si pas d'inscription_session (cas n8n)
+      const formationNom = formation?.nom || eleve.formationSuivie || 'Non définie'
+      const formationCode = formation?.codeFormation || eleve.formationSuivie || ''
 
       // Calcul des statistiques
       const stats = this.calculateEleveStats(eleve)
@@ -99,8 +102,8 @@ export class EleveService {
         ville: prospect?.ville || '',
 
         // Formation
-        formation: formation?.nom || 'Non définie',
-        code_formation: formation?.codeFormation || '',
+        formation: formationNom,
+        code_formation: formationCode,
         session: sessionActive?.nomSession || 'Non définie',
         formateur_principal: formateur ? `${formateur.prenom} ${formateur.nom}` : 'Non assigné',
         salle: sessionActive?.sallePrincipale || 'Non définie',
@@ -150,6 +153,9 @@ export class EleveService {
     const sessionActive = eleve.inscriptionsSessions?.[0]?.session
     const formation = sessionActive?.formation
     const formateur = sessionActive?.formateurPrincipal
+    // Fallback sur formationSuivie si pas d'inscription_session (cas n8n)
+    const formationNom = formation?.nom || eleve.formationSuivie || 'Non définie'
+    const formationCode = formation?.codeFormation || eleve.formationSuivie || ''
 
     // Calcul des statistiques détaillées
     const stats = this.calculateEleveStats(eleve)
@@ -207,8 +213,8 @@ export class EleveService {
       nb_echanges: prospect?.nbEchanges || 0,
 
       // Formation
-      formation: formation?.nom || 'Non définie',
-      code_formation: formation?.codeFormation || '',
+      formation: formationNom,
+      code_formation: formationCode,
       session: sessionActive?.nomSession || 'Non définie',
       formateur_principal: formateur ? `${formateur.prenom} ${formateur.nom}` : 'Non assigné',
       formateur_email: formateur?.email || '',
