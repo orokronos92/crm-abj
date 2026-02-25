@@ -82,7 +82,17 @@ interface Session {
   taux_assiduite?: number
   nb_abandons?: number
   prochaine_eval?: string
-  eleves?: Array<{ id: number; nom: string; prenom: string; moyenne: number; absences: number }>
+  eleves?: Array<{
+    id: number
+    type: 'eleve' | 'candidat'
+    nom: string
+    prenom: string
+    numeroDossier: string
+    statutInscription: string
+    moyenne: number
+    absences: number
+    positionAttente?: number | null
+  }>
 }
 
 export default function SessionsPage() {
@@ -93,6 +103,7 @@ export default function SessionsPage() {
   const [modalSessionOuverte, setModalSessionOuverte] = useState(false)
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingEleves, setLoadingEleves] = useState(false)
 
   // Charger les sessions depuis l'API
   const loadSessions = async () => {
@@ -110,6 +121,23 @@ export default function SessionsPage() {
       console.error('Erreur fetch sessions:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Charger les élèves d'une session depuis l'API
+  const loadElevesSession = async (session: Session) => {
+    try {
+      setLoadingEleves(true)
+      const response = await fetch(`/api/sessions/${session.id}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setSelectedSession({ ...session, eleves: data.eleves })
+      }
+    } catch (error) {
+      console.error('Erreur fetch élèves session:', error)
+    } finally {
+      setLoadingEleves(false)
     }
   }
 
@@ -312,7 +340,7 @@ export default function SessionsPage() {
           {filteredSessions.map((session) => (
             <div
               key={session.id}
-              onClick={() => setSelectedSession(session)}
+              onClick={() => loadElevesSession(session)}
               className="card p-6 hover:border-[rgb(var(--accent))] cursor-pointer transition-all"
             >
               <div className="flex items-start justify-between">
@@ -698,7 +726,14 @@ export default function SessionsPage() {
                     )}
                   </div>
 
-                  {selectedSession.eleves && selectedSession.eleves.length > 0 ? (
+                  {loadingEleves ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="flex items-center gap-3 text-[rgb(var(--muted-foreground))]">
+                        <div className="w-5 h-5 border-2 border-[rgb(var(--accent))] border-t-transparent rounded-full animate-spin" />
+                        <span>Chargement des élèves...</span>
+                      </div>
+                    </div>
+                  ) : selectedSession.eleves && selectedSession.eleves.length > 0 ? (
                     <div className="space-y-2">
                       {selectedSession.eleves.map((eleve) => (
                         <div
@@ -706,7 +741,7 @@ export default function SessionsPage() {
                           className="p-4 bg-[rgb(var(--secondary))] rounded-lg flex items-center justify-between hover:bg-[rgba(var(--accent),0.05)] transition-all"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
                               {eleve.prenom.charAt(0)}{eleve.nom.charAt(0)}
                             </div>
                             <div>
@@ -714,17 +749,27 @@ export default function SessionsPage() {
                                 {eleve.prenom} {eleve.nom}
                               </p>
                               <p className="text-xs text-[rgb(var(--muted-foreground))]">
-                                {eleve.absences} absence{eleve.absences > 1 ? 's' : ''}
+                                {eleve.numeroDossier && (
+                                  <span className="mr-2 font-mono">{eleve.numeroDossier}</span>
+                                )}
+                                {eleve.absences} absence{eleve.absences !== 1 ? 's' : ''}
+                                {eleve.statutInscription === 'EN_ATTENTE' && (
+                                  <span className="ml-2 text-[rgb(var(--warning))]">— Liste d'attente
+                                    {eleve.positionAttente ? ` #${eleve.positionAttente}` : ''}
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="text-sm text-[rgb(var(--muted-foreground))]">Moyenne</p>
-                              <p className="text-xl font-bold text-[rgb(var(--accent))]">
-                                {eleve.moyenne.toFixed(1)}
-                              </p>
-                            </div>
+                            {eleve.moyenne > 0 && (
+                              <div className="text-right">
+                                <p className="text-sm text-[rgb(var(--muted-foreground))]">Moyenne</p>
+                                <p className="text-xl font-bold text-[rgb(var(--accent))]">
+                                  {eleve.moyenne.toFixed(1)}
+                                </p>
+                              </div>
+                            )}
                             <button className="p-2 hover:bg-[rgb(var(--card))] rounded-lg transition-colors">
                               <Eye className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
                             </button>
