@@ -68,7 +68,7 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
             codeFormation: data.dataCAP.codeFormation,
             nomSession: data.dataCAP.nomSession,
             dateDebutGlobale: data.dataCAP.dateDebutGlobale,
-            dureeMois: data.dataCAP.dureeMois,
+            dateFinGlobale: data.dataCAP.dateFinGlobale,
             nbParticipants: data.dataCAP.nbParticipants,
           },
           plageHoraire: data.dataCAP.plageHoraire,
