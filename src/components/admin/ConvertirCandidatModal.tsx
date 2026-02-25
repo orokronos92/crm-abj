@@ -190,7 +190,8 @@ export function ConvertirCandidatModal({
           formationRetenue: formData.formationRetenue,
           sessionVisee: formData.sessionVisee || null,
           dateDebutSouhaitee: formData.dateDebutSouhaitee || null,
-          modeFinancement: prospect.modeFinancement || null
+          modeFinancement: prospect.modeFinancement || null,
+          tarifFormation: formations.find(f => f.codeFormation === formData.formationRetenue)?.tarifStandard || null
         },
 
         // === CONFIGURATION RÉPONSE ===
