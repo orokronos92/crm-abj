@@ -61,6 +61,7 @@ export default withAuth(
           '/api/notifications',
           '/api/salles',
           '/api/evenements',
+          '/api/formations',
           '/api/formateurs',
           '/api/sessions',
           '/api/webhook/callback',

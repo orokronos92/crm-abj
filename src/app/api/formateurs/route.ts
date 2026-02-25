@@ -1,5 +1,6 @@
 /**
  * API Route: Formateurs
+ * GET  : Liste des formateurs actifs (pour sélecteurs formulaires)
  * POST : Créer un nouveau formateur avec compte utilisateur
  */
 
@@ -7,6 +8,35 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { formateurWebhooks } from '@/lib/webhook-client'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const statut = searchParams.get('statut') || 'ACTIF'
+
+    const formateurs = await prisma.formateur.findMany({
+      where: statut !== 'TOUS' ? { statut } : undefined,
+      select: {
+        idFormateur: true,
+        nom: true,
+        prenom: true,
+        specialites: true,
+        statut: true,
+      },
+      orderBy: { nom: 'asc' },
+    })
+
+    return NextResponse.json({ success: true, formateurs })
+  } catch (error) {
+    console.error('Erreur GET /api/formateurs:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur lors du chargement des formateurs' },
+      { status: 500 }
+    )
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

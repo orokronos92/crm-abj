@@ -167,12 +167,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Mettre à jour la notification en PENDING (pas encore confirmé par n8n)
+    // actionPar : null car la table utilisateurs est vide (auth non activée)
     const updated = await prisma.notification.update({
       where: { idNotification: notificationId },
       data: {
         actionEffectuee: false, // Reste false jusqu'au callback n8n
         dateAction: new Date(),
-        actionPar: userId,
+        actionPar: null,
         resultatAction: JSON.stringify({ ...resultatAction, status: 'pending' })
       },
       select: {

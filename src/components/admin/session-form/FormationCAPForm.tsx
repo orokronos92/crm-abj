@@ -47,26 +47,54 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
   const [formateursDisponibles, setFormateursDisponibles] = useState<any[]>([])
   const [sallesDisponibles, setSallesDisponibles] = useState<any[]>([])
   const [errors, setErrors] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // TODO: Charger formations CAP depuis API
-    setFormations([
-      { code: 'CAP_BJ', nom: 'CAP Bijouterie-Joaillerie' },
-      { code: 'CAP_ATBJ', nom: 'CAP Art et Techniques de la Bijouterie-Joaillerie' }
-    ])
+    async function loadData() {
+      setLoading(true)
+      try {
+        const [resFormations, resFormateurs, resSalles] = await Promise.all([
+          fetch('/api/formations?actif=true'),
+          fetch('/api/formateurs?statut=ACTIF'),
+          fetch('/api/salles'),
+        ])
 
-    // TODO: Charger formateurs et salles
-    setFormateursDisponibles([
-      { id: 1, nom: 'Laurent Dupont', matieres: ['Sertissage', 'Polissage'] },
-      { id: 2, nom: 'Marie Bernard', matieres: ['Joaillerie création'] },
-      { id: 3, nom: 'Thomas Petit', matieres: ['CAO/DAO', 'Dessin technique'] }
-    ])
+        if (resFormations.ok) {
+          const data = await resFormations.json()
+          const formationsList = (data.formations || []) as any[]
+          // Filtrer les formations CAP uniquement
+          setFormations(formationsList.filter((f: any) => f.categorie === 'CAP'))
+        }
 
-    setSallesDisponibles([
-      { id: 1, nom: 'Atelier A', capacite: 15 },
-      { id: 2, nom: 'Atelier B', capacite: 10 },
-      { id: 3, nom: 'Salle informatique', capacite: 12 }
-    ])
+        if (resFormateurs.ok) {
+          const data = await resFormateurs.json()
+          setFormateursDisponibles(
+            (data.formateurs || []).map((f: any) => ({
+              id: f.idFormateur,
+              nom: `${f.prenom} ${f.nom}`,
+              matieres: f.specialites || [],
+            }))
+          )
+        }
+
+        if (resSalles.ok) {
+          const data = await resSalles.json()
+          setSallesDisponibles(
+            (data.salles || []).map((s: any) => ({
+              id: s.idSalle,
+              nom: s.nom,
+              capacite: s.capaciteMax || 0,
+            }))
+          )
+        }
+      } catch (err) {
+        console.error('Erreur chargement données CAP:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
   }, [])
 
   const handleJourToggle = (jour: JourSemaine) => {
@@ -166,6 +194,11 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
         <p className="text-sm text-[rgb(var(--muted-foreground))]">
           Planification complexe avec programme de matières et optimisation IA
         </p>
+        {loading && (
+          <p className="text-xs text-[rgb(var(--muted-foreground))] mt-2 animate-pulse">
+            Chargement des formations, formateurs et salles...
+          </p>
+        )}
       </div>
 
       {errors.length > 0 && (

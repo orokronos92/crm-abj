@@ -39,6 +39,7 @@ export interface FormationCourteData {
   codeFormation: string
   dateDebut: string
   dateFin: string
+  dureeHeures: number       // Durée totale en heures (ex: 40h, 4h...) — n8n planifie
   joursActifs: JourSemaine[]
   nbParticipants: number
   salleId?: number
