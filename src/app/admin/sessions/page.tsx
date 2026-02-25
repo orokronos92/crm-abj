@@ -32,203 +32,6 @@ import {
   FileText,
 } from 'lucide-react'
 
-// Mock data sessions
-const MOCK_SESSIONS = [
-  {
-    id: 1,
-    formation: 'CAP Art du Bijou et du Joyau',
-    code_formation: 'CAP_ATBJ',
-    nom_session: 'CAP ATBJ - Promotion Mars 2024',
-    date_debut: '15/03/2024',
-    date_fin: '15/09/2024',
-    duree_jours: 120,
-    duree_heures: 840,
-
-    // Places
-    capaciteMax: 12,
-    nbInscrits: 11,
-    listeAttente: 3,
-
-    // Formateurs
-    formateur_principal: 'Michel Laurent',
-    formateurs_secondaires: ['Sophie Petit'],
-
-    // Salle
-    salle: 'Atelier A',
-
-    // Statut
-    statut: 'EN_COURS',
-
-    // Progression
-    heures_effectuees: 520,
-    prochaine_eval: '15/02/2024',
-
-    // Stats
-    moyenne_session: 14.8,
-    taux_assiduite: 94,
-    nb_abandons: 1,
-
-    // Élèves
-    eleves: [
-      { id: 1, nom: 'Fontaine', prenom: 'Chloé', moyenne: 16.1, absences: 2 },
-      { id: 2, nom: 'Martin', prenom: 'Lucas', moyenne: 14.2, absences: 5 },
-      { id: 3, nom: 'Dubois', prenom: 'Emma', moyenne: 15.8, absences: 1 },
-    ],
-  },
-  {
-    id: 2,
-    formation: 'Sertissage Niveau 2',
-    code_formation: 'SERTI_N2',
-    nom_session: 'Sertissage N2 - Février 2024',
-    date_debut: '05/02/2024',
-    date_fin: '05/05/2024',
-    duree_jours: 60,
-    duree_heures: 420,
-
-    capaciteMax: 6,
-    nbInscrits: 5,
-    listeAttente: 0,
-
-    formateur_principal: 'Michel Laurent',
-    formateurs_secondaires: [],
-
-    salle: 'Atelier B',
-
-    statut: 'EN_COURS',
-
-    heures_effectuees: 380,
-    prochaine_eval: '20/02/2024',
-
-    moyenne_session: 15.2,
-    taux_assiduite: 97,
-    nb_abandons: 0,
-
-    eleves: [
-      { id: 4, nom: 'Barbier', prenom: 'Maxime', moyenne: 13.1, absences: 8 },
-      { id: 5, nom: 'Rousseau', prenom: 'Sophie', moyenne: 16.8, absences: 0 },
-    ],
-  },
-  {
-    id: 3,
-    formation: 'CAO/DAO Bijouterie',
-    code_formation: 'CAO_DAO',
-    nom_session: 'CAO/DAO - Inscriptions Avril 2024',
-    date_debut: '15/04/2024',
-    date_fin: '15/07/2024',
-    duree_jours: 45,
-    duree_heures: 315,
-
-    capaciteMax: 8,
-    nbInscrits: 4,
-    listeAttente: 0,
-
-    formateur_principal: 'Sophie Petit',
-    formateurs_secondaires: [],
-
-    salle: 'Salle informatique',
-
-    statut: 'INSCRIPTIONS_OUVERTES',
-
-    heures_effectuees: 0,
-    prochaine_eval: null,
-
-    moyenne_session: null,
-    taux_assiduite: null,
-    nb_abandons: 0,
-
-    eleves: [],
-  },
-  {
-    id: 4,
-    formation: 'Joaillerie Création',
-    code_formation: 'JOAIL_CREA',
-    nom_session: 'Joaillerie Création - Session Juin 2024',
-    date_debut: '10/06/2024',
-    date_fin: '10/12/2024',
-    duree_jours: 100,
-    duree_heures: 700,
-
-    capaciteMax: 10,
-    nbInscrits: 6,
-    listeAttente: 2,
-
-    formateur_principal: 'Michel Laurent',
-    formateurs_secondaires: ['Antoine Dubois'],
-
-    salle: 'Atelier C',
-
-    statut: 'INSCRIPTIONS_OUVERTES',
-
-    heures_effectuees: 0,
-    prochaine_eval: null,
-
-    moyenne_session: null,
-    taux_assiduite: null,
-    nb_abandons: 0,
-
-    eleves: [],
-  },
-  {
-    id: 5,
-    formation: 'Sertissage Niveau 1',
-    code_formation: 'SERTI_N1',
-    nom_session: 'Sertissage N1 - Septembre 2024',
-    date_debut: '15/09/2024',
-    date_fin: '15/12/2024',
-    duree_jours: 50,
-    duree_heures: 350,
-
-    capaciteMax: 8,
-    nbInscrits: 0,
-    listeAttente: 0,
-
-    formateur_principal: 'Michel Laurent',
-    formateurs_secondaires: [],
-
-    salle: 'Atelier B',
-
-    statut: 'A_VENIR',
-
-    heures_effectuees: 0,
-    prochaine_eval: null,
-
-    moyenne_session: null,
-    taux_assiduite: null,
-    nb_abandons: 0,
-
-    eleves: [],
-  },
-  {
-    id: 6,
-    formation: 'CAP Art du Bijou et du Joyau',
-    code_formation: 'CAP_ATBJ',
-    nom_session: 'CAP ATBJ - Promotion Septembre 2023',
-    date_debut: '15/09/2023',
-    date_fin: '15/03/2024',
-    duree_jours: 120,
-    duree_heures: 840,
-
-    capaciteMax: 12,
-    nbInscrits: 12,
-    listeAttente: 0,
-
-    formateur_principal: 'Michel Laurent',
-    formateurs_secondaires: ['Sophie Petit'],
-
-    salle: 'Atelier A',
-
-    statut: 'TERMINEE',
-
-    heures_effectuees: 840,
-    prochaine_eval: null,
-
-    moyenne_session: 15.4,
-    taux_assiduite: 96,
-    nb_abandons: 0,
-
-    eleves: [],
-  },
-]
 
 const STATUT_COLORS: Record<string, string> = {
   'EN_COURS': 'bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))] border border-[rgba(var(--success),0.3)]',
@@ -261,9 +64,9 @@ interface Session {
   nom_session: string
   formateur_principal: string
   salle: string
-  capaciteMax: number
-  nbInscrits: number
-  listeAttente?: number
+  capacite_max: number
+  places_prises: number
+  liste_attente?: number
   date_debut: string
   date_fin: string
   statut: string
@@ -320,10 +123,18 @@ export default function SessionsPage() {
       session.formation.toLowerCase().includes(searchTerm.toLowerCase()) ||
       session.formateur_principal.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesFilter = activeFilter === 'TOUS' || session.statut === activeFilter
+    const matchesFilter = activeFilter === 'TOUS' || session.statut_session === activeFilter
 
     return matchesSearch && matchesFilter
   })
+
+  const formatDate = (isoDate: string) => {
+    if (!isoDate) return '-'
+    // Accepte YYYY-MM-DD ou déjà formaté DD/MM/YYYY
+    if (isoDate.includes('/')) return isoDate
+    const [y, m, d] = isoDate.split('-')
+    return `${d}/${m}/${y}`
+  }
 
   const getProgressionColor = (pct: number) => {
     if (pct >= 80) return 'text-[rgb(var(--success))]'
@@ -332,7 +143,7 @@ export default function SessionsPage() {
   }
 
   const getTauxRemplissage = (session: Session) => {
-    return Math.round((session.nbInscrits / session.capaciteMax) * 100)
+    return Math.round((session.places_prises / session.capacite_max) * 100)
   }
 
   const getProgressionHeures = (session: Session) => {
@@ -343,14 +154,14 @@ export default function SessionsPage() {
   // Stats par filtre
   const statsParStatut = {
     TOUS: sessions.length,
-    EN_COURS: sessions.filter(s => s.statut === 'EN_COURS').length,
-    INSCRIPTIONS_OUVERTES: sessions.filter(s => s.statut === 'INSCRIPTIONS_OUVERTES').length,
-    A_VENIR: sessions.filter(s => s.statut === 'A_VENIR').length,
-    TERMINEE: sessions.filter(s => s.statut === 'TERMINEE').length,
-    EN_ANALYSE: sessions.filter(s => s.statut === 'EN_ANALYSE').length,
-    VALIDE: sessions.filter(s => s.statut === 'VALIDE').length,
-    REFUSE: sessions.filter(s => s.statut === 'REFUSE').length,
-    DIFFUSEE: sessions.filter(s => s.statut === 'DIFFUSEE').length,
+    EN_COURS: sessions.filter(s => s.statut_session === 'EN_COURS').length,
+    INSCRIPTIONS_OUVERTES: sessions.filter(s => s.statut_session === 'INSCRIPTIONS_OUVERTES').length,
+    A_VENIR: sessions.filter(s => s.statut_session === 'A_VENIR').length,
+    TERMINEE: sessions.filter(s => s.statut_session === 'TERMINEE').length,
+    EN_ANALYSE: sessions.filter(s => s.statut_session === 'EN_ANALYSE').length,
+    VALIDE: sessions.filter(s => s.statut_session === 'VALIDE').length,
+    REFUSE: sessions.filter(s => s.statut_session === 'REFUSE').length,
+    DIFFUSEE: sessions.filter(s => s.statut_session === 'DIFFUSEE').length,
   }
 
   return (
@@ -418,7 +229,7 @@ export default function SessionsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Élèves total</p>
                 <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {sessions.reduce((sum, s) => sum + s.nbInscrits, 0)}
+                  {sessions.reduce((sum, s) => sum + s.places_prises, 0)}
                 </p>
               </div>
               <Users className="w-8 h-8 text-[rgb(var(--foreground))]" />
@@ -430,7 +241,7 @@ export default function SessionsPage() {
               <div>
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">Places disponibles</p>
                 <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
-                  {sessions.reduce((sum, s) => sum + (s.capaciteMax - s.nbInscrits), 0)}
+                  {sessions.reduce((sum, s) => sum + (s.capacite_max - s.places_prises), 0)}
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-[rgb(var(--accent))]" />
@@ -485,7 +296,18 @@ export default function SessionsPage() {
 
         {/* Contenu scrollable */}
         <div className="flex-1 overflow-y-auto pt-6">
+          {/* État de chargement */}
+          {loading && (
+            <div className="flex items-center justify-center py-16">
+              <div className="flex items-center gap-3 text-[rgb(var(--muted-foreground))]">
+                <div className="w-5 h-5 border-2 border-[rgb(var(--accent))] border-t-transparent rounded-full animate-spin" />
+                <span>Chargement des sessions...</span>
+              </div>
+            </div>
+          )}
+
           {/* Grille sessions */}
+          {!loading && (
           <div className="grid grid-cols-1 gap-4">
           {filteredSessions.map((session) => (
             <div
@@ -510,8 +332,8 @@ export default function SessionsPage() {
                             {session.formation}
                           </p>
                         </div>
-                        <span className={`px-4 py-1.5 text-sm rounded-full ${STATUT_COLORS[session.statut]}`}>
-                          {STATUT_LABELS[session.statut]}
+                        <span className={`px-4 py-1.5 text-sm rounded-full ${STATUT_COLORS[session.statut_session] || STATUT_COLORS[session.statut] || ''}`}>
+                          {STATUT_LABELS[session.statut_session] || STATUT_LABELS[session.statut] || session.statut_session}
                         </span>
                       </div>
 
@@ -522,7 +344,7 @@ export default function SessionsPage() {
                           <div>
                             <p className="text-xs text-[rgb(var(--muted-foreground))]">Période</p>
                             <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.date_debut} → {session.date_fin}
+                              {formatDate(session.date_debut)} → {formatDate(session.date_fin)}
                             </p>
                           </div>
                         </div>
@@ -555,10 +377,10 @@ export default function SessionsPage() {
                           <div>
                             <p className="text-xs text-[rgb(var(--muted-foreground))]">Places</p>
                             <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.nbInscrits}/{session.capaciteMax}
-                              {session.listeAttente && session.listeAttente > 0 && (
+                              {session.places_prises}/{session.capacite_max}
+                              {session.liste_attente && session.liste_attente > 0 && (
                                 <span className="ml-1 text-xs text-[rgb(var(--warning))]">
-                                  (+{session.listeAttente} attente)
+                                  (+{session.liste_attente} attente)
                                 </span>
                               )}
                             </p>
@@ -577,7 +399,7 @@ export default function SessionsPage() {
                         </div>
 
                         {/* Progression ou Taux remplissage */}
-                        {session.statut === 'EN_COURS' ? (
+                        {session.statut_session === 'EN_COURS' ? (
                           <div className="flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-[rgb(var(--success))]" />
                             <div>
@@ -587,7 +409,7 @@ export default function SessionsPage() {
                               </p>
                             </div>
                           </div>
-                        ) : session.statut === 'INSCRIPTIONS_OUVERTES' ? (
+                        ) : session.statut_session === 'INSCRIPTIONS_OUVERTES' ? (
                           <div className="flex items-center gap-2">
                             <BarChart3 className="w-4 h-4 text-[rgb(var(--accent))]" />
                             <div>
@@ -597,7 +419,7 @@ export default function SessionsPage() {
                               </p>
                             </div>
                           </div>
-                        ) : session.statut === 'TERMINEE' && session.moyenne_session ? (
+                        ) : session.statut_session === 'TERMINEE' && session.moyenne_session ? (
                           <div className="flex items-center gap-2">
                             <BarChart3 className="w-4 h-4 text-[rgb(var(--success))]" />
                             <div>
@@ -627,6 +449,7 @@ export default function SessionsPage() {
             </div>
           )}
           </div>
+          )}
         </div>
       </div>
 
@@ -650,8 +473,8 @@ export default function SessionsPage() {
                       {selectedSession.formation}
                     </p>
                     <div className="flex items-center gap-3">
-                      <span className={`px-4 py-1.5 text-sm rounded-full ${STATUT_COLORS[selectedSession.statut]}`}>
-                        {STATUT_LABELS[selectedSession.statut]}
+                      <span className={`px-4 py-1.5 text-sm rounded-full ${STATUT_COLORS[selectedSession.statut_session] || STATUT_COLORS[selectedSession.statut] || ''}`}>
+                        {STATUT_LABELS[selectedSession.statut_session] || STATUT_LABELS[selectedSession.statut] || selectedSession.statut_session}
                       </span>
                       <span className="px-4 py-1.5 text-sm rounded-full bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] border border-[rgba(var(--accent),0.3)]">
                         {selectedSession.duree_heures}h - {selectedSession.duree_jours} jours
@@ -672,12 +495,12 @@ export default function SessionsPage() {
               <div className="grid grid-cols-5 gap-4 mt-6">
                 <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                   <p className="text-3xl font-bold text-[rgb(var(--accent))]">
-                    {selectedSession.nbInscrits}/{selectedSession.capaciteMax}
+                    {selectedSession.places_prises}/{selectedSession.capacite_max}
                   </p>
                   <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Places prises</p>
                 </div>
 
-                {selectedSession.statut === 'EN_COURS' && (
+                {selectedSession.statut_session === 'EN_COURS' && (
                   <>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                       <p className={`text-3xl font-bold ${getProgressionColor(getProgressionHeures(selectedSession))}`}>
@@ -706,7 +529,7 @@ export default function SessionsPage() {
                   </>
                 )}
 
-                {selectedSession.statut === 'INSCRIPTIONS_OUVERTES' && (
+                {selectedSession.statut_session === 'INSCRIPTIONS_OUVERTES' && (
                   <>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                       <p className={`text-3xl font-bold ${getProgressionColor(getTauxRemplissage(selectedSession))}`}>
@@ -716,19 +539,19 @@ export default function SessionsPage() {
                     </div>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                       <p className="text-3xl font-bold text-[rgb(var(--accent))]">
-                        {selectedSession.capaciteMax - selectedSession.nbInscrits}
+                        {selectedSession.capacite_max - selectedSession.places_prises}
                       </p>
                       <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Places restantes</p>
                     </div>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                       <p className="text-3xl font-bold text-[rgb(var(--warning))]">
-                        {selectedSession.listeAttente ?? 0}
+                        {selectedSession.liste_attente ?? 0}
                       </p>
                       <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Liste d'attente</p>
                     </div>
                     <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg text-center">
                       <p className="text-lg font-bold text-[rgb(var(--accent))]">
-                        {selectedSession.date_debut}
+                        {formatDate(selectedSession.date_debut)}
                       </p>
                       <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">Début session</p>
                     </div>
@@ -740,7 +563,7 @@ export default function SessionsPage() {
               <div className="flex gap-1 pt-4">
                 {[
                   { key: 'synthese', label: 'Synthèse', icon: FileText },
-                  { key: 'eleves', label: `Élèves (${selectedSession.nbInscrits})`, icon: Users },
+                  { key: 'eleves', label: `Élèves (${selectedSession.places_prises})`, icon: Users },
                   { key: 'planning', label: 'Planning', icon: Calendar }
                 ].map((tab) => {
                   const Icon = tab.icon
@@ -782,7 +605,7 @@ export default function SessionsPage() {
                           <p className="text-xs text-[rgb(var(--muted-foreground))]">Période</p>
                         </div>
                         <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                          Du {selectedSession.date_debut} au {selectedSession.date_fin}
+                          Du {formatDate(selectedSession.date_debut)} au {formatDate(selectedSession.date_fin)}
                         </p>
                       </div>
 
@@ -865,9 +688,9 @@ export default function SessionsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-                      Élèves inscrits ({selectedSession.nbInscrits}/{selectedSession.capaciteMax})
+                      Élèves inscrits ({selectedSession.places_prises}/{selectedSession.capacite_max})
                     </h3>
-                    {selectedSession.statut === 'INSCRIPTIONS_OUVERTES' && (
+                    {selectedSession.statut_session === 'INSCRIPTIONS_OUVERTES' && (
                       <button className="px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg hover:bg-[rgb(var(--accent-light))] transition-all flex items-center gap-2">
                         <UserPlus className="w-4 h-4" />
                         Ajouter un élève
@@ -913,7 +736,7 @@ export default function SessionsPage() {
                     <div className="p-12 text-center bg-[rgb(var(--secondary))] rounded-lg">
                       <Users className="w-16 h-16 text-[rgb(var(--muted-foreground))] mx-auto mb-4 opacity-50" />
                       <p className="text-[rgb(var(--muted-foreground))]">
-                        {selectedSession.statut === 'INSCRIPTIONS_OUVERTES'
+                        {selectedSession.statut_session === 'INSCRIPTIONS_OUVERTES'
                           ? 'Aucun élève inscrit pour le moment'
                           : 'Aucun élève dans cette session'}
                       </p>
