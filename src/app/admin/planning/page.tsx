@@ -834,6 +834,16 @@ export default function PlanningPage() {
               ? (salles.find((s: any) => s.nom === modalMoisOuvert.salle)?.mois?.[modalMoisOuvert.mois]?.evenements ?? [])
               : []
           }
+          reservations={
+            modalMoisOuvert.type === 'salle'
+              ? (salles.find((s: any) => s.nom === modalMoisOuvert.salle)?.mois?.[modalMoisOuvert.mois]?.reservations ?? [])
+              : []
+          }
+          disponibilites={
+            modalMoisOuvert.type === 'formateur'
+              ? (formateurs.find((f: any) => f.nomComplet === modalMoisOuvert.titre)?.mois?.[modalMoisOuvert.mois]?.disponibilites ?? [])
+              : []
+          }
           salle={modalMoisOuvert.salle}
         />
       )}

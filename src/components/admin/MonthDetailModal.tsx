@@ -1,11 +1,27 @@
 /**
  * Modal détail mensuel - Granularité jour/heure pour salles et formateurs
- * Limite : 200 lignes max
+ * Utilise les vraies données de réservation (ReservationSalle) pour la précision horaire
  */
 
 'use client'
 
 import { X, Clock, Users, MapPin } from 'lucide-react'
+
+interface Reservation {
+  id: number
+  idSession?: number | null
+  idEvenement?: number | null
+  dateDebut: string
+  dateFin: string
+  statut: string
+}
+
+interface Disponibilite {
+  id: number
+  date: string
+  creneau: string | null  // MATIN | APRES_MIDI | SOIR | null (= journée entière)
+  type: string            // DISPONIBLE | INDISPONIBLE
+}
 
 interface MonthDetailModalProps {
   type: 'salle' | 'formateur'
@@ -13,89 +29,98 @@ interface MonthDetailModalProps {
   mois: number // 0-11
   annee: number
   onClose: () => void
-  sessions?: any[] // Sessions pour calculer occupation
-  evenements?: any[] // Événements pour afficher les types réels
-  salle?: string // Nom de la salle pour filtrer les sessions (vue salle)
+  sessions?: any[]
+  evenements?: any[]
+  reservations?: Reservation[]
+  disponibilites?: Disponibilite[]
+  salle?: string
 }
 
-export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions = [], evenements = [], salle }: MonthDetailModalProps) {
-  // Générer les jours du mois
+export function MonthDetailModal({
+  type, titre, mois, annee, onClose,
+  sessions = [], evenements = [],
+  reservations = [], disponibilites = [],
+  salle
+}: MonthDetailModalProps) {
   const premierJour = new Date(annee, mois, 1)
   const dernierJour = new Date(annee, mois + 1, 0)
   const nbJours = dernierJour.getDate()
 
   const jours = Array.from({ length: nbJours }, (_, i) => {
     const date = new Date(annee, mois, i + 1)
-    return {
-      numero: i + 1,
-      nom: date.toLocaleDateString('fr-FR', { weekday: 'short' }),
-      date
-    }
+    return { numero: i + 1, nom: date.toLocaleDateString('fr-FR', { weekday: 'short' }), date }
   })
 
-  // Créer des semaines de 7 jours
-  const semaines = []
+  const semaines: typeof jours[] = []
   for (let i = 0; i < jours.length; i += 7) {
     semaines.push(jours.slice(i, i + 7))
   }
 
   const moisNom = premierJour.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 
-  // Créneaux horaires pour salles (9h-21h par tranche de 2h)
   const creneauxSalle = [
-    { debut: '09:00', fin: '11:00' },
-    { debut: '11:00', fin: '13:00' },
-    { debut: '13:00', fin: '15:00' },
-    { debut: '15:00', fin: '17:00' },
-    { debut: '17:00', fin: '19:00' },
-    { debut: '19:00', fin: '21:00' },
+    { debut: '09:00', fin: '11:00', debutH: 9, finH: 11 },
+    { debut: '11:00', fin: '13:00', debutH: 11, finH: 13 },
+    { debut: '13:00', fin: '15:00', debutH: 13, finH: 15 },
+    { debut: '15:00', fin: '17:00', debutH: 15, finH: 17 },
+    { debut: '17:00', fin: '19:00', debutH: 17, finH: 19 },
+    { debut: '19:00', fin: '21:00', debutH: 19, finH: 21 },
   ]
 
-  // Créneaux pour formateurs
-  const creneauxFormateur = ['Matin', 'Après-midi', 'Soir']
+  const creneauxFormateur = [
+    { label: 'Matin', code: 'MATIN' },
+    { label: 'Après-midi', code: 'APRES_MIDI' },
+    { label: 'Soir', code: 'SOIR' },
+  ]
 
-  // Déterminer le type d'activité pour un jour donné
-  const getActiviteJour = (jourNumero: number) => {
-    const dateJour = new Date(annee, mois, jourNumero)
-
-    // Vérifier événements pour ce jour (si vue salle, vérifier que l'événement est dans cette salle)
-    const evenementJour = evenements.find(evt => {
-      const evtDate = new Date(evt.date)
-      const memeJour = evtDate.getDate() === jourNumero && evtDate.getMonth() === mois && evtDate.getFullYear() === annee
-
-      // Si vue salle, vérifier que l'événement est dans cette salle
-      if (type === 'salle' && salle) {
-        return memeJour && evt.salle === salle
-      }
-
-      return memeJour
+  /**
+   * Vue SALLE : détermine l'activité d'un créneau horaire précis
+   * Utilise d'abord les réservations (précision heure), sinon fallback sessions/événements
+   */
+  const getActiviteSalleCreneau = (jourNumero: number, debutH: number, finH: number) => {
+    // 1. Chercher une réservation qui chevauche ce créneau
+    const reservation = reservations.find(r => {
+      const rDebut = new Date(r.dateDebut)
+      const rFin = new Date(r.dateFin)
+      if (rDebut.getDate() !== jourNumero || rDebut.getMonth() !== mois || rDebut.getFullYear() !== annee) return false
+      // Chevauchement : début résa < fin créneau ET fin résa > début créneau
+      return rDebut.getHours() < finH && rFin.getHours() > debutH
     })
 
+    if (reservation) {
+      // Identifier le type via session liée
+      if (reservation.idSession) {
+        const session = sessions.find(s => s.id === reservation.idSession)
+        const formation = session?.formation || session?.nom || ''
+        if (formation.includes('CAP')) return { type: 'CAP', color: 'success' }
+        if (formation.includes('Sertissage')) return { type: 'Sertissage', color: 'info' }
+        if (formation.includes('CAO')) return { type: 'CAO/DAO', color: 'accent' }
+        return { type: 'Formation', color: 'accent' }
+      }
+      if (reservation.idEvenement) return { type: 'Événement', color: 'warning' }
+      return { type: 'Réservé', color: 'accent' }
+    }
+
+    // 2. Fallback : vérifier événements du jour (occupation journée entière)
+    const evenementJour = evenements.find(evt => {
+      const evtDate = new Date(evt.date)
+      return evtDate.getDate() === jourNumero && evtDate.getMonth() === mois && evtDate.getFullYear() === annee
+    })
     if (evenementJour) {
-      // Mapper le type d'événement
       if (evenementJour.type === 'PORTES_OUVERTES') return { type: 'Portes ouvertes', color: 'warning' }
       if (evenementJour.type === 'REUNION') return { type: 'Réunion', color: 'info' }
-      if (evenementJour.type === 'STAGE_INITIATION') return { type: 'Stage', color: 'accent' }
       if (evenementJour.type === 'REMISE_DIPLOME') return { type: 'Remise diplômes', color: 'success' }
       return { type: 'Événement', color: 'accent' }
     }
 
-    // Vérifier sessions actives ce jour (si vue salle, filtrer par salle)
-    const sessionJour = sessions.find(session => {
-      const sessionDebut = new Date(session.dateDebut)
-      const sessionFin = new Date(session.dateFin)
-      const dansLaPeriode = dateJour >= sessionDebut && dateJour <= sessionFin
-
-      // Si vue salle, vérifier que la session est dans cette salle
-      if (type === 'salle' && salle) {
-        return dansLaPeriode && session.salle === salle
-      }
-
-      return dansLaPeriode
+    // 3. Fallback : session sans réservation précise (journée entière)
+    const dateJour = new Date(annee, mois, jourNumero)
+    const sessionJour = sessions.find(s => {
+      const sessionDebut = new Date(s.dateDebut)
+      const sessionFin = new Date(s.dateFin)
+      return dateJour >= sessionDebut && dateJour <= sessionFin
     })
-
     if (sessionJour) {
-      // Identifier le type de formation
       const formation = sessionJour.formation || sessionJour.nom || ''
       if (formation.includes('CAP')) return { type: 'CAP', color: 'success' }
       if (formation.includes('Sertissage')) return { type: 'Sertissage', color: 'info' }
@@ -106,25 +131,42 @@ export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions =
     return null
   }
 
-  // Vérifier si un formateur est occupé à un créneau donné (pour vue formateur)
-  const estOccupe = (jourNumero: number, creneau: string): boolean => {
+  /**
+   * Vue FORMATEUR : détermine le statut d'un créneau (Matin/Après-midi/Soir)
+   * Utilise disponibilites avec creneauJournee précis
+   */
+  const getStatutFormateurCreneau = (jourNumero: number, codeCreneau: string): 'session' | 'disponible' | 'indisponible' | 'libre' => {
     const dateJour = new Date(annee, mois, jourNumero)
 
-    // Vérifier si une session est active ce jour
-    const sessionActive = sessions.find(session => {
-      const sessionDebut = new Date(session.dateDebut)
-      const sessionFin = new Date(session.dateFin)
+    // 1. Session active ce jour → créneau occupé
+    const sessionActive = sessions.find(s => {
+      const sessionDebut = new Date(s.dateDebut)
+      const sessionFin = new Date(s.dateFin)
       return dateJour >= sessionDebut && dateJour <= sessionFin
     })
+    if (sessionActive) return 'session'
 
-    // Vérifier si un événement est prévu ce jour
-    const evenementJour = evenements.find(evt => {
-      const evtDate = new Date(evt.date)
-      return evtDate.getDate() === jourNumero && evtDate.getMonth() === mois && evtDate.getFullYear() === annee
+    // 2. Chercher une disponibilité déclarée pour ce jour et ce créneau
+    const dispoJour = disponibilites.filter(d => {
+      const dDate = new Date(d.date)
+      return dDate.getDate() === jourNumero && dDate.getMonth() === mois && dDate.getFullYear() === annee
     })
 
-    // Si session ou événement trouvé, le formateur est considéré occupé
-    return !!(sessionActive || evenementJour)
+    // Disponibilité spécifique au créneau OU journée entière (creneau null)
+    const dispoMatin = dispoJour.find(d => d.creneau === codeCreneau || d.creneau === null)
+    if (dispoMatin) {
+      return dispoMatin.type === 'DISPONIBLE' ? 'disponible' : 'indisponible'
+    }
+
+    return 'libre'
+  }
+
+  const colorClassSalle = (activite: { type: string; color: string } | null) => {
+    if (!activite) return 'bg-[rgb(var(--secondary))] border-[rgba(var(--border),0.3)]'
+    if (activite.color === 'success') return 'bg-[rgba(var(--success),0.2)] border-[rgb(var(--success))] text-[rgb(var(--success))]'
+    if (activite.color === 'info') return 'bg-[rgba(var(--info),0.2)] border-[rgb(var(--info))] text-[rgb(var(--info))]'
+    if (activite.color === 'warning') return 'bg-[rgba(var(--warning),0.2)] border-[rgb(var(--warning))] text-[rgb(var(--warning))]'
+    return 'bg-[rgba(var(--accent),0.2)] border-[rgb(var(--accent))] text-[rgb(var(--accent))]'
   }
 
   return (
@@ -143,10 +185,7 @@ export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions =
               <p className="text-sm text-[rgb(var(--muted-foreground))] capitalize">{moisNom}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -154,20 +193,15 @@ export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions =
         {/* Grille calendrier */}
         <div className="flex-1 overflow-auto p-6">
           <div className="min-w-[800px]">
-            {/* Afficher toutes les semaines du mois */}
             {semaines.map((semaine, semaineIdx) => (
               <div key={semaineIdx}>
-                {/* Espacement entre les semaines */}
                 {semaineIdx > 0 && <div className="h-4"></div>}
 
                 {/* En-tête de la semaine */}
                 <div className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-2">
                   <div className="text-xs font-medium text-[rgb(var(--muted-foreground))] flex items-center">
                     {semaineIdx === 0 && (
-                      <>
-                        <Clock className="w-3 h-3 mr-1" />
-                        {type === 'salle' ? 'Horaires' : 'Créneaux'}
-                      </>
+                      <><Clock className="w-3 h-3 mr-1" />{type === 'salle' ? 'Horaires' : 'Créneaux'}</>
                     )}
                   </div>
                   {semaine.map((jour) => (
@@ -176,71 +210,65 @@ export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions =
                       <p className="text-xs text-[rgb(var(--muted-foreground))]">{jour.numero}</p>
                     </div>
                   ))}
-                  {/* Remplir cellules vides pour semaines incomplètes */}
                   {Array.from({ length: 7 - semaine.length }).map((_, i) => (
                     <div key={`empty-${i}`}></div>
                   ))}
                 </div>
 
-                {/* Créneaux pour cette semaine */}
+                {/* Créneaux */}
                 {type === 'salle' ? (
-                  // Vue horaire pour salles
                   creneauxSalle.map((creneau, idx) => (
                     <div key={`${semaineIdx}-${idx}`} className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-1">
                       <div className="text-xs text-[rgb(var(--muted-foreground))] flex items-center">
                         {creneau.debut}-{creneau.fin}
                       </div>
                       {semaine.map((jour) => {
-                        const activite = getActiviteJour(jour.numero)
-                        const colorClass = activite
-                          ? activite.color === 'success' ? 'bg-[rgba(var(--success),0.2)] border-[rgb(var(--success))] text-[rgb(var(--success))]'
-                          : activite.color === 'info' ? 'bg-[rgba(var(--info),0.2)] border-[rgb(var(--info))] text-[rgb(var(--info))]'
-                          : activite.color === 'warning' ? 'bg-[rgba(var(--warning),0.2)] border-[rgb(var(--warning))] text-[rgb(var(--warning))]'
-                          : 'bg-[rgba(var(--accent),0.2)] border-[rgb(var(--accent))] text-[rgb(var(--accent))]'
-                          : 'bg-[rgb(var(--secondary))]'
-
+                        const activite = getActiviteSalleCreneau(jour.numero, creneau.debutH, creneau.finH)
                         return (
                           <div
                             key={jour.numero}
-                            className={`h-12 rounded border border-[rgba(var(--border),0.3)] flex items-center justify-center text-xs transition-all cursor-pointer hover:opacity-80 ${colorClass}`}
+                            className={`h-12 rounded border flex items-center justify-center text-xs transition-all cursor-pointer hover:opacity-80 ${colorClassSalle(activite)}`}
                           >
-                            {activite && <span className="font-medium">{activite.type}</span>}
+                            {activite && <span className="font-medium truncate px-1">{activite.type}</span>}
                           </div>
                         )
                       })}
-                      {/* Remplir cellules vides pour semaines incomplètes */}
                       {Array.from({ length: 7 - semaine.length }).map((_, i) => (
                         <div key={`empty-${i}`}></div>
                       ))}
                     </div>
                   ))
                 ) : (
-                  // Vue créneaux pour formateurs
                   creneauxFormateur.map((creneau, idx) => (
                     <div key={`${semaineIdx}-${idx}`} className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-1">
                       <div className="text-xs text-[rgb(var(--muted-foreground))] flex items-center font-medium">
-                        {creneau}
+                        {creneau.label}
                       </div>
                       {semaine.map((jour) => {
-                        const occupe = estOccupe(jour.numero, creneau)
+                        const statut = getStatutFormateurCreneau(jour.numero, creneau.code)
+                        const isSession = statut === 'session'
+                        const isDisponible = statut === 'disponible'
+                        const isIndisponible = statut === 'indisponible'
                         return (
                           <div
                             key={jour.numero}
-                            className={`h-12 rounded border border-[rgba(var(--border),0.3)] flex items-center justify-center text-xs transition-all ${
-                              occupe
+                            className={`h-12 rounded border flex items-center justify-center text-xs transition-all ${
+                              isSession
                                 ? 'bg-[rgba(var(--accent),0.2)] border-[rgb(var(--accent))]'
-                                : 'bg-[rgba(var(--success),0.15)] border-[rgba(var(--success),0.3)] cursor-pointer hover:bg-[rgba(var(--success),0.25)]'
+                                : isDisponible
+                                ? 'bg-[rgba(var(--success),0.15)] border-[rgba(var(--success),0.3)] cursor-pointer hover:bg-[rgba(var(--success),0.25)]'
+                                : isIndisponible
+                                ? 'bg-[rgba(var(--error),0.15)] border-[rgba(var(--error),0.3)]'
+                                : 'bg-[rgb(var(--secondary))] border-[rgba(var(--border),0.3)]'
                             }`}
                           >
-                            {occupe ? (
-                              <span className="font-medium text-[rgb(var(--accent))]">En cours</span>
-                            ) : (
-                              <span className="font-medium text-[rgb(var(--success))]">Dispo</span>
-                            )}
+                            {isSession && <span className="font-medium text-[rgb(var(--accent))]">En cours</span>}
+                            {isDisponible && <span className="font-medium text-[rgb(var(--success))]">Dispo</span>}
+                            {isIndisponible && <span className="font-medium text-[rgb(var(--error))]">Indispo</span>}
+                            {statut === 'libre' && <span className="text-[rgb(var(--muted-foreground))]">—</span>}
                           </div>
                         )
                       })}
-                      {/* Remplir cellules vides pour semaines incomplètes */}
                       {Array.from({ length: 7 - semaine.length }).map((_, i) => (
                         <div key={`empty-${i}`}></div>
                       ))}
@@ -252,7 +280,7 @@ export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions =
           </div>
         </div>
 
-        {/* Footer avec légende améliorée */}
+        {/* Footer légende */}
         <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-xs">
@@ -263,16 +291,12 @@ export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions =
                     <span className="text-[rgb(var(--muted-foreground))]">CAP / Formation</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[rgba(var(--accent),0.3)] border border-[rgb(var(--accent))]"></div>
-                    <span className="text-[rgb(var(--muted-foreground))]">Événement</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded bg-[rgba(var(--info),0.3)] border border-[rgb(var(--info))]"></div>
                     <span className="text-[rgb(var(--muted-foreground))]">Sertissage / CAO</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded bg-[rgba(var(--warning),0.3)] border border-[rgb(var(--warning))]"></div>
-                    <span className="text-[rgb(var(--muted-foreground))]">Réunion</span>
+                    <span className="text-[rgb(var(--muted-foreground))]">Événement</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.3)]"></div>
@@ -281,8 +305,22 @@ export function MonthDetailModal({ type, titre, mois, annee, onClose, sessions =
                 </>
               ) : (
                 <>
-                  <span>🟦 En cours / Indisponible</span>
-                  <span>🟩 Disponible</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-[rgba(var(--accent),0.3)] border border-[rgb(var(--accent))]"></div>
+                    <span className="text-[rgb(var(--muted-foreground))]">En session</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-[rgba(var(--success),0.3)] border border-[rgb(var(--success))]"></div>
+                    <span className="text-[rgb(var(--muted-foreground))]">Disponible</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-[rgba(var(--error),0.3)] border border-[rgb(var(--error))]"></div>
+                    <span className="text-[rgb(var(--muted-foreground))]">Indisponible</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.3)]"></div>
+                    <span className="text-[rgb(var(--muted-foreground))]">Non déclaré</span>
+                  </div>
                 </>
               )}
             </div>
