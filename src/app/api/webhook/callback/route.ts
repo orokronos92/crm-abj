@@ -155,15 +155,15 @@ export async function POST(request: NextRequest) {
 
     // === MODE T2 : correlationId sans notification en BDD ===
     if (hasCorrelationId && !hasNotificationId) {
-      // Création documents requis si c'est une conversion candidat réussie
-      if (body.status === 'success' && body.response === 'candidat_created') {
+      // Création documents requis si c'est une conversion candidat ou élève réussie
+      if (body.status === 'success' && (body.response === 'candidat_created' || body.response === 'eleve_created')) {
         const numeroDossier = body.data?.numeroDossier as string | undefined
         if (numeroDossier) {
           creerDocumentsRequis(numeroDossier, body.correlationId!).catch(err =>
             console.error('[webhook/callback] Erreur création documents requis:', err)
           )
         } else {
-          console.warn('[webhook/callback] candidat_created reçu sans data.numeroDossier')
+          console.warn(`[webhook/callback] ${body.response} reçu sans data.numeroDossier`)
         }
       }
 
