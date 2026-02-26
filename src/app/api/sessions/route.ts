@@ -52,6 +52,11 @@ export async function GET(request: NextRequest) {
             prenom: true,
           }
         },
+        salle: {
+          select: {
+            nom: true,
+          }
+        },
         inscriptionsSessions: {
           select: {
             idInscription: true,
@@ -76,7 +81,7 @@ export async function GET(request: NextRequest) {
       let formateurPrincipal = session.formateurPrincipal
         ? `${session.formateurPrincipal.prenom} ${session.formateurPrincipal.nom}`
         : 'Non assigné'
-      let salle = session.sallePrincipale || 'Non assignée'
+      let salle = session.salle?.nom || session.sallePrincipale || 'Non assignée'
 
       if (session.notes) {
         try {
@@ -89,8 +94,8 @@ export async function GET(request: NextRequest) {
             totalHeures = metadata.programme.reduce((sum: number, m: any) => sum + (m.heures || 0), 0)
           }
 
-          // Récupérer le nombre de participants
-          if (metadata.nbParticipants) {
+          // Récupérer le nombre de participants — capaciteMax BDD a priorité sur les métadonnées
+          if (!session.capaciteMax && metadata.nbParticipants) {
             nbParticipants = metadata.nbParticipants
           }
 
