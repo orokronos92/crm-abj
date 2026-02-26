@@ -42,10 +42,17 @@ export class DashboardRepository {
   }
 
   /**
-   * Compte le nombre total de candidats
+   * Compte le nombre total de candidats actifs
+   * Exclut les candidats déjà convertis en élèves (INSCRIT, CONVERTI)
    */
   async countCandidats(): Promise<number> {
-    return await prisma.candidat.count()
+    return await prisma.candidat.count({
+      where: {
+        statutDossier: {
+          notIn: ['INSCRIT', 'CONVERTI']
+        }
+      }
+    })
   }
 
   /**
