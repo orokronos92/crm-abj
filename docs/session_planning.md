@@ -400,3 +400,133 @@ Admin renseigne :
 → Planning se met à jour automatiquement
 ```
 
+---
+
+## 9. Ce qui a été livré (25 février 2026 — Phase 2)
+
+### Liste d'attente — Implémentation complète
+
+#### `inscrireEnListeAttente` (webhook callback)
+
+Fonction ajoutée dans `src/app/api/webhook/callback/route.ts`.
+
+Déclenchée automatiquement après `candidat_created` ou `eleve_created` reçu de n8n.
+
+```
+Callback n8n reçu (candidat_created / eleve_created)
+    ↓
+Lookup candidat par numeroDossier
+    ↓
+Lookup ConversionEnCours de ce candidat (fenêtre 24h, sessionVisee non null)
+    ↓
+Lookup session par nomSession (depuis ConversionEnCours.sessionVisee)
+    ↓
+Vérification :
+  - Session non ANNULEE / TERMINEE
+  - Pas déjà inscrit (hors ANNULE)
+    ↓
+Calcul statut :
+  - isEleve (responseType === 'eleve_created') ET place dispo → INSCRIT
+  - Sinon → EN_ATTENTE (avec positionAttente calculée)
+    ↓
+CREATE InscriptionSession
+Si INSCRIT → UPDATE session.nbInscrits + 1
+```
+
+**Règle priorité** :
+- `priorite = 1` pour élève (parcours validé)
+- `priorite = 2` pour candidat (en cours de parcours)
+
+#### `POST /api/sessions/[id]/inscrire`
+
+**Fichier** : `src/app/api/sessions/[id]/inscrire/route.ts`
+
+Permet à l'admin d'ajouter manuellement un candidat ou élève depuis la fiche session.
+
+| Cas | Résultat |
+|-----|----------|
+| ELEVE + place disponible | INSCRIT direct (priorité 1) |
+| CANDIDAT + place disponible | EN_ATTENTE (priorité 2) |
+| Session pleine (tous) | EN_ATTENTE avec position dans la file |
+
+Body : `{ idCandidat?: number, idEleve?: number }` — au moins un requis.
+
+#### `POST /api/sessions/[id]/desister`
+
+**Fichier** : `src/app/api/sessions/[id]/desister/route.ts`
+
+Transaction atomique (Prisma `$transaction`) :
+
+```
+1. UPDATE inscription → statut: ANNULE
+2. Si était INSCRIT :
+   a. UPDATE session.nbInscrits - 1
+   b. Chercher premier EN_ATTENTE (ORDER BY priorite ASC, positionAttente ASC)
+   c. Si trouvé → UPDATE inscription → INSCRIT, dateConfirmation = now()
+   d. UPDATE session.nbInscrits + 1
+   e. Recompacter positions restantes (positionAttente = 1, 2, 3...)
+```
+
+Réponse : `{ success: true, message, promotion: { idInscription, type, nom } | null }`
+
+#### Onglet Élèves — Deux sections distinctes
+
+**Fichier** : `src/app/admin/sessions/page.tsx`
+
+L'onglet "Élèves" est redesigné avec deux sections visuellement séparées :
+
+**Section Inscrits** :
+- Badge ✅ + nombre d'inscrits / capacité max
+- Avatar gradient (violet/bleu = élève, orange/rouge = candidat)
+- Badge type (ÉLÈVE / CANDIDAT)
+- Bouton **Désister** (icône ×, rouge au survol, spinner pendant l'action)
+
+**Section Liste d'attente** :
+- Badge `#N` pour la position dans la file
+- Même style avatar avec distinction élève/candidat
+- Bouton **Retirer** (même logique que Désister)
+
+**Label onglet** : `Élèves (N+M)` quand M > 0 (M = en attente), sinon `Élèves (N)`.
+
+**Toast résultat** : Message de confirmation après désistement, avec indication si quelqu'un a été promu depuis la liste d'attente (ex. : *"Désistement enregistré. Emma Petit a été promue depuis la liste d'attente."*). Dismissible par bouton ×.
+
+#### Nouveaux champs `Session` interface (TypeScript)
+
+```typescript
+interface EleveSession {
+  idInscription: number   // ← nouveau
+  id: number
+  type: 'eleve' | 'candidat'
+  nom: string
+  prenom: string
+  numeroDossier: string
+  statutInscription: string
+  priorite: number        // ← nouveau
+  positionAttente: number | null  // ← nouveau
+  dateInscription: Date | null    // ← nouveau
+  moyenne: number
+  absences: number
+}
+
+// Propriétés ajoutées au state session sélectionnée :
+// inscrits: EleveSession[]
+// listeAttente: EleveSession[]
+```
+
+### État Phase 2
+
+| Élément | Statut |
+|---------|--------|
+| Migration BDD (`idCandidat`, `priorite`, `positionAttente`, `notifiePar`) | ✅ Fait (session précédente) |
+| `GET /api/sessions/[id]` — retourne inscrits + listeAttente séparés | ✅ Fait |
+| `POST /api/sessions/[id]/inscrire` | ✅ Fait |
+| `POST /api/sessions/[id]/desister` + promotion automatique | ✅ Fait |
+| `inscrireEnListeAttente` dans webhook callback | ✅ Fait |
+| Onglet Élèves — UI deux sections (inscrits / attente) | ✅ Fait |
+| Dropdown "Session souhaitée" dans `ConvertirCandidatModal` | ✅ Fait (session précédente) |
+| Notification n8n lors d'une promotion (email au promu) | ⏳ Phase 3 |
+| `POST /api/webhook/session-action` dédié sessions | ⏳ Phase 3 |
+
+**Build** : `✓ Compiled successfully` — 0 erreur TypeScript.
+**Branche** : `feat/session-forms-bdd` (poussée sur GitHub).
+

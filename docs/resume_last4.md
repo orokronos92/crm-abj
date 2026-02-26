@@ -1,5 +1,5 @@
 # Résumé Session 4 : Système Document Qualiopi et Refonte Dataset Complet
-
+p
 **Date** : 12 février 2026
 **Objectif principal** : Implémenter le système de gestion documentaire Qualiopi complet et créer un dataset professionnel adapté aux nouvelles tables
 
