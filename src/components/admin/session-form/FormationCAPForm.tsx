@@ -237,7 +237,7 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
             >
               <option value="">Sélectionner un CAP</option>
               {formations.map(f => (
-                <option key={f.code} value={f.code}>{f.nom}</option>
+                <option key={f.codeFormation} value={f.codeFormation}>{f.nom}</option>
               ))}
             </select>
           </div>
