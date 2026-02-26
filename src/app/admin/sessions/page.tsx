@@ -61,7 +61,7 @@ interface Session {
   id: number
   formation: string
   code_formation: string
-  nom_session: string
+  nom_session: string | null
   formateur_principal: string
   salle: string
   capacite_max: number
@@ -214,9 +214,9 @@ export default function SessionsPage() {
   }, [])
 
   const filteredSessions = sessions.filter(session => {
-    const matchesSearch = session.nom_session.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      session.formation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      session.formateur_principal.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = (session.nom_session ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (session.formation ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (session.formateur_principal ?? '').toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesFilter = activeFilter === 'TOUS' || session.statut_session === activeFilter
 
