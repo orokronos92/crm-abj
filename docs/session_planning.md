@@ -530,3 +530,60 @@ interface EleveSession {
 **Build** : `✓ Compiled successfully` — 0 erreur TypeScript.
 **Branche** : `feat/session-forms-bdd` (poussée sur GitHub).
 
+---
+
+## 10. Corrections et améliorations (27 février 2026)
+
+### Bug — Affichage "0/80" au lieu de "0/8" dans la liste des sessions
+
+**Fichier** : `src/app/api/sessions/route.ts`
+
+**Cause** : La variable `nbParticipants` était initialisée avec `session.capaciteMax` (capacité de la salle, ex: 80). La condition pour utiliser `metadata.nbParticipants` (valeur réelle choisie par l'admin, ex: 8) était inversée — elle ne s'exécutait jamais car `capaciteMax` est toujours défini côté BDD.
+
+**Correction** :
+- `nbParticipants` initialisé à `null` au lieu de `session.capaciteMax`
+- Condition corrigée : `if (metadata.nbParticipants)` (sans `!session.capaciteMax`)
+- Retour : `capacite_max: nbParticipants ?? session.capaciteMax ?? 0` (priorité metadata → BDD → 0)
+
+**Règle** : `metadata.nbParticipants` (valeur admin) a toujours la priorité sur `session.capaciteMax` (capacité de la salle).
+
+---
+
+### Ajout champ `heuresParJour` — Formulaire création session courte
+
+**Fichiers modifiés** :
+- `src/components/admin/session-form/session-form.types.ts`
+- `src/components/admin/session-form/FormationCourteForm.tsx`
+- `src/components/admin/SessionFormModal.tsx`
+
+**Problème** : Sans `heuresParJour`, Marjorie ne pouvait pas résoudre l'équation de planification :
+
+```
+40h ÷ ? h/jour = ? séances à planifier
+```
+
+Une formation de 40h sur 5 lundis consécutifs (8h/jour) n'est pas la même planification que 40h sur 10 lundis (4h/jour).
+
+**Solution** : Ajout d'un 4ème champ `Heures / jour` dans le bloc dates/durée, avec **8h par défaut**.
+
+**Payload n8n enrichi** :
+```json
+{
+  "dureeHeures": 40,
+  "heuresParJour": 8,
+  "nbSeances": 5
+}
+```
+
+**Résumé dynamique** dans le formulaire : affiche le calcul en temps réel
+```
+📅 Fenêtre : 36 jours pour planifier 40h → 5 séances de 8h (1 jour/semaine actif)
+```
+
+**Validations ajoutées** :
+- `heuresParJour` obligatoire
+- `heuresParJour` ne peut pas dépasser `dureeHeures`
+
+**Build** : `✓ Compiled successfully` — 0 erreur TypeScript.
+**Branche** : `feat/session-forms-bdd`.
+
