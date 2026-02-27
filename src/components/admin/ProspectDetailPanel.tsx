@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react'
 import { HistoriqueEchangesModal } from './HistoriqueEchangesModal'
 import { ConvertirCandidatModal } from './ConvertirCandidatModal'
 import { EnvoyerDossierModal } from './EnvoyerDossierModal'
-import { GenererDevisModal } from './GenererDevisModal'
+import { GenererDevisModal, type FormationCatalogue } from './GenererDevisModal'
 import { EnvoyerEmailModal } from './EnvoyerEmailModal'
 import {
   Mail,
@@ -28,6 +28,7 @@ import {
 
 interface ProspectDetailPanelProps {
   prospectId: string
+  formations: FormationCatalogue[]
   onClose: () => void
   onProspectConverti?: (prospectId: string) => void
 }
@@ -64,7 +65,7 @@ const STATUT_COLORS: Record<string, string> = {
   EN_ATTENTE_DOSSIER: 'badge-warning',
 }
 
-export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }: ProspectDetailPanelProps) {
+export function ProspectDetailPanel({ prospectId, formations, onClose, onProspectConverti }: ProspectDetailPanelProps) {
   const [prospect, setProspect] = useState<ProspectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [showHistorique, setShowHistorique] = useState(false)
@@ -369,6 +370,7 @@ export function ProspectDetailPanel({ prospectId, onClose, onProspectConverti }:
             telephone: prospect.telephone,
             formationPrincipale: prospect.formationSouhaitee
           }}
+          formations={formations}
           onClose={() => setShowGenererDevisModal(false)}
           onSuccess={handleGenererDevisSuccess}
         />

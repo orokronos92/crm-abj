@@ -10,6 +10,7 @@ import { Users } from 'lucide-react'
 import { CandidatService } from '@/services/candidat.service'
 import { CandidatsFilters } from '@/components/admin/CandidatsFilters'
 import { CandidatsPageClient } from '@/components/admin/CandidatsPageClient'
+import prisma from '@/lib/prisma'
 
 interface CandidatsPageProps {
   searchParams: Promise<{
@@ -24,6 +25,19 @@ export default async function CandidatsPage({ searchParams }: CandidatsPageProps
   const candidatService = new CandidatService()
   const params = await searchParams
   const { statutDossier, statutFinancement, formation, search } = params
+
+  // Récupérer les formations actives depuis la BDD pour le modal devis
+  const formationsRef = await prisma.formation.findMany({
+    where: { actif: true },
+    select: { codeFormation: true, nom: true, tarifStandard: true, dureeHeures: true },
+    orderBy: { nom: 'asc' }
+  })
+  const formations = formationsRef.map(f => ({
+    code: f.codeFormation,
+    nom: f.nom,
+    tarif: Number(f.tarifStandard ?? 0),
+    duree: f.dureeHeures ? `${f.dureeHeures}h` : 'N/A'
+  }))
 
   // Récupérer les candidats avec filtres
   const { candidats, total } = await candidatService.getCandidats({
@@ -78,7 +92,7 @@ export default async function CandidatsPage({ searchParams }: CandidatsPageProps
         {/* Contenu scrollable */}
         <div className="flex-1 overflow-y-auto pt-6">
           {/* Tableau candidats */}
-          <CandidatsPageClient candidats={candidats} total={total} />
+          <CandidatsPageClient candidats={candidats} total={total} formations={formations} />
         </div>
       </div>
     </DashboardLayout>

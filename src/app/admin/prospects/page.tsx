@@ -32,10 +32,18 @@ export default async function ProspectsPage({ searchParams }: ProspectsPageProps
   // Récupération des formations actives depuis la BDD
   const formationsRef = await prisma.formation.findMany({
     where: { actif: true },
-    select: { codeFormation: true, nom: true },
+    select: { codeFormation: true, nom: true, tarifStandard: true, dureeHeures: true },
     orderBy: { nom: 'asc' }
   })
+  // Pour les filtres (ProspectsFilters)
   const formations = formationsRef.map(f => ({ code: f.codeFormation, label: f.nom }))
+  // Pour le catalogue devis (ProspectsPageClient → modal)
+  const formationsCatalogue = formationsRef.map(f => ({
+    code: f.codeFormation,
+    nom: f.nom,
+    tarif: Number(f.tarifStandard ?? 0),
+    duree: f.dureeHeures ? `${f.dureeHeures}h` : 'N/A'
+  }))
 
   // Récupération des données depuis la BDD avec filtres
   const { prospects, total } = await prospectService.getProspects({
@@ -68,7 +76,7 @@ export default async function ProspectsPage({ searchParams }: ProspectsPageProps
         {/* Contenu scrollable */}
         <div className="flex-1 overflow-y-auto pt-6">
           {/* Composant client pour le tableau interactif */}
-          <ProspectsPageClient prospects={prospects} total={total} />
+          <ProspectsPageClient prospects={prospects} total={total} formations={formationsCatalogue} />
         </div>
       </div>
     </DashboardLayout>

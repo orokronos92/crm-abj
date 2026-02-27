@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { ProspectDetailPanel } from './ProspectDetailPanel'
+import type { FormationCatalogue } from './GenererDevisModal'
 import { MessageSquare, Users } from 'lucide-react'
 
 interface Prospect {
@@ -28,6 +29,7 @@ interface Prospect {
 interface ProspectsPageClientProps {
   prospects: Prospect[]
   total: number
+  formations: FormationCatalogue[]
 }
 
 const STATUT_COLORS: Record<string, string> = {
@@ -47,7 +49,7 @@ const STATUT_COLORS: Record<string, string> = {
   CONTACT: 'badge-info',
 }
 
-export function ProspectsPageClient({ prospects: initialProspects, total: initialTotal }: ProspectsPageClientProps) {
+export function ProspectsPageClient({ prospects: initialProspects, total: initialTotal, formations }: ProspectsPageClientProps) {
   const [prospects, setProspects] = useState<Prospect[]>(initialProspects)
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null)
 
@@ -164,6 +166,7 @@ export function ProspectsPageClient({ prospects: initialProspects, total: initia
       {selectedProspectId && (
         <ProspectDetailPanel
           prospectId={selectedProspectId}
+          formations={formations}
           onClose={() => setSelectedProspectId(null)}
           onProspectConverti={handleProspectConverti}
         />

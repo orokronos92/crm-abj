@@ -4,6 +4,13 @@ import { useState, useRef } from 'react'
 import { X, FileText, CheckCircle, AlertCircle, Loader2, Euro, GraduationCap, CreditCard, User, MessageSquare } from 'lucide-react'
 import { useCallbackListener } from '@/hooks/use-callback-listener'
 
+export interface FormationCatalogue {
+  code: string
+  nom: string
+  tarif: number
+  duree: string
+}
+
 interface GenererDevisModalProps {
   prospect: {
     idProspect: string
@@ -13,17 +20,10 @@ interface GenererDevisModalProps {
     telephone?: string
     formationPrincipale?: string
   }
+  formations: FormationCatalogue[]
   onClose: () => void
   onSuccess: () => void
 }
-
-const FORMATIONS_TARIFS = [
-  { code: 'CAP_BJ', nom: 'CAP Bijouterie-Joaillerie', tarif: 8500, duree: '800h' },
-  { code: 'INIT_BJ', nom: 'Initiation Bijouterie', tarif: 1200, duree: '40h' },
-  { code: 'PERF_SERTI', nom: 'Perfectionnement Sertissage', tarif: 3200, duree: '120h' },
-  { code: 'CAO_DAO', nom: 'CAO/DAO Bijouterie', tarif: 2800, duree: '80h' },
-  { code: 'GEMMO', nom: 'Gemmologie', tarif: 2400, duree: '60h' },
-]
 
 const MODES_FINANCEMENT = [
   { code: 'CPF', nom: 'CPF (Compte Personnel de Formation)' },
@@ -35,6 +35,7 @@ const MODES_FINANCEMENT = [
 
 export function GenererDevisModal({
   prospect,
+  formations,
   onClose,
   onSuccess
 }: GenererDevisModalProps) {
@@ -55,21 +56,22 @@ export function GenererDevisModal({
     timeoutSeconds: 60
   })
 
-  // Trouver la formation par défaut
-  const formationParDefaut = FORMATIONS_TARIFS.find(f =>
+  // Trouver la formation par défaut (correspondance avec formationPrincipale du prospect)
+  const formationParDefaut = formations.find(f =>
     prospect.formationPrincipale && (
       f.nom.toLowerCase().includes(prospect.formationPrincipale.toLowerCase()) ||
-      prospect.formationPrincipale.toLowerCase().includes(f.nom.toLowerCase())
+      prospect.formationPrincipale.toLowerCase().includes(f.nom.toLowerCase()) ||
+      f.code.toLowerCase() === prospect.formationPrincipale.toLowerCase()
     )
-  ) || FORMATIONS_TARIFS[0]
+  ) || formations[0]
 
   const [formData, setFormData] = useState({
-    formationCode: formationParDefaut.code,
+    formationCode: formationParDefaut?.code ?? '',
     modeFinancement: 'CPF',
     messageMarjorie: ''
   })
 
-  const formationSelectionnee = FORMATIONS_TARIFS.find(f => f.code === formData.formationCode) || formationParDefaut
+  const formationSelectionnee = formations.find(f => f.code === formData.formationCode) || formationParDefaut
 
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -295,7 +297,7 @@ export function GenererDevisModal({
                 className="w-full px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
                 disabled={submitting}
               >
-                {FORMATIONS_TARIFS.map((formation) => (
+                {formations.map((formation) => (
                   <option key={formation.code} value={formation.code}>
                     {formation.nom} ({formation.duree}) - {formation.tarif}€
                   </option>

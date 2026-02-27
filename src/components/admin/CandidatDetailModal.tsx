@@ -28,6 +28,7 @@ import {
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { EnvoyerMessageCandidatModal } from './EnvoyerMessageCandidatModal'
 import { GenererDevisCandidatModal } from './GenererDevisCandidatModal'
+import type { FormationCatalogue } from './GenererDevisModal'
 import { ValiderEtapeModal, type EtapeType } from './ValiderEtapeModal'
 import { ConvertirEleveModal } from './ConvertirEleveModal'
 import { RefuserCandidatModal } from './RefuserCandidatModal'
@@ -87,6 +88,7 @@ interface CandidatDetail {
 
 interface CandidatDetailModalProps {
   candidatId: number
+  formations: FormationCatalogue[]
   onClose: () => void
   onCandidatEjecte?: (candidatId: number) => void
 }
@@ -102,7 +104,7 @@ const STATUT_DOCUMENT_COLORS: Record<string, string> = {
 // Statuts pour lesquels les actions Refuser/Convertir sont masquées
 const STATUTS_TERMINES = ['REFUSE', 'INSCRIT']
 
-export function CandidatDetailModal({ candidatId, onClose, onCandidatEjecte }: CandidatDetailModalProps) {
+export function CandidatDetailModal({ candidatId, formations, onClose, onCandidatEjecte }: CandidatDetailModalProps) {
   const [candidat, setCandidat] = useState<CandidatDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('general')
@@ -635,6 +637,7 @@ export function CandidatDetailModal({ candidatId, onClose, onCandidatEjecte }: C
             telephone: candidat.telephone,
             formation: candidat.formation
           }}
+          formations={formations}
           onClose={() => setShowGenererDevisModal(false)}
           onSuccess={rechargerCandidat}
         />

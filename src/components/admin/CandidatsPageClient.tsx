@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { CandidatDetailModal } from './CandidatDetailModal'
+import type { FormationCatalogue } from './GenererDevisModal'
 
 interface Candidat {
   id: number
@@ -27,9 +28,10 @@ interface Candidat {
 interface CandidatsPageClientProps {
   candidats: Candidat[]
   total: number
+  formations: FormationCatalogue[]
 }
 
-export function CandidatsPageClient({ candidats: initialCandidats, total: initialTotal }: CandidatsPageClientProps) {
+export function CandidatsPageClient({ candidats: initialCandidats, total: initialTotal, formations }: CandidatsPageClientProps) {
   const [candidats, setCandidats] = useState<Candidat[]>(initialCandidats)
   const [total, setTotal] = useState(initialTotal)
   const [selectedCandidatId, setSelectedCandidatId] = useState<number | null>(null)
@@ -160,6 +162,7 @@ export function CandidatsPageClient({ candidats: initialCandidats, total: initia
       {selectedCandidatId && (
         <CandidatDetailModal
           candidatId={selectedCandidatId}
+          formations={formations}
           onClose={() => setSelectedCandidatId(null)}
           onCandidatEjecte={handleCandidatEjecte}
         />
