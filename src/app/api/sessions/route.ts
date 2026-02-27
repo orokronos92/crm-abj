@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
       // Extraire les vraies données depuis les métadonnées
       let totalHeures = 0
-      let nbParticipants = session.capaciteMax // Par défaut, prendre capaciteMax
+      let nbParticipants: number | null = null // Sera rempli depuis les métadonnées ou capaciteMax
       let formateurPrincipal = session.formateurPrincipal
         ? `${session.formateurPrincipal.prenom} ${session.formateurPrincipal.nom}`
         : 'Non assigné'
@@ -94,8 +94,9 @@ export async function GET(request: NextRequest) {
             totalHeures = metadata.programme.reduce((sum: number, m: any) => sum + (m.heures || 0), 0)
           }
 
-          // Récupérer le nombre de participants — capaciteMax BDD a priorité sur les métadonnées
-          if (!session.capaciteMax && metadata.nbParticipants) {
+          // Récupérer le nombre de participants — nbParticipants des métadonnées a priorité sur capaciteMax BDD
+          // (capaciteMax BDD peut refléter la capacité de la salle, pas le nombre de participants choisi)
+          if (metadata.nbParticipants) {
             nbParticipants = metadata.nbParticipants
           }
 
@@ -149,7 +150,7 @@ export async function GET(request: NextRequest) {
         nom_session: session.nomSession,
         formateur_principal: formateurPrincipal,
         salle: salle,
-        capacite_max: nbParticipants,
+        capacite_max: nbParticipants ?? session.capaciteMax ?? 0,
         places_prises: session.nbInscrits || session.inscriptionsSessions.length,
         liste_attente: 0, // TODO: implémenter liste d'attente
         date_debut: session.dateDebut.toISOString().split('T')[0],
