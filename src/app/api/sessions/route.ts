@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
         nom_session: session.nomSession,
         formateur_principal: formateurPrincipal,
         salle: salle,
-        capacite_max: nbParticipants ?? session.capaciteMax ?? 0,
+        capacite_max: session.capaciteMax || nbParticipants || 0,
         places_prises: session.nbInscrits || session.inscriptionsSessions.length,
         liste_attente: 0, // TODO: implémenter liste d'attente
         date_debut: session.dateDebut.toISOString().split('T')[0],

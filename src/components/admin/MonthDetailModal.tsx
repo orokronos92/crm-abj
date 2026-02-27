@@ -94,11 +94,19 @@ export function MonthDetailModal({
         const codeFormation = session?.codeFormation || ''
         const nomFormation = session?.formation || session?.nom || 'Formation'
 
-        // Couleur selon le code formation, texte = nom réel de la formation
-        if (codeFormation.includes('CAP')) return { type: nomFormation, color: 'success' }
-        if (codeFormation.includes('SERTI')) return { type: nomFormation, color: 'info' }
-        if (codeFormation.includes('CAO') || codeFormation.includes('DAO')) return { type: nomFormation, color: 'info' }
-        return { type: nomFormation, color: 'accent' }
+        // Acronyme : initiales de chaque mot en majuscules (ex: "Atelier ciselure email" → "ACE")
+        const acronyme = nomFormation
+          .split(/[\s\/\-]+/)
+          .filter(Boolean)
+          .map((mot: string) => mot[0].toUpperCase())
+          .join('')
+          .slice(0, 4)
+
+        // Couleur selon le code formation, texte = acronyme lisible
+        if (codeFormation.includes('CAP')) return { type: acronyme, color: 'success' }
+        if (codeFormation.includes('SERTI')) return { type: acronyme, color: 'info' }
+        if (codeFormation.includes('CAO') || codeFormation.includes('DAO')) return { type: acronyme, color: 'info' }
+        return { type: acronyme, color: 'accent' }
       }
       if (reservation.idEvenement) return { type: 'Événement', color: 'warning' }
       return { type: 'Réservé', color: 'accent' }
