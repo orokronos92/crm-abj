@@ -91,11 +91,14 @@ export function MonthDetailModal({
       // Identifier le type via session liée
       if (reservation.idSession) {
         const session = sessions.find(s => s.id === reservation.idSession)
-        const formation = session?.formation || session?.nom || ''
-        if (formation.includes('CAP')) return { type: 'CAP', color: 'success' }
-        if (formation.includes('Sertissage')) return { type: 'Sertissage', color: 'info' }
-        if (formation.includes('CAO')) return { type: 'CAO/DAO', color: 'accent' }
-        return { type: 'Formation', color: 'accent' }
+        const codeFormation = session?.codeFormation || ''
+        const nomFormation = session?.formation || session?.nom || 'Formation'
+
+        // Couleur selon le code formation, texte = nom réel de la formation
+        if (codeFormation.includes('CAP')) return { type: nomFormation, color: 'success' }
+        if (codeFormation.includes('SERTI')) return { type: nomFormation, color: 'info' }
+        if (codeFormation.includes('CAO') || codeFormation.includes('DAO')) return { type: nomFormation, color: 'info' }
+        return { type: nomFormation, color: 'accent' }
       }
       if (reservation.idEvenement) return { type: 'Événement', color: 'warning' }
       return { type: 'Réservé', color: 'accent' }
