@@ -101,11 +101,8 @@ export async function GET(request: NextRequest) {
             totalHeures = metadata.programme.reduce((sum: number, m: any) => sum + (m.heures || 0), 0)
           }
 
-          // Récupérer le nombre de participants — nbParticipants des métadonnées a priorité sur capaciteMax BDD
-          // (capaciteMax BDD peut refléter la capacité de la salle, pas le nombre de participants choisi)
-          if (metadata.nbParticipants) {
-            nbParticipants = metadata.nbParticipants
-          }
+          // nbParticipants des métadonnées ignoré — n8n écrit directement capaciteMax en BDD
+          // Les anciennes métadonnées contiennent la capacité de la salle (ex: 80) et non le nb de participants
 
           // Récupérer le formateur principal depuis les métadonnées si pas déjà défini
           if (formateurPrincipal === 'Non assigné' && metadata.formateurs && metadata.formateurs.length > 0) {
@@ -184,7 +181,7 @@ export async function GET(request: NextRequest) {
         nom_session: session.nomSession,
         formateur_principal: formateurPrincipal,
         salle: salle,
-        capacite_max: session.capaciteMax || nbParticipants || 0,
+        capacite_max: session.capaciteMax ?? 0,
         places_prises: session.nbInscrits || session.inscriptionsSessions.length,
         liste_attente: 0, // TODO: implémenter liste d'attente
         date_debut: session.dateDebut.toISOString().split('T')[0],
