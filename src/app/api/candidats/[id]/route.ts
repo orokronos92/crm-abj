@@ -50,14 +50,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Candidat non trouvé' }, { status: 404 })
     }
 
-    // Mapper les codes formation vers labels
-    const formationLabels: Record<string, string> = {
-      'CAP_BJ': 'CAP Bijouterie-Joaillerie',
-      'INIT_BJ': 'Initiation Bijouterie',
-      'PERF_SERTI': 'Perfectionnement Sertissage',
-      'CAO_DAO': 'CAO/DAO Bijouterie',
-      'GEMMO': 'Gemmologie'
-    }
+    // Récupérer le nom de la formation depuis la BDD (pas de hardcode)
+    const formationBdd = candidat.formationRetenue
+      ? await prisma.formation.findFirst({
+          where: { codeFormation: candidat.formationRetenue },
+          select: { nom: true }
+        })
+      : null
 
     // Formater pour le frontend
     const formatted = {
@@ -68,7 +67,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       prenom: candidat.prospect?.prenom || '',
       email: candidat.prospect?.emails?.[0] || '',
       telephone: candidat.prospect?.telephones?.[0] || '',
-      formation: formationLabels[candidat.formationRetenue || ''] || candidat.formationRetenue || 'Non définie',
+      formation: formationBdd?.nom || candidat.formationRetenue || 'Non définie',
       session: candidat.sessionVisee || 'Non définie',
       statut_dossier: candidat.statutDossier || 'RECU',
       statut_financement: candidat.statutFinancement || 'EN_ATTENTE',
