@@ -75,7 +75,7 @@ interface Session {
   rapport_ia?: string | null
   notes?: string | null
   duree_jours: number
-  duree_heures: number
+  duree_heures: number | null
   heures_effectuees?: number
   formateurs_secondaires: string[]
   moyenne_session?: number
@@ -488,7 +488,7 @@ export default function SessionsPage() {
                           <div>
                             <p className="text-xs text-[rgb(var(--muted-foreground))]">Durée</p>
                             <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.duree_heures}h ({session.duree_jours}j)
+                              {session.duree_heures != null ? `${session.duree_heures}h (${session.duree_jours}j)` : `${session.duree_jours}j`}
                             </p>
                           </div>
                         </div>
@@ -572,7 +572,7 @@ export default function SessionsPage() {
                         {STATUT_LABELS[selectedSession.statut_session] || STATUT_LABELS[selectedSession.statut] || selectedSession.statut_session}
                       </span>
                       <span className="px-4 py-1.5 text-sm rounded-full bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] border border-[rgba(var(--accent),0.3)]">
-                        {selectedSession.duree_heures}h - {selectedSession.duree_jours} jours
+                        {selectedSession.duree_heures != null ? `${selectedSession.duree_heures}h - ` : ''}{selectedSession.duree_jours} jours
                       </span>
                     </div>
                   </div>
@@ -736,7 +736,7 @@ export default function SessionsPage() {
                           <p className="text-xs text-[rgb(var(--muted-foreground))]">Durée totale</p>
                         </div>
                         <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                          {selectedSession.duree_heures}h ({selectedSession.duree_jours} jours)
+                          {selectedSession.duree_heures != null ? `${selectedSession.duree_heures}h (${selectedSession.duree_jours} jours)` : `${selectedSession.duree_jours} jours`}
                         </p>
                       </div>
                     </div>

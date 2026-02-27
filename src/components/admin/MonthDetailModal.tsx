@@ -113,21 +113,7 @@ export function MonthDetailModal({
       return { type: 'Événement', color: 'accent' }
     }
 
-    // 3. Fallback : session sans réservation précise (journée entière)
-    const dateJour = new Date(annee, mois, jourNumero)
-    const sessionJour = sessions.find(s => {
-      const sessionDebut = new Date(s.dateDebut)
-      const sessionFin = new Date(s.dateFin)
-      return dateJour >= sessionDebut && dateJour <= sessionFin
-    })
-    if (sessionJour) {
-      const formation = sessionJour.formation || sessionJour.nom || ''
-      if (formation.includes('CAP')) return { type: 'CAP', color: 'success' }
-      if (formation.includes('Sertissage')) return { type: 'Sertissage', color: 'info' }
-      if (formation.includes('CAO')) return { type: 'CAO/DAO', color: 'accent' }
-      return { type: 'Formation', color: 'accent' }
-    }
-
+    // Pas de réservation précise pour ce créneau → disponible
     return null
   }
 

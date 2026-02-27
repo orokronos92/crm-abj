@@ -62,6 +62,13 @@ export async function GET(request: NextRequest) {
             idInscription: true,
           }
         },
+        reservationsSalles: {
+          select: {
+            dateDebut: true,
+            dateFin: true,
+            statut: true,
+          }
+        },
       },
       orderBy: {
         creeLe: 'desc'
@@ -143,6 +150,33 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Calculer les vraies heures depuis les réservations (créneaux précis)
+      // Sommer (dateFin - dateDebut) pour chaque réservation non annulée
+      const heuresReservations = session.reservationsSalles
+        .filter(r => r.statut !== 'ANNULE')
+        .reduce((sum, r) => {
+          const dureeMs = new Date(r.dateFin).getTime() - new Date(r.dateDebut).getTime()
+          return sum + dureeMs / (1000 * 60 * 60)
+        }, 0)
+
+      // Compter les jours distincts occupés par les réservations
+      const joursDistinctsReservations = new Set(
+        session.reservationsSalles
+          .filter(r => r.statut !== 'ANNULE')
+          .map(r => new Date(r.dateDebut).toISOString().split('T')[0])
+      ).size
+
+      // Priorité : réservations réelles > métadonnées > fenêtre de dates × 7h (estimation)
+      const dureeHeuresFinale = heuresReservations > 0
+        ? Math.round(heuresReservations)
+        : totalHeures > 0
+        ? totalHeures
+        : null
+
+      const dureeJoursFinale = joursDistinctsReservations > 0
+        ? joursDistinctsReservations
+        : dureeJours
+
       return {
         id: session.idSession,
         formation: session.formation?.nom || 'Formation non définie',
@@ -161,8 +195,8 @@ export async function GET(request: NextRequest) {
         rapport_ia: session.rapportIA,
         notes: session.notes,
         // Champs supplémentaires pour le modal de détail
-        duree_jours: dureeJours,
-        duree_heures: totalHeures > 0 ? totalHeures : dureeJours * 7, // Vraies heures ou estimation
+        duree_jours: dureeJoursFinale,
+        duree_heures: dureeHeuresFinale, // null si pas encore planifié
         formateurs_secondaires: [], // À implémenter plus tard si nécessaire
       }
     })
