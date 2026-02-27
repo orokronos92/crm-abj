@@ -40,6 +40,7 @@ export interface FormationCourteData {
   dateDebut: string
   dateFin: string
   dureeHeures: number       // Durée totale en heures (ex: 40h, 4h...) — n8n planifie
+  heuresParJour: number     // Durée d'une séance (ex: 4h ou 8h) — n8n calcule nb séances = dureeHeures / heuresParJour
   joursActifs: JourSemaine[]
   nbParticipants: number
   salleId?: number

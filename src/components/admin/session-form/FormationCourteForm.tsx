@@ -46,6 +46,7 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
     dateDebut: '',
     dateFin: '',
     dureeHeures: 0,
+    heuresParJour: 8,
     joursActifs: ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI'],
     nbParticipants: 8,
     description: '',
@@ -128,6 +129,8 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
       newErrors.push('La date de fin doit être après la date de début')
     }
     if (!formData.dureeHeures || formData.dureeHeures <= 0) newErrors.push('Durée en heures requise')
+    if (!formData.heuresParJour || formData.heuresParJour <= 0) newErrors.push('Heures par jour requises')
+    if (formData.heuresParJour > formData.dureeHeures) newErrors.push('Les heures par jour ne peuvent pas dépasser la durée totale')
     if (formData.joursActifs.length === 0) newErrors.push('Au moins un jour actif requis')
     if (formData.nbParticipants <= 0) newErrors.push('Nombre de participants invalide')
 
@@ -187,7 +190,7 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
       </div>
 
       {/* Dates + Durée heures */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
             <Calendar className="w-4 h-4 inline mr-1" />
@@ -217,7 +220,7 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
         <div>
           <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
             <Clock className="w-4 h-4 inline mr-1" />
-            Durée totale (heures) *
+            Durée totale (h) *
           </label>
           <input
             type="number"
@@ -229,17 +232,37 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
             required
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
+            <Clock className="w-4 h-4 inline mr-1" />
+            Heures / jour *
+          </label>
+          <input
+            type="number"
+            value={formData.heuresParJour || ''}
+            onChange={(e) => setFormData({ ...formData, heuresParJour: parseInt(e.target.value) || 0 })}
+            className="w-full px-4 py-2.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+            min="1"
+            max="12"
+            placeholder="ex: 8"
+            required
+          />
+        </div>
       </div>
 
       {/* Résumé fenêtre temporelle */}
-      {nbJours > 0 && formData.dureeHeures > 0 && (
+      {nbJours > 0 && formData.dureeHeures > 0 && formData.heuresParJour > 0 && (
         <div className="p-3 bg-[rgba(var(--accent),0.08)] border border-[rgba(var(--accent),0.2)] rounded-lg">
           <p className="text-sm text-[rgb(var(--foreground))]">
             📅 Fenêtre : <span className="font-bold">{nbJours} jours</span> pour planifier{' '}
             <span className="font-bold">{formData.dureeHeures}h</span> de formation
+            {' '}→{' '}
+            <span className="font-bold text-[rgb(var(--accent))]">
+              {Math.ceil(formData.dureeHeures / formData.heuresParJour)} séance{Math.ceil(formData.dureeHeures / formData.heuresParJour) > 1 ? 's' : ''} de {formData.heuresParJour}h
+            </span>
             {formData.joursActifs.length > 0 && (
               <span className="text-[rgb(var(--muted-foreground))]">
-                {' '}({formData.joursActifs.length} jour{formData.joursActifs.length > 1 ? 's' : ''}/semaine)
+                {' '}({formData.joursActifs.length} jour{formData.joursActifs.length > 1 ? 's' : ''}/semaine actif{formData.joursActifs.length > 1 ? 's' : ''})
               </span>
             )}
           </p>
