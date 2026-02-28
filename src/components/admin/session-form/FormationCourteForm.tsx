@@ -258,7 +258,15 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
             <span className="font-bold">{formData.dureeHeures}h</span> de formation
             {' '}→{' '}
             <span className="font-bold text-[rgb(var(--accent))]">
-              {Math.ceil(formData.dureeHeures / formData.heuresParJour)} séance{Math.ceil(formData.dureeHeures / formData.heuresParJour) > 1 ? 's' : ''} de {formData.heuresParJour}h
+              {(() => {
+                const seancesCompletes = Math.floor(formData.dureeHeures / formData.heuresParJour)
+                const reliquat = formData.dureeHeures % formData.heuresParJour
+                const totalJours = seancesCompletes + (reliquat > 0 ? 1 : 0)
+                if (reliquat === 0) {
+                  return `${totalJours} jour${totalJours > 1 ? 's' : ''} de ${formData.heuresParJour}h`
+                }
+                return `${totalJours} jours (${seancesCompletes}×${formData.heuresParJour}h + 1×${reliquat}h)`
+              })()}
             </span>
             {formData.joursActifs.length > 0 && (
               <span className="text-[rgb(var(--muted-foreground))]">
