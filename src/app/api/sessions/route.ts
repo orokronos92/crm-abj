@@ -101,8 +101,12 @@ export async function GET(request: NextRequest) {
             totalHeures = metadata.programme.reduce((sum: number, m: any) => sum + (m.heures || 0), 0)
           }
 
-          // nbParticipants des métadonnées ignoré — n8n écrit directement capaciteMax en BDD
-          // Les anciennes métadonnées contiennent la capacité de la salle (ex: 80) et non le nb de participants
+          // Lire le vrai nombre de participants depuis les métadonnées du formulaire
+          // informationsGenerales.nbParticipants = valeur choisie par l'admin (ex: 8)
+          // session.capaciteMax en BDD = capacité de la salle (ex: 80) — pas la bonne valeur
+          if (metadata.informationsGenerales?.nbParticipants) {
+            nbParticipants = metadata.informationsGenerales.nbParticipants
+          }
 
           // Récupérer le formateur principal depuis les métadonnées si pas déjà défini
           if (formateurPrincipal === 'Non assigné' && metadata.formateurs && metadata.formateurs.length > 0) {
@@ -181,7 +185,7 @@ export async function GET(request: NextRequest) {
         nom_session: session.nomSession,
         formateur_principal: formateurPrincipal,
         salle: salle,
-        capacite_max: session.capaciteMax ?? 0,
+        capacite_max: nbParticipants ?? session.capaciteMax ?? 0,
         places_prises: session.nbInscrits || session.inscriptionsSessions.length,
         liste_attente: 0, // TODO: implémenter liste d'attente
         date_debut: session.dateDebut.toISOString().split('T')[0],
