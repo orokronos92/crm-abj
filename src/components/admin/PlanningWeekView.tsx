@@ -17,9 +17,9 @@ const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2
 const GRID_HEIGHT = SLOT_HEIGHT * TOTAL_SLOTS
 
 // Couleurs lignes de grille (hex direct — rgba(var()) ne marche PAS en inline style)
-const LINE_HOUR = '#d4af3750'    // ligne heure pleine — jaune ABJ
-const LINE_HALF = '#ffffff22'    // ligne demi-heure — blanc visible
-const COL_BORDER = '#ffffff10'   // séparation colonnes jours
+const LINE_HOUR_COLOR = '#d4af37'  // jaune ABJ pour heures pleines
+const LINE_HALF_COLOR = '#ffffff30' // blanc pour demi-heures
+const COL_BORDER = '#ffffff10'     // séparation colonnes jours
 
 interface Reservation {
   id: number
@@ -191,7 +191,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
       {/* Grille scrollable */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         {/* Header jours (sticky) */}
-        <div className="flex sticky top-0 z-10" style={{ backgroundColor: '#1a1a1a', borderBottom: `1px solid ${LINE_HOUR}` }}>
+        <div className="flex sticky top-0 z-10" style={{ backgroundColor: '#1a1a1a', borderBottom: `1px solid ${LINE_HOUR_COLOR}50` }}>
           <div className="flex-shrink-0" style={{ width: 56 }} />
           {jours.map(j => {
             const today = j.toDateString() === new Date().toDateString()
@@ -219,9 +219,10 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
               key={`gl${i}`}
               className="absolute left-0 right-0"
               style={{
-                top: line.top,
-                height: 1,
-                backgroundColor: line.isHour ? LINE_HOUR : LINE_HALF,
+                top: line.isHour ? line.top - 1 : line.top,
+                height: line.isHour ? 2 : 1,
+                backgroundColor: line.isHour ? LINE_HOUR_COLOR : LINE_HALF_COLOR,
+                opacity: line.isHour ? 0.45 : 1,
               }}
             />
           ))}
@@ -299,7 +300,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
       </div>
 
       {/* Légende */}
-      <div className="flex items-center gap-5 px-4 py-2 flex-shrink-0 text-[11px]" style={{ borderTop: `1px solid ${LINE_HOUR}`, backgroundColor: '#1a1a1a' }}>
+      <div className="flex items-center gap-5 px-4 py-2 flex-shrink-0 text-[11px]" style={{ borderTop: `1px solid ${LINE_HOUR_COLOR}50`, backgroundColor: '#1a1a1a' }}>
         {[
           { key: 'cap', label: 'CAP / Formation' },
           { key: 'serti', label: 'Sertissage / CAO' },
