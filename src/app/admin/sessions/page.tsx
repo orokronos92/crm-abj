@@ -283,94 +283,92 @@ export default function SessionsPage() {
 
           {/* Statistiques globales */}
           <div className="grid grid-cols-5 gap-4">
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Total sessions</p>
-                <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {sessions.length}
-                </p>
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Total sessions</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
+                    {sessions.length}
+                  </p>
+                </div>
+                <BookOpen className="w-8 h-8 text-[rgb(var(--accent))]" />
               </div>
-              <BookOpen className="w-8 h-8 text-[rgb(var(--accent))]" />
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">En cours</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">
+                    {statsParStatut.EN_COURS}
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-[rgb(var(--success))]" />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">En analyse</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--warning))] mt-1">
+                    {statsParStatut.EN_ANALYSE}
+                  </p>
+                </div>
+                <Clock className="w-8 h-8 text-[rgb(var(--warning))]" />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Élèves total</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
+                    {sessions.reduce((sum, s) => sum + s.places_prises, 0)}
+                  </p>
+                </div>
+                <Users className="w-8 h-8 text-[rgb(var(--foreground))]" />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Places disponibles</p>
+                  <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
+                    {sessions.reduce((sum, s) => sum + (s.capacite_max - s.places_prises), 0)}
+                  </p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-[rgb(var(--accent))]" />
+              </div>
             </div>
           </div>
 
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">En cours</p>
-                <p className="text-3xl font-bold text-[rgb(var(--success))] mt-1">
-                  {statsParStatut.EN_COURS}
-                </p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-[rgb(var(--success))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">En analyse</p>
-                <p className="text-3xl font-bold text-[rgb(var(--warning))] mt-1">
-                  {statsParStatut.EN_ANALYSE}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-[rgb(var(--warning))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Élèves total</p>
-                <p className="text-3xl font-bold text-[rgb(var(--foreground))] mt-1">
-                  {sessions.reduce((sum, s) => sum + s.places_prises, 0)}
-                </p>
-              </div>
-              <Users className="w-8 h-8 text-[rgb(var(--foreground))]" />
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Places disponibles</p>
-                <p className="text-3xl font-bold text-[rgb(var(--accent))] mt-1">
-                  {sessions.reduce((sum, s) => sum + (s.capacite_max - s.places_prises), 0)}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-[rgb(var(--accent))]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Filtres par onglets */}
-        <div className="card p-1">
-          <div className="flex gap-2">
-            {(['TOUS', 'EN_COURS', 'INSCRIPTIONS_OUVERTES', 'A_VENIR', 'TERMINEE'] as StatutFilter[]).map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  activeFilter === filter
+          {/* Filtres par onglets */}
+          <div className="card p-1">
+            <div className="flex gap-2">
+              {(['TOUS', 'EN_COURS', 'INSCRIPTIONS_OUVERTES', 'A_VENIR', 'TERMINEE'] as StatutFilter[]).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeFilter === filter
                     ? 'bg-[rgb(var(--accent))] text-[rgb(var(--primary))]'
                     : 'text-[rgb(var(--muted-foreground))] hover:bg-[rgb(var(--secondary))]'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <span>{filter === 'TOUS' ? 'Toutes' : STATUT_LABELS[filter]}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
-                    activeFilter === filter
+                    }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <span>{filter === 'TOUS' ? 'Toutes' : STATUT_LABELS[filter]}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${activeFilter === filter
                       ? 'bg-[rgba(var(--primary),0.2)] text-[rgb(var(--primary))]'
                       : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))]'
-                  }`}>
-                    {statsParStatut[filter]}
-                  </span>
-                </div>
-              </button>
-            ))}
+                      }`}>
+                      {statsParStatut[filter]}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
           {/* Recherche */}
           <div className="card p-4">
@@ -403,147 +401,147 @@ export default function SessionsPage() {
 
           {/* Grille sessions */}
           {!loading && (
-          <div className="grid grid-cols-1 gap-4">
-          {filteredSessions.map((session) => (
-            <div
-              key={session.id}
-              onClick={() => loadElevesSession(session)}
-              className="card p-6 hover:border-[rgb(var(--accent))] cursor-pointer transition-all"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="w-7 h-7 text-[rgb(var(--primary))]" />
-                    </div>
-
+            <div className="grid grid-cols-1 gap-4">
+              {filteredSessions.map((session) => (
+                <div
+                  key={session.id}
+                  onClick={() => loadElevesSession(session)}
+                  className="card p-6 hover:border-[rgb(var(--accent))] cursor-pointer transition-all"
+                >
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-xl font-bold text-[rgb(var(--foreground))] mb-1">
-                            {session.nom_session}
-                          </h3>
-                          <p className="text-sm text-[rgb(var(--muted-foreground))]">
-                            {session.formation}
-                          </p>
-                        </div>
-                        <span className={`px-4 py-1.5 text-sm rounded-full ${STATUT_COLORS[session.statut_session] || STATUT_COLORS[session.statut] || ''}`}>
-                          {STATUT_LABELS[session.statut_session] || STATUT_LABELS[session.statut] || session.statut_session}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-6 gap-4 mt-4">
-                        {/* Dates */}
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-[rgb(var(--accent))]" />
-                          <div>
-                            <p className="text-xs text-[rgb(var(--muted-foreground))]">Période</p>
-                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {formatDate(session.date_debut)} → {formatDate(session.date_fin)}
-                            </p>
-                          </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="w-7 h-7 text-[rgb(var(--primary))]" />
                         </div>
 
-                        {/* Formateur */}
-                        <div className="flex items-center gap-2">
-                          <Award className="w-4 h-4 text-[rgb(var(--accent))]" />
-                          <div>
-                            <p className="text-xs text-[rgb(var(--muted-foreground))]">Formateur</p>
-                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.formateur_principal}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Salle */}
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-[rgb(var(--accent))]" />
-                          <div>
-                            <p className="text-xs text-[rgb(var(--muted-foreground))]">Salle</p>
-                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.salle}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Places */}
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-[rgb(var(--accent))]" />
-                          <div>
-                            <p className="text-xs text-[rgb(var(--muted-foreground))]">Places</p>
-                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.places_prises}/{session.capacite_max}
-                              {session.liste_attente && session.liste_attente > 0 && (
-                                <span className="ml-1 text-xs text-[rgb(var(--warning))]">
-                                  (+{session.liste_attente} attente)
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Durée */}
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-[rgb(var(--accent))]" />
-                          <div>
-                            <p className="text-xs text-[rgb(var(--muted-foreground))]">Durée</p>
-                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                              {session.duree_heures != null ? `${session.duree_heures}h (${session.duree_jours}j)` : `${session.duree_jours}j`}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Progression ou Taux remplissage */}
-                        {session.statut_session === 'EN_COURS' ? (
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-[rgb(var(--success))]" />
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-3">
                             <div>
-                              <p className="text-xs text-[rgb(var(--muted-foreground))]">Progression</p>
-                              <p className={`text-sm font-bold ${getProgressionColor(getProgressionHeures(session))}`}>
-                                {getProgressionHeures(session)}%
+                              <h3 className="text-xl font-bold text-[rgb(var(--foreground))] mb-1">
+                                {session.nom_session}
+                              </h3>
+                              <p className="text-sm text-[rgb(var(--muted-foreground))]">
+                                {session.formation}
                               </p>
                             </div>
+                            <span className={`px-4 py-1.5 text-sm rounded-full ${STATUT_COLORS[session.statut_session] || STATUT_COLORS[session.statut] || ''}`}>
+                              {STATUT_LABELS[session.statut_session] || STATUT_LABELS[session.statut] || session.statut_session}
+                            </span>
                           </div>
-                        ) : session.statut_session === 'INSCRIPTIONS_OUVERTES' ? (
-                          <div className="flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4 text-[rgb(var(--accent))]" />
-                            <div>
-                              <p className="text-xs text-[rgb(var(--muted-foreground))]">Remplissage</p>
-                              <p className={`text-sm font-bold ${getProgressionColor(getTauxRemplissage(session))}`}>
-                                {getTauxRemplissage(session)}%
-                              </p>
+
+                          <div className="grid grid-cols-6 gap-4 mt-4">
+                            {/* Dates */}
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-[rgb(var(--accent))]" />
+                              <div>
+                                <p className="text-xs text-[rgb(var(--muted-foreground))]">Période</p>
+                                <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                  {formatDate(session.date_debut)} → {formatDate(session.date_fin)}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        ) : session.statut_session === 'TERMINEE' && session.moyenne_session ? (
-                          <div className="flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4 text-[rgb(var(--success))]" />
-                            <div>
-                              <p className="text-xs text-[rgb(var(--muted-foreground))]">Moyenne</p>
-                              <p className="text-sm font-bold text-[rgb(var(--success))]">
-                                {session.moyenne_session.toFixed(1)}/20
-                              </p>
+
+                            {/* Formateur */}
+                            <div className="flex items-center gap-2">
+                              <Award className="w-4 h-4 text-[rgb(var(--accent))]" />
+                              <div>
+                                <p className="text-xs text-[rgb(var(--muted-foreground))]">Formateur</p>
+                                <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                  {session.formateur_principal}
+                                </p>
+                              </div>
                             </div>
+
+                            {/* Salle */}
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-[rgb(var(--accent))]" />
+                              <div>
+                                <p className="text-xs text-[rgb(var(--muted-foreground))]">Salle</p>
+                                <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                  {session.salle}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Places */}
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-[rgb(var(--accent))]" />
+                              <div>
+                                <p className="text-xs text-[rgb(var(--muted-foreground))]">Places</p>
+                                <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                  {session.places_prises}/{session.capacite_max}
+                                  {(session.liste_attente ?? 0) > 0 && (
+                                    <span className="ml-1 text-xs text-[rgb(var(--warning))]">
+                                      (+{session.liste_attente} attente)
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Durée */}
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-[rgb(var(--accent))]" />
+                              <div>
+                                <p className="text-xs text-[rgb(var(--muted-foreground))]">Durée</p>
+                                <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                  {session.duree_heures != null ? `${session.duree_heures}h (${session.duree_jours}j)` : `${session.duree_jours}j`}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Progression ou Taux remplissage */}
+                            {session.statut_session === 'EN_COURS' ? (
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4 text-[rgb(var(--success))]" />
+                                <div>
+                                  <p className="text-xs text-[rgb(var(--muted-foreground))]">Progression</p>
+                                  <p className={`text-sm font-bold ${getProgressionColor(getProgressionHeures(session))}`}>
+                                    {getProgressionHeures(session)}%
+                                  </p>
+                                </div>
+                              </div>
+                            ) : session.statut_session === 'INSCRIPTIONS_OUVERTES' ? (
+                              <div className="flex items-center gap-2">
+                                <BarChart3 className="w-4 h-4 text-[rgb(var(--accent))]" />
+                                <div>
+                                  <p className="text-xs text-[rgb(var(--muted-foreground))]">Remplissage</p>
+                                  <p className={`text-sm font-bold ${getProgressionColor(getTauxRemplissage(session))}`}>
+                                    {getTauxRemplissage(session)}%
+                                  </p>
+                                </div>
+                              </div>
+                            ) : session.statut_session === 'TERMINEE' && session.moyenne_session ? (
+                              <div className="flex items-center gap-2">
+                                <BarChart3 className="w-4 h-4 text-[rgb(var(--success))]" />
+                                <div>
+                                  <p className="text-xs text-[rgb(var(--muted-foreground))]">Moyenne</p>
+                                  <p className="text-sm font-bold text-[rgb(var(--success))]">
+                                    {session.moyenne_session.toFixed(1)}/20
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div></div>
+                            )}
                           </div>
-                        ) : (
-                          <div></div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              ))}
 
-          {filteredSessions.length === 0 && (
-            <div className="card p-12 text-center">
-              <BookOpen className="w-16 h-16 text-[rgb(var(--muted-foreground))] mx-auto mb-4 opacity-50" />
-              <p className="text-lg text-[rgb(var(--muted-foreground))]">
-                Aucune session trouvée
-              </p>
+              {filteredSessions.length === 0 && (
+                <div className="card p-12 text-center">
+                  <BookOpen className="w-16 h-16 text-[rgb(var(--muted-foreground))] mx-auto mb-4 opacity-50" />
+                  <p className="text-lg text-[rgb(var(--muted-foreground))]">
+                    Aucune session trouvée
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-          </div>
           )}
         </div>
       </div>
