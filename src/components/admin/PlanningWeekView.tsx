@@ -267,10 +267,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
                         top,
                         height: Math.max(height, SLOT_HEIGHT - 2),
                         backgroundColor: c.bg,
-                        borderLeft: `3px solid ${c.border}`,
-                        border: `1px solid ${c.border}40`,
-                        borderLeftWidth: 3,
-                        borderLeftColor: c.border,
+                        border: `2px solid ${c.border}`,
                       }}
                       title={`${block.label}\n${block.horaires}`}
                     >
