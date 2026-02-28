@@ -49,20 +49,20 @@ export function MonthDetailModal({
   if (type === 'salle') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-6xl flex flex-col" style={{ height: '90vh' }}>
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-[rgba(var(--border),0.3)]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(var(--border),0.3)] flex-shrink-0">
             <div className="flex items-center gap-3">
-              <MapPin className="w-6 h-6 text-[rgb(var(--accent))]" />
-              <h2 className="text-xl font-bold text-[rgb(var(--foreground))]">{titre}</h2>
+              <MapPin className="w-5 h-5 text-[rgb(var(--accent))]" />
+              <h2 className="text-lg font-bold text-[rgb(var(--foreground))]">{titre}</h2>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-[rgb(var(--secondary))] rounded-lg transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* PlanningWeekView remplace l'ancienne grille */}
-          <div className="flex-1 overflow-hidden flex flex-col">
+          {/* PlanningWeekView — prend tout l'espace restant */}
+          <div className="flex-1 min-h-0">
             <PlanningWeekView
               mois={mois}
               annee={annee}

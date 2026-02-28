@@ -1,7 +1,8 @@
 /**
  * PlanningWeekView — Timeline hebdomadaire granularité 30 minutes
- * Style Google Calendar : blocs d'événements positionnés en absolute
+ * Style Google Calendar : jours en colonnes, heures en lignes
  * Plage horaire : 08:00 → 21:00 (26 créneaux de 30 min)
+ * Blocs d'événements positionnés en absolute
  */
 
 'use client'
@@ -9,14 +10,12 @@
 import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-// --- Constantes ---
-const SLOT_HEIGHT = 40      // px par créneau de 30 min
+const SLOT_HEIGHT = 36
 const START_HOUR = 8
 const END_HOUR = 21
-const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2  // 26
-const GRID_HEIGHT = SLOT_HEIGHT * TOTAL_SLOTS     // 1040px
+const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2
+const GRID_HEIGHT = SLOT_HEIGHT * TOTAL_SLOTS
 
-// --- Types ---
 interface Reservation {
   id: number
   idSession?: number | null
@@ -26,13 +25,13 @@ interface Reservation {
   statut: string
 }
 
-interface EventBlock {
+interface Block {
   id: string
   label: string
   startSlot: number
   endSlot: number
-  color: 'success' | 'info' | 'warning' | 'error' | 'accent'
-  type: string
+  colorKey: string
+  horaires: string
 }
 
 interface PlanningWeekViewProps {
@@ -45,7 +44,6 @@ interface PlanningWeekViewProps {
     nom?: string
     dateDebut: string
     dateFin: string
-    nbInscrits?: number
   }>
   evenements: Array<{
     idEvenement: number
@@ -58,374 +56,235 @@ interface PlanningWeekViewProps {
   reservations: Reservation[]
 }
 
-// --- Couleurs CSS pour chaque type ---
-const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = {
-  success: { bg: 'rgba(34,197,94,0.25)', border: 'rgb(34,197,94)', text: 'rgb(34,197,94)' },
-  info:    { bg: 'rgba(59,130,246,0.25)', border: 'rgb(59,130,246)', text: 'rgb(59,130,246)' },
-  warning: { bg: 'rgba(234,179,8,0.25)',  border: 'rgb(234,179,8)',  text: 'rgb(234,179,8)' },
-  error:   { bg: 'rgba(239,68,68,0.25)',  border: 'rgb(239,68,68)',  text: 'rgb(239,68,68)' },
-  accent:  { bg: 'rgba(212,175,55,0.25)', border: 'rgb(212,175,55)', text: 'rgb(212,175,55)' },
+const COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  cap:   { bg: '#16a34a30', border: '#22c55e', text: '#4ade80' },
+  serti: { bg: '#2563eb30', border: '#3b82f6', text: '#60a5fa' },
+  event: { bg: '#ca8a0430', border: '#eab308', text: '#facc15' },
+  block: { bg: '#dc262630', border: '#ef4444', text: '#f87171' },
+  other: { bg: '#d4af3730', border: '#d4af37', text: '#fbbf24' },
 }
 
-/** Convertit une heure HH:MM en index de slot (0 = 08:00, 1 = 08:30, ...) */
 function timeToSlot(h: number, m: number): number {
-  return (h - START_HOUR) * 2 + (m >= 30 ? 1 : 0)
+  return Math.max(0, Math.min(TOTAL_SLOTS, (h - START_HOUR) * 2 + Math.floor(m / 30)))
 }
 
-/** Détermine la couleur selon le code formation */
-function getColorForFormation(codeFormation: string): EventBlock['color'] {
-  if (codeFormation.includes('CAP')) return 'success'
-  if (codeFormation.includes('SERTI')) return 'info'
-  if (codeFormation.includes('CAO') || codeFormation.includes('DAO')) return 'info'
-  return 'accent'
+function slotToTime(slot: number): string {
+  const h = START_HOUR + Math.floor(slot / 2)
+  const m = (slot % 2) * 30
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
-/** Génère un acronyme depuis un nom de formation */
-function toAcronyme(nom: string): string {
-  return nom
-    .split(/[\s/\-]+/)
-    .filter(Boolean)
-    .map((mot: string) => mot[0]?.toUpperCase() || '')
-    .join('')
-    .slice(0, 4)
+function getColorKey(code: string): string {
+  if (code.includes('CAP')) return 'cap'
+  if (code.includes('SERTI')) return 'serti'
+  if (code.includes('CAO') || code.includes('DAO')) return 'serti'
+  return 'other'
 }
 
-export function PlanningWeekView({
-  mois, annee, sessions, evenements, reservations
-}: PlanningWeekViewProps) {
+function acronyme(nom: string): string {
+  return nom.split(/[\s/\-]+/).filter(Boolean).map(w => w[0]?.toUpperCase() || '').join('').slice(0, 5)
+}
 
-  // --- Navigation semaine ---
+export function PlanningWeekView({ mois, annee, sessions, evenements, reservations }: PlanningWeekViewProps) {
   const [semaineOffset, setSemaineOffset] = useState(0)
 
-  // Jours du mois
-  const premierDuMois = new Date(annee, mois, 1)
-  const dernierDuMois = new Date(annee, mois + 1, 0)
-  const nbJours = dernierDuMois.getDate()
+  const nbJours = new Date(annee, mois + 1, 0).getDate()
+  const moisLabel = new Date(annee, mois, 1).toLocaleDateString('fr-FR', { month: 'long' })
 
-  // Découper en semaines (groupes de 7 jours)
   const semaines = useMemo(() => {
-    const result: Date[][] = []
+    const res: Date[][] = []
     for (let i = 0; i < nbJours; i += 7) {
-      const semaine: Date[] = []
-      for (let j = i; j < Math.min(i + 7, nbJours); j++) {
-        semaine.push(new Date(annee, mois, j + 1))
-      }
-      result.push(semaine)
+      const s: Date[] = []
+      for (let j = i; j < Math.min(i + 7, nbJours); j++) s.push(new Date(annee, mois, j + 1))
+      res.push(s)
     }
-    return result
+    return res
   }, [annee, mois, nbJours])
 
-  const nbSemaines = semaines.length
-  const semaineIdx = Math.min(semaineOffset, nbSemaines - 1)
-  const joursSemaine = semaines[semaineIdx] || []
+  const idx = Math.min(semaineOffset, semaines.length - 1)
+  const jours = semaines[idx] || []
 
-  const moisNom = premierDuMois.toLocaleDateString('fr-FR', { month: 'long' })
+  // Construire blocs par jour
+  const blocksMap = useMemo(() => {
+    const map = new Map<number, Block[]>()
+    for (const jour of jours) {
+      const d = jour.getDate()
+      const blocks: Block[] = []
+      const sessionIds = new Set<number>()
+      const eventIds = new Set<number>()
 
-  // Labels heures pour la colonne gauche
-  const heureLabels = useMemo(() => {
-    const labels: { heure: string; estHeurePleine: boolean }[] = []
-    for (let h = START_HOUR; h < END_HOUR; h++) {
-      labels.push({ heure: `${String(h).padStart(2, '0')}:00`, estHeurePleine: true })
-      labels.push({ heure: `${String(h).padStart(2, '0')}:30`, estHeurePleine: false })
-    }
-    return labels
-  }, [])
-
-  // --- Construction des blocs par jour ---
-  const blocksParJour = useMemo(() => {
-    const result: Map<number, EventBlock[]> = new Map()
-
-    for (const jour of joursSemaine) {
-      const jourNum = jour.getDate()
-      const blocks: EventBlock[] = []
-
-      // 1. Réservations (priorité — précision horaire)
-      const reservationsJour = reservations.filter(r => {
-        const d = new Date(r.dateDebut)
-        return d.getDate() === jourNum && d.getMonth() === mois && d.getFullYear() === annee
-      })
-
-      for (const resa of reservationsJour) {
-        const dDebut = new Date(resa.dateDebut)
-        const dFin = new Date(resa.dateFin)
-        const startSlot = timeToSlot(dDebut.getHours(), dDebut.getMinutes())
-        const endSlot = timeToSlot(dFin.getHours(), dFin.getMinutes())
-
+      // Réservations
+      for (const r of reservations) {
+        const rd = new Date(r.dateDebut)
+        if (rd.getDate() !== d || rd.getMonth() !== mois || rd.getFullYear() !== annee) continue
+        const rf = new Date(r.dateFin)
+        const s0 = timeToSlot(rd.getHours(), rd.getMinutes())
+        const s1 = timeToSlot(rf.getHours(), rf.getMinutes())
         let label = 'Réservé'
-        let color: EventBlock['color'] = 'accent'
-
-        if (resa.idSession) {
-          const session = sessions.find(s => s.id === resa.idSession)
-          if (session) {
-            const code = session.codeFormation || ''
-            label = toAcronyme(session.formation || session.nom || 'Formation')
-            color = getColorForFormation(code)
-          }
-        } else if (resa.idEvenement) {
-          const evt = evenements.find(e => e.idEvenement === resa.idEvenement)
-          label = evt ? evt.titre : 'Événement'
-          color = 'warning'
+        let ck = 'other'
+        if (r.idSession) {
+          sessionIds.add(r.idSession)
+          const sess = sessions.find(s => s.id === r.idSession)
+          if (sess) { label = acronyme(sess.formation || sess.nom || 'Formation'); ck = getColorKey(sess.codeFormation || '') }
+        } else if (r.idEvenement) {
+          eventIds.add(r.idEvenement)
+          const ev = evenements.find(e => e.idEvenement === r.idEvenement)
+          label = ev?.titre || 'Événement'; ck = 'event'
         }
-
-        blocks.push({
-          id: `resa-${resa.id}`,
-          label,
-          startSlot: Math.max(0, startSlot),
-          endSlot: Math.min(TOTAL_SLOTS, Math.max(endSlot, startSlot + 1)),
-          color,
-          type: resa.idSession ? 'session' : 'evenement'
-        })
+        blocks.push({ id: `r${r.id}`, label, startSlot: s0, endSlot: Math.max(s0 + 1, s1), colorKey: ck, horaires: `${slotToTime(s0)} – ${slotToTime(s1)}` })
       }
 
-      // 2. Événements sans réservation associée
-      const evenementsJour = evenements.filter(evt => {
-        const d = new Date(evt.date)
-        return d.getDate() === jourNum && d.getMonth() === mois && d.getFullYear() === annee
-      })
-      for (const evt of evenementsJour) {
-        // Vérifier qu'il n'est pas déjà couvert par une réservation
-        const dejaCouvert = blocks.some(b => b.id.startsWith('resa-') && b.type === 'evenement')
-        if (dejaCouvert) continue
-
-        const [hD, mD] = (evt.heureDebut || '09:00').split(':').map(Number)
-        const [hF, mF] = (evt.heureFin || '17:00').split(':').map(Number)
-        blocks.push({
-          id: `evt-${evt.idEvenement}`,
-          label: evt.titre || 'Événement',
-          startSlot: Math.max(0, timeToSlot(hD, mD)),
-          endSlot: Math.min(TOTAL_SLOTS, timeToSlot(hF, mF)),
-          color: 'warning',
-          type: 'evenement'
-        })
+      // Événements sans réservation
+      for (const ev of evenements) {
+        const ed = new Date(ev.date)
+        if (ed.getDate() !== d || ed.getMonth() !== mois || ed.getFullYear() !== annee) continue
+        if (eventIds.has(ev.idEvenement)) continue
+        const [hd, md] = (ev.heureDebut || '09:00').split(':').map(Number)
+        const [hf, mf] = (ev.heureFin || '17:00').split(':').map(Number)
+        const s0 = timeToSlot(hd, md)
+        const s1 = timeToSlot(hf, mf)
+        blocks.push({ id: `e${ev.idEvenement}`, label: ev.titre || 'Événement', startSlot: s0, endSlot: Math.max(s0 + 1, s1), colorKey: 'event', horaires: `${slotToTime(s0)} – ${slotToTime(s1)}` })
       }
 
-      // 3. Sessions qui couvrent ce jour sans réservation précise
-      const sessionsCouvrant = sessions.filter(s => {
-        const sd = new Date(s.dateDebut)
-        const sf = new Date(s.dateFin)
-        return jour >= sd && jour <= sf
-      })
-      for (const session of sessionsCouvrant) {
-        const dejaParResa = blocks.some(b => b.id.startsWith('resa-') && b.type === 'session')
-        if (dejaParResa) continue
-
-        const code = session.codeFormation || ''
-        blocks.push({
-          id: `session-${session.id}-${jourNum}`,
-          label: toAcronyme(session.formation || session.nom || 'Formation'),
-          startSlot: timeToSlot(9, 0),   // défaut 09:00-17:00
-          endSlot: timeToSlot(17, 0),
-          color: getColorForFormation(code),
-          type: 'session'
-        })
+      // Sessions sans réservation (fallback 09:00-17:00)
+      for (const sess of sessions) {
+        if (sessionIds.has(sess.id)) continue
+        const sd = new Date(sess.dateDebut); const sf = new Date(sess.dateFin)
+        if (jour < sd || jour > sf) continue
+        const s0 = timeToSlot(9, 0); const s1 = timeToSlot(17, 0)
+        blocks.push({ id: `s${sess.id}-${d}`, label: acronyme(sess.formation || sess.nom || 'Formation'), startSlot: s0, endSlot: s1, colorKey: getColorKey(sess.codeFormation || ''), horaires: '09:00 – 17:00' })
       }
 
-      result.set(jourNum, blocks)
+      map.set(d, blocks)
     }
+    return map
+  }, [jours, reservations, sessions, evenements, mois, annee])
 
-    return result
-  }, [joursSemaine, reservations, sessions, evenements, mois, annee])
-
-  // --- Rendu ---
   return (
-    <div className="flex flex-col h-full">
-      {/* Header navigation semaine */}
-      <div className="flex items-center justify-between px-2 py-3 border-b border-[rgba(var(--border),0.3)]">
-        <div className="flex items-center gap-2 text-sm text-[rgb(var(--muted-foreground))]">
-          <span className="capitalize">{moisNom} {annee}</span>
-          <span className="text-[rgb(var(--foreground))] font-medium">
-            — Semaine du {joursSemaine[0]?.getDate()} au {joursSemaine[joursSemaine.length - 1]?.getDate()}
-          </span>
-        </div>
+    <div className="flex flex-col h-full min-h-0">
+      {/* Navigation semaine */}
+      <div className="flex items-center justify-between px-4 py-2 flex-shrink-0">
+        <span className="text-sm text-[rgb(var(--foreground))]">
+          <span className="capitalize">{moisLabel} {annee}</span>
+          {' — Semaine du '}
+          <strong>{jours[0]?.getDate()}</strong>
+          {' au '}
+          <strong>{jours[jours.length - 1]?.getDate()}</strong>
+        </span>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-[rgb(var(--muted-foreground))] mr-2">
-            Semaine {semaineIdx + 1}/{nbSemaines}
-          </span>
-          <button
-            onClick={() => setSemaineOffset(Math.max(0, semaineIdx - 1))}
-            disabled={semaineIdx === 0}
-            className="p-1.5 rounded hover:bg-[rgb(var(--secondary))] disabled:opacity-30 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setSemaineOffset(Math.min(nbSemaines - 1, semaineIdx + 1))}
-            disabled={semaineIdx >= nbSemaines - 1}
-            className="p-1.5 rounded hover:bg-[rgb(var(--secondary))] disabled:opacity-30 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <span className="text-xs text-[rgb(var(--muted-foreground))] mr-2">{idx + 1}/{semaines.length}</span>
+          <button onClick={() => setSemaineOffset(Math.max(0, idx - 1))} disabled={idx === 0} className="p-1 rounded hover:bg-[rgb(var(--secondary))] disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
+          <button onClick={() => setSemaineOffset(Math.min(semaines.length - 1, idx + 1))} disabled={idx >= semaines.length - 1} className="p-1 rounded hover:bg-[rgb(var(--secondary))] disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
 
-      {/* Grille principale avec scroll vertical */}
-      <div className="flex-1 overflow-auto">
-        <div className="min-w-[900px]">
-          {/* En-têtes jours */}
-          <div className="flex sticky top-0 z-10 bg-[rgb(var(--card))] border-b border-[rgba(var(--border),0.3)]">
-            <div className="w-[60px] flex-shrink-0" />
-            {joursSemaine.map((jour) => {
-              const isAujourdhui = jour.toDateString() === new Date().toDateString()
+      {/* Grille scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        {/* Header jours (sticky) */}
+        <div className="flex sticky top-0 z-10 bg-[rgb(var(--card))] border-b border-[rgba(var(--border),0.4)]">
+          <div className="w-14 flex-shrink-0" />
+          {jours.map(j => {
+            const today = j.toDateString() === new Date().toDateString()
+            return (
+              <div key={j.getDate()} className={`flex-1 text-center py-1.5 border-l border-[rgba(var(--border),0.2)] ${today ? 'bg-[rgba(var(--accent),0.06)]' : ''}`}>
+                <div className="text-[10px] font-semibold text-[rgb(var(--muted-foreground))] uppercase tracking-wide">
+                  {j.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                </div>
+                <div className={`text-base font-bold ${today ? 'text-[rgb(var(--accent))]' : 'text-[rgb(var(--foreground))]'}`}>
+                  {j.getDate()}
+                </div>
+              </div>
+            )
+          })}
+          {Array.from({ length: 7 - jours.length }).map((_, i) => (
+            <div key={`eh${i}`} className="flex-1 border-l border-[rgba(var(--border),0.1)]" />
+          ))}
+        </div>
+
+        {/* Corps : heures à gauche + colonnes jours */}
+        <div className="flex relative" style={{ height: GRID_HEIGHT }}>
+          {/* Colonne heures */}
+          <div className="w-14 flex-shrink-0 relative border-r border-[rgba(var(--border),0.2)]">
+            {Array.from({ length: END_HOUR - START_HOUR }).map((_, i) => {
+              const h = START_HOUR + i
               return (
-                <div
-                  key={jour.getDate()}
-                  className={`flex-1 text-center py-2 border-l border-[rgba(var(--border),0.15)] ${
-                    isAujourdhui ? 'bg-[rgba(var(--accent),0.08)]' : ''
-                  }`}
-                >
-                  <p className="text-xs font-medium text-[rgb(var(--muted-foreground))] uppercase">
-                    {jour.toLocaleDateString('fr-FR', { weekday: 'short' })}
-                  </p>
-                  <p className={`text-lg font-bold ${
-                    isAujourdhui ? 'text-[rgb(var(--accent))]' : 'text-[rgb(var(--foreground))]'
-                  }`}>
-                    {jour.getDate()}
-                  </p>
+                <div key={h} className="absolute right-2" style={{ top: i * 2 * SLOT_HEIGHT - 7 }}>
+                  <span className="text-[11px] font-medium text-[rgb(var(--muted-foreground))]">
+                    {String(h).padStart(2, '0')}:00
+                  </span>
                 </div>
               )
             })}
-            {/* Colonnes vides si semaine incomplète */}
-            {Array.from({ length: 7 - joursSemaine.length }).map((_, i) => (
-              <div key={`empty-h-${i}`} className="flex-1 border-l border-[rgba(var(--border),0.15)]" />
-            ))}
           </div>
 
-          {/* Corps timeline */}
-          <div className="flex" style={{ height: GRID_HEIGHT }}>
-            {/* Colonne heures */}
-            <div className="w-[60px] flex-shrink-0 relative">
-              {heureLabels.map((h, idx) => (
-                <div
-                  key={h.heure}
-                  className="absolute right-2 flex items-start"
-                  style={{ top: idx * SLOT_HEIGHT - 6 }}
-                >
-                  {h.estHeurePleine && (
-                    <span className="text-[11px] font-medium text-[rgb(var(--muted-foreground))]">
-                      {h.heure}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* Colonnes jours */}
+          {jours.map(jour => {
+            const jourNum = jour.getDate()
+            const blocks = blocksMap.get(jourNum) || []
+            return (
+              <div key={jourNum} className="flex-1 relative border-l border-[rgba(var(--border),0.12)]" style={{ height: GRID_HEIGHT }}>
+                {/* Lignes horizontales heures pleines */}
+                {Array.from({ length: END_HOUR - START_HOUR + 1 }).map((_, i) => (
+                  <div key={`h${i}`} className="absolute left-0 right-0" style={{ top: i * 2 * SLOT_HEIGHT, height: 1, backgroundColor: 'rgba(var(--border), 0.2)' }} />
+                ))}
+                {/* Lignes demi-heures (plus fines) */}
+                {Array.from({ length: END_HOUR - START_HOUR }).map((_, i) => (
+                  <div key={`m${i}`} className="absolute left-0 right-0" style={{ top: (i * 2 + 1) * SLOT_HEIGHT, height: 1, backgroundColor: 'rgba(var(--border), 0.07)' }} />
+                ))}
 
-            {/* Colonnes jours */}
-            {joursSemaine.map((jour) => {
-              const jourNum = jour.getDate()
-              const blocks = blocksParJour.get(jourNum) || []
-              const hasBlocks = blocks.length > 0
-
-              return (
-                <div
-                  key={jourNum}
-                  className="flex-1 relative border-l border-[rgba(var(--border),0.15)]"
-                  style={{
-                    height: GRID_HEIGHT,
-                    backgroundImage: `repeating-linear-gradient(
-                      to bottom,
-                      transparent 0px,
-                      transparent ${SLOT_HEIGHT - 1}px,
-                      rgba(var(--border), 0.08) ${SLOT_HEIGHT - 1}px,
-                      rgba(var(--border), 0.08) ${SLOT_HEIGHT}px
-                    )`,
-                    backgroundSize: `100% ${SLOT_HEIGHT}px`,
-                  }}
-                >
-                  {/* Lignes heures pleines (plus visibles) */}
-                  {Array.from({ length: END_HOUR - START_HOUR }).map((_, i) => (
+                {/* Blocs */}
+                {blocks.map(block => {
+                  const c = COLORS[block.colorKey] || COLORS.other
+                  const top = block.startSlot * SLOT_HEIGHT + 1
+                  const height = (block.endSlot - block.startSlot) * SLOT_HEIGHT - 2
+                  return (
                     <div
-                      key={i}
-                      className="absolute left-0 right-0 border-t border-[rgba(var(--border),0.25)]"
-                      style={{ top: i * 2 * SLOT_HEIGHT }}
-                    />
-                  ))}
-
-                  {/* Blocs événements */}
-                  {blocks.map((block) => {
-                    const top = block.startSlot * SLOT_HEIGHT
-                    const height = (block.endSlot - block.startSlot) * SLOT_HEIGHT
-                    const colors = COLOR_MAP[block.color] || COLOR_MAP.accent
-
-                    return (
-                      <div
-                        key={block.id}
-                        className="absolute left-1 right-1 rounded-md overflow-hidden cursor-pointer hover:brightness-110 transition-all"
-                        style={{
-                          top: top + 1,
-                          height: height - 2,
-                          backgroundColor: colors.bg,
-                          borderLeft: `3px solid ${colors.border}`,
-                          boxShadow: `0 1px 3px rgba(0,0,0,0.2)`,
-                        }}
-                        title={`${block.label} (${heureLabels[block.startSlot]?.heure || ''} - ${heureLabels[block.endSlot]?.heure || ''})`}
-                      >
-                        <div className="px-2 py-1 h-full flex flex-col justify-start">
-                          <span
-                            className="text-xs font-bold truncate"
-                            style={{ color: colors.text }}
-                          >
-                            {block.label}
-                          </span>
-                          {height > SLOT_HEIGHT * 2 && (
-                            <span className="text-[10px] opacity-70" style={{ color: colors.text }}>
-                              {heureLabels[block.startSlot]?.heure} - {heureLabels[block.endSlot]?.heure || `${END_HOUR}:00`}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-
-                  {/* Indicateur "Libre" si aucun bloc */}
-                  {!hasBlocks && (
-                    <div
-                      className="absolute left-0 right-0 flex items-center justify-center"
-                      style={{ top: (timeToSlot(12, 0) - 1) * SLOT_HEIGHT, height: SLOT_HEIGHT * 2 }}
+                      key={block.id}
+                      className="absolute left-[3px] right-[3px] rounded overflow-hidden cursor-default"
+                      style={{ top, height: Math.max(height, SLOT_HEIGHT - 2), backgroundColor: c.bg, borderLeft: `3px solid ${c.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
+                      title={`${block.label}\n${block.horaires}`}
                     >
-                      <span className="text-xs text-[rgb(var(--muted-foreground))] opacity-40">
-                        Libre
-                      </span>
+                      <div className="px-1.5 py-0.5 flex flex-col h-full overflow-hidden">
+                        <span className="text-[11px] font-bold leading-tight truncate" style={{ color: c.text }}>{block.label}</span>
+                        {height >= SLOT_HEIGHT * 1.5 && (
+                          <span className="text-[9px] opacity-70 mt-0.5" style={{ color: c.text }}>{block.horaires}</span>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                  )
+                })}
 
-            {/* Colonnes vides si semaine incomplète */}
-            {Array.from({ length: 7 - joursSemaine.length }).map((_, i) => (
-              <div
-                key={`empty-${i}`}
-                className="flex-1 border-l border-[rgba(var(--border),0.1)]"
-                style={{ height: GRID_HEIGHT }}
-              />
-            ))}
-          </div>
+                {/* Libre si rien */}
+                {blocks.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="text-[11px] text-[rgb(var(--muted-foreground))] opacity-25">Libre</span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          {Array.from({ length: 7 - jours.length }).map((_, i) => (
+            <div key={`ec${i}`} className="flex-1 border-l border-[rgba(var(--border),0.08)]" style={{ height: GRID_HEIGHT }} />
+          ))}
         </div>
       </div>
 
       {/* Légende */}
-      <div className="px-4 py-3 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
-        <div className="flex items-center gap-6 text-xs flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLOR_MAP.success.bg, border: `1px solid ${COLOR_MAP.success.border}` }} />
-            <span className="text-[rgb(var(--muted-foreground))]">CAP / Formation</span>
+      <div className="flex items-center gap-5 px-4 py-2 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))] flex-shrink-0 text-[11px]">
+        {[
+          { key: 'cap', label: 'CAP / Formation' },
+          { key: 'serti', label: 'Sertissage / CAO' },
+          { key: 'event', label: 'Événement' },
+          { key: 'block', label: 'Bloqué' },
+        ].map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: COLORS[key].bg, border: `1px solid ${COLORS[key].border}` }} />
+            <span className="text-[rgb(var(--muted-foreground))]">{label}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLOR_MAP.info.bg, border: `1px solid ${COLOR_MAP.info.border}` }} />
-            <span className="text-[rgb(var(--muted-foreground))]">Sertissage / CAO</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLOR_MAP.warning.bg, border: `1px solid ${COLOR_MAP.warning.border}` }} />
-            <span className="text-[rgb(var(--muted-foreground))]">Événement</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLOR_MAP.error.bg, border: `1px solid ${COLOR_MAP.error.border}` }} />
-            <span className="text-[rgb(var(--muted-foreground))]">Bloqué</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.3)]" />
-            <span className="text-[rgb(var(--muted-foreground))]">Disponible</span>
-          </div>
+        ))}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.3)]" />
+          <span className="text-[rgb(var(--muted-foreground))]">Disponible</span>
         </div>
       </div>
     </div>
