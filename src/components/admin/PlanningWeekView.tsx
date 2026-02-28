@@ -17,8 +17,8 @@ const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2
 const GRID_HEIGHT = SLOT_HEIGHT * TOTAL_SLOTS
 
 // Couleurs lignes de grille (hex direct — rgba(var()) ne marche PAS en inline style)
-const LINE_HOUR = '#ffffff18'    // ligne heure pleine — visible
-const LINE_HALF = '#ffffff08'    // ligne demi-heure — subtile
+const LINE_HOUR = '#d4af3750'    // ligne heure pleine — jaune ABJ
+const LINE_HALF = '#ffffff22'    // ligne demi-heure — blanc visible
 const COL_BORDER = '#ffffff10'   // séparation colonnes jours
 
 interface Reservation {
@@ -231,10 +231,17 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
             {Array.from({ length: END_HOUR - START_HOUR }).map((_, i) => {
               const h = START_HOUR + i
               return (
-                <div key={h} className="absolute right-2" style={{ top: i * 2 * SLOT_HEIGHT - 7 }}>
-                  <span className="text-[11px] font-medium" style={{ color: '#888' }}>
-                    {String(h).padStart(2, '0')}:00
-                  </span>
+                <div key={h}>
+                  <div className="absolute right-2" style={{ top: i * 2 * SLOT_HEIGHT - 7 }}>
+                    <span className="text-[11px] font-medium" style={{ color: '#d4af37' }}>
+                      {String(h).padStart(2, '0')}:00
+                    </span>
+                  </div>
+                  <div className="absolute right-2" style={{ top: (i * 2 + 1) * SLOT_HEIGHT - 6 }}>
+                    <span className="text-[9px]" style={{ color: '#666' }}>
+                      {String(h).padStart(2, '0')}:30
+                    </span>
+                  </div>
                 </div>
               )
             })}
