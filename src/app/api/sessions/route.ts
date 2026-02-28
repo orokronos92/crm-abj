@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
           // informationsGenerales.nbParticipants = valeur choisie par l'admin (ex: 8)
           // session.capaciteMax en BDD = capacité de la salle (ex: 80) — pas la bonne valeur
           if (metadata.informationsGenerales?.nbParticipants) {
-            nbParticipants = metadata.informationsGenerales.nbParticipants
+            nbParticipants = Number(metadata.informationsGenerales.nbParticipants)
           }
 
           // Récupérer le formateur principal depuis les métadonnées si pas déjà défini
