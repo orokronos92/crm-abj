@@ -9,13 +9,15 @@ interface ProgrammeMatieresEditorProps {
   onChange: (matieres: Matiere[]) => void
   sallesDisponibles: Array<{ id: number; nom: string; capacite: number }>
   formateursDisponibles: Array<{ id: number; nom: string; matieres: string[] }>
+  dureeHeuresCible?: number
 }
 
 export function ProgrammeMatieresEditor({
   matieres,
   onChange,
   sallesDisponibles,
-  formateursDisponibles
+  formateursDisponibles,
+  dureeHeuresCible = 800
 }: ProgrammeMatieresEditorProps) {
   const [nouvelleMatiereNom, setNouvelleMatiereNom] = useState('')
   const [nouvelleMatiere, setNouvelleMatiere] = useState<Partial<Matiere>>({
@@ -26,7 +28,9 @@ export function ProgrammeMatieresEditor({
   })
 
   const totalHeures = matieres.reduce((sum, m) => sum + m.heures, 0)
-  const isProcheDe800 = totalHeures >= 720 && totalHeures <= 880 // ±10% de 800h
+  const borneMin = Math.round(dureeHeuresCible * 0.9)
+  const borneMax = Math.round(dureeHeuresCible * 1.1)
+  const isProcheDe800 = totalHeures >= borneMin && totalHeures <= borneMax // ±10% de la cible
 
   const handleAjouterMatiere = () => {
     if (!nouvelleMatiereNom.trim() || !nouvelleMatiere.heures || nouvelleMatiere.heures <= 0) {
@@ -111,7 +115,7 @@ export function ProgrammeMatieresEditor({
           <span className={`font-bold ${isProcheDe800 ? 'text-[rgb(var(--success))]' : 'text-[rgb(var(--warning))]'}`}>
             {totalHeures}h
           </span>
-          <span className="text-[rgb(var(--muted-foreground))]"> / ~800h</span>
+          <span className="text-[rgb(var(--muted-foreground))]"> / ~{dureeHeuresCible}h</span>
         </div>
       </div>
 
@@ -119,7 +123,7 @@ export function ProgrammeMatieresEditor({
         <div className="flex items-start gap-2 p-3 bg-[rgba(var(--warning),0.1)] border border-[rgba(var(--warning),0.3)] rounded-lg">
           <AlertCircle className="w-4 h-4 text-[rgb(var(--warning))] flex-shrink-0 mt-0.5" />
           <p className="text-xs text-[rgb(var(--muted-foreground))]">
-            Le total des heures devrait être proche de 800h (marge ±10% acceptée : 720-880h)
+            Le total des heures devrait être proche de {dureeHeuresCible}h (marge ±10% acceptée : {borneMin}-{borneMax}h)
           </p>
         </div>
       )}

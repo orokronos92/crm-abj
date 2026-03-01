@@ -48,6 +48,7 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
   const [sallesDisponibles, setSallesDisponibles] = useState<any[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [dureeHeuresCible, setDureeHeuresCible] = useState(800)
 
   useEffect(() => {
     async function loadData() {
@@ -96,6 +97,14 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
 
     loadData()
   }, [])
+
+  useEffect(() => {
+    if (!formData.codeFormation || formations.length === 0) return
+    const formation = formations.find(f => f.codeFormation === formData.codeFormation)
+    if (formation?.dureeHeures && formation.dureeHeures > 0) {
+      setDureeHeuresCible(formation.dureeHeures)
+    }
+  }, [formData.codeFormation, formations])
 
   const handleJourToggle = (jour: JourSemaine) => {
     setFormData(prev => ({
@@ -172,8 +181,10 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
     if (formData.programme.length === 0) newErrors.push('Programme vide (ajoutez au moins une matière)')
 
     const totalHeures = formData.programme.reduce((sum, m) => sum + m.heures, 0)
-    if (totalHeures < 720 || totalHeures > 880) {
-      newErrors.push(`Total heures programme hors limites (${totalHeures}h, attendu 720-880h)`)
+    const borneMin = Math.round(dureeHeuresCible * 0.9)
+    const borneMax = Math.round(dureeHeuresCible * 1.1)
+    if (totalHeures < borneMin || totalHeures > borneMax) {
+      newErrors.push(`Total heures programme hors limites (${totalHeures}h, attendu ${borneMin}-${borneMax}h pour une cible de ${dureeHeuresCible}h)`)
     }
 
     // Validation des vœux par matière (optionnel car Marjorie peut planifier sans vœux)
@@ -521,6 +532,7 @@ export function FormationCAPForm({ onSubmit, onBack }: FormationCAPFormProps) {
           onChange={(matieres) => setFormData({ ...formData, programme: matieres })}
           sallesDisponibles={sallesDisponibles}
           formateursDisponibles={formateursDisponibles}
+          dureeHeuresCible={dureeHeuresCible}
         />
       </div>
 
