@@ -148,8 +148,12 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
         blocks.push({ id: `e${ev.idEvenement}`, label: ev.titre || 'Événement', startSlot: s0, endSlot: Math.max(s0 + 1, s1), colorKey: 'event', horaires: `${slotToTime(s0)} – ${slotToTime(s1)}` })
       }
 
+      // Sessions SANS aucune réservation en base (fallback 09:00-17:00 tous les jours)
+      // Si la session a des réservations, on fait confiance aux réservations (jours fragmentés)
       for (const sess of sessions) {
         if (sessionIds.has(sess.id)) continue
+        const sessionADesReservations = reservations.some(r => r.idSession === sess.id)
+        if (sessionADesReservations) continue
         const sd = new Date(sess.dateDebut); const sf = new Date(sess.dateFin)
         if (jour < sd || jour > sf) continue
         const s0 = timeToSlot(9, 0); const s1 = timeToSlot(17, 0)
