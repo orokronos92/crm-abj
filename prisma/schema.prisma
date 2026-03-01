@@ -414,6 +414,21 @@ model Formation {
   @@map("formations")
 }
 
+/// Catalogue des matières enseignées à l'ABJ
+/// Référentiel utilisé dans les formulaires CAP (remplace les textes libres)
+model Matiere {
+  idMatiere  Int      @id @default(autoincrement()) @map("id_matiere")
+  nom        String   @unique
+  code       String?  @unique
+  categorie  String?  // "PRATIQUE" | "THEORIQUE"
+  actif      Boolean  @default(true)
+  creeLe     DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe  DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+
+  @@index([actif])
+  @@map("matieres")
+}
+
 /// Sessions planifiées d'une formation
 model Session {
   idSession     Int      @id @default(autoincrement()) @map("id_session")
@@ -441,6 +456,13 @@ model Session {
 
   formateurPrincipalId Int?     @map("formateur_principal_id")
   notes                String?
+
+  // === TYPE ET PROGRAMME (CAP vs COURTE) ===
+  typeFormation        String?  @default("COURTE") @map("type_formation") // "COURTE" | "CAP"
+  totalHeuresProgramme Int?     @map("total_heures_programme") // Total heures toutes matières (ex: 800 pour CAP)
+  nbMatieres           Int?     @map("nb_matieres") // Nombre de matières distinctes (CAP)
+  programmeResume      String?  @map("programme_resume") @db.Text // Résumé lisible du programme généré par Marjorie
+
   creeLe               DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe            DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 
@@ -549,6 +571,7 @@ model Formateur {
   formationsCont           FormateurFormationContinue[]
   veillePro                FormateurVeilleProfessionnelle[]
   formationsAttirees       Formation[] @relation("FormationsAttirees")
+  reservations             ReservationSalle[] @relation("ReservationsFormateur")
 
   @@map("formateurs")
 }
@@ -931,12 +954,14 @@ model ReservationSalle {
   idSession        Int?     @map("id_session")     // Session qui occupe ce créneau (null si événement ponctuel)
   idEvenement      Int?     @map("id_evenement")   // Événement qui occupe ce créneau (null si session)
 
-  // Créneau horaire précis (Timestamp pour l'heure)
-  dateDebut        DateTime @map("date_debut") @db.Timestamp(6)   // Ex: 2026-03-15 08:00:00
-  dateFin          DateTime @map("date_fin") @db.Timestamp(6)     // Ex: 2026-03-15 12:00:00
+  // Créneau horaire précis
+  dateDebut        DateTime @map("date_debut") @db.Timestamptz(6)   // Ex: 2026-03-15 08:00:00
+  dateFin          DateTime @map("date_fin") @db.Timestamptz(6)     // Ex: 2026-03-15 12:00:00
 
-  // Infos récurrente : si la session se répète chaque semaine, on crée une entrée par jour
-  // Pour une session CAP 8 mois, le planning_ia de Session.planningIA détaille les créneaux
+  // === CAP : contexte pédagogique du créneau ===
+  matiere          String?  // Matière enseignée sur ce créneau (ex: "Sertissage", "Histoire de l'art")
+  idFormateur      Int?     @map("id_formateur") // Formateur qui enseigne ce créneau (peut différer du formateur principal)
+  typeFormation    String?  @default("COURTE") @map("type_formation") // "COURTE" | "CAP"
 
   statut           String   @default("CONFIRME") // PREVUE | CONFIRME | ANNULE
   motifAnnulation  String?  @map("motif_annulation")
@@ -945,13 +970,17 @@ model ReservationSalle {
   modifieLe        DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 
   // Relations
-  salle            Salle     @relation(fields: [idSalle], references: [idSalle])
-  session          Session?  @relation(fields: [idSession], references: [idSession])
+  salle            Salle      @relation(fields: [idSalle], references: [idSalle])
+  session          Session?   @relation(fields: [idSession], references: [idSession])
   evenement        Evenement? @relation(fields: [idEvenement], references: [idEvenement])
+  formateur        Formateur? @relation("ReservationsFormateur", fields: [idFormateur], references: [idFormateur])
 
   @@index([idSalle, dateDebut, dateFin])
   @@index([idSession])
   @@index([idEvenement])
+  @@index([idFormateur])
+  @@index([matiere])
+  @@index([typeFormation])
   @@map("reservations_salles")
 }
 

@@ -587,3 +587,381 @@ Une formation de 40h sur 5 lundis consécutifs (8h/jour) n'est pas la même plan
 **Build** : `✓ Compiled successfully` — 0 erreur TypeScript.
 **Branche** : `feat/session-forms-bdd`.
 
+---
+
+## 11. Améliorations identifiées (27 février 2026) — Non encore implémentées
+
+### Bug — Capacité session "0/50" au lieu de "0/5" sur la ligne sessions
+
+**Fichier concerné** : `src/app/api/sessions/route.ts`
+
+**Symptôme** : La ligne de session dans la liste affiche `0/50` (capacité salle) au lieu de `0/5` (capacité choisie par l'admin pour cette session).
+
+**Contexte** :
+- La section 10 décrit une première correction (initialisation `nbParticipants = null` + priorité `metadata.nbParticipants` → `session.capaciteMax`)
+- Malgré cette correction, le VPS affiche encore `0/50` en production
+- La BDD VPS contient bien `capacite_max = 5` pour la session concernée
+- Le `MonthDetailModal` (drill-down) affiche le bon nombre (5) car il lit directement les réservations
+- Seule la ligne de la page `/admin/sessions` est affectée
+
+**Hypothèse à investiguer** :
+- Vérifier si `metadata.nbParticipants` est présent et vaut `50` dans les métadonnées JSON de la session VPS (n8n écrit peut-être encore ce champ avec la valeur salle)
+- Si oui : supprimer complètement la lecture `metadata.nbParticipants` et utiliser uniquement `session.capaciteMax`
+- Si non : debugger l'API `/api/sessions` en loggant les valeurs brutes retournées
+
+**Correction recommandée (à implémenter)** :
+```typescript
+// AVANT (comportement ambigu) :
+let nbParticipants = null
+if (metadata.nbParticipants) { nbParticipants = metadata.nbParticipants }
+capacite_max: nbParticipants ?? session.capaciteMax ?? 0
+
+// APRÈS (ignorer complètement metadata.nbParticipants) :
+// n8n écrit directement capaciteMax en BDD — pas besoin des métadonnées
+capacite_max: session.capaciteMax ?? 0
+```
+
+**Note** : Ce changement a été partiellement fait (commit `a8acf5b`) mais le bug persiste en production. À ré-investiguer avec logs.
+
+---
+
+### Amélioration — Granularité planning : 08h-21h par 30 minutes
+
+**Contexte** :
+- Actuellement : `MonthDetailModal` affiche des créneaux de 2h (09h-11h, 11h-13h, 13h-15h, 15h-17h, 17h-19h, 19h-21h)
+- Objectif cible : créneaux de 30 minutes de 08h00 à 21h00 (26 créneaux par colonne/jour)
+- Problème de lisibilité : 26 lignes × 7 jours = matrice dense difficile à lire
+
+**Options d'implémentation analysées** :
+
+#### Option A — Vue Semaine avec Navigation (type Google Calendar)
+```
+← Semaine précédente   [Mar 2 — Dim 8 mars 2026]   Semaine suivante →
+     Lun 2  Mar 3  Mer 4  Jeu 5  Ven 6  Sam 7  Dim 8
+08h  │      │      │      │      │      │      │
+08h30│      │ CAP  │      │ CAP  │      │      │
+09h  │ SERTI│ BIJ  │      │ BIJ  │      │      │
+...  │      │      │      │      │      │      │
+21h  │      │      │      │      │      │      │
+```
+- Avantage : Navigation naturelle, densité raisonnable (7 colonnes × 26 lignes)
+- Inconvénient : Quitte la logique "click sur mois → drill-down"
+
+#### Option B — Zoom adaptatif (vue mois → vue jour)
+```
+Click mois → vue semaine → click jour → vue jour (30min)
+```
+- Avantage : Progressive disclosure, pas de surcharge visuelle
+- Inconvénient : 2 niveaux de drill-down supplémentaires
+
+#### Option C — Drill-down Jour (recommandé) ← Approche retenue
+```
+Vue annuelle (12 mois)
+    → Click mois → MonthDetailModal (vue mensuelle, créneaux 2h actuels)
+        → Click jour → DayDetailModal (vue journée, créneaux 30min)
+```
+- Avantage : Granularité progressive, charge cognitive par paliers
+- Compatible avec l'architecture existante (s'ajoute sans remplacer)
+
+#### Option D — Granularité 1h (compromis)
+```
+MonthDetailModal avec créneaux 1h (08h-09h, 09h-10h, ..., 20h-21h)
+= 13 créneaux × 7 jours = 91 cellules (acceptable)
+```
+- Avantage : Simple à implémenter, lisible sans navigation supplémentaire
+- Inconvénient : Pas assez précis pour des créneaux de 45min ou 1h30
+
+**Implémentation recommandée (Option C) — DayDetailModal** :
+
+```typescript
+// Nouveau composant : src/components/admin/DayDetailModal.tsx
+interface DayDetailModalProps {
+  salle: string
+  date: Date
+  onClose: () => void
+}
+
+// Créneaux : de 08h00 à 21h00 par pas de 30min
+const CRENEAUX_30MIN = Array.from({ length: 26 }, (_, i) => {
+  const totalMinutes = 8 * 60 + i * 30 // 08h00 = 480min
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  return `${h.toString().padStart(2, '0')}h${m.toString().padStart(2, '0')}`
+})
+// ['08h00', '08h30', '09h00', ..., '20h30']
+```
+
+**API nécessaire** :
+```
+GET /api/planning/salles/[salle]/jour?date=2026-03-02
+→ ReservationSalle où dateDebut et dateFin chevauchent ce jour
+→ Pour chaque réservation : calcul des créneaux de 30min occupés
+```
+
+**Fichiers à créer/modifier** :
+- `src/components/admin/DayDetailModal.tsx` (nouveau)
+- `src/components/admin/MonthDetailModal.tsx` — ajouter click sur cellule jour
+- `src/app/api/planning/salles/[salle]/jour/route.ts` (nouveau endpoint)
+
+---
+
+### Amélioration — Formule occupation basée sur heures (pas jours)
+
+**Contexte** :
+- Actuellement : `occupation = joursOccupes.size / nbJoursDuMois * 100`
+- Problème : Une salle utilisée uniquement le matin (4h/jour) sur 20 jours affiche 65% d'occupation alors qu'elle n'est utilisée qu'à 33% des heures disponibles
+- La table `ReservationSalle` a des timestamps précis (`dateDebut`/`dateFin`)
+
+**Formule cible** :
+```typescript
+// Heures disponibles dans le mois = nb_jours × amplitude (08h-21h = 13h)
+const heuresDispo = nbJoursDuMois * 13
+
+// Heures occupées = Σ durées des ReservationSalle
+const heuresOccupees = reservations.reduce((sum, r) => {
+  const debut = new Date(r.dateDebut)
+  const fin = new Date(r.dateFin)
+  return sum + (fin.getTime() - debut.getTime()) / (1000 * 60 * 60)
+}, 0)
+
+const occupation = Math.round((heuresOccupees / heuresDispo) * 100)
+```
+
+**Fichiers à modifier** :
+- `src/app/admin/planning/page.tsx` — remplacer le calcul `Set<number> jours`
+- `src/app/api/sessions/route.ts` ou `src/app/api/planning/salles/route.ts` — inclure les `ReservationSalle` dans la réponse
+
+**Prérequis** : Requiert que les `ReservationSalle` soient accessibles depuis l'API planning. Actuellement `/api/sessions` retourne `durée` calculée depuis les réservations mais pas les créneaux détaillés.
+
+---
+
+### Amélioration — Durée affichée sur ligne sessions
+
+**Contexte** :
+- Commit `4f5cfcb` : durée calculée depuis les vraies `ReservationSalle` (ex: 9h réelles)
+- Mais si `session.reservationsSalles` est vide (session sans réservations créées), la durée tombe à `0h`
+- Il faudrait un fallback lisible : afficher la durée estimée depuis `metadata.dureeHeures` si pas de réservations
+
+**Correction à prévoir** :
+```typescript
+// Priorité : réservations réelles → metadata.dureeHeures → durée estimée (dates × 7h)
+const dureeReelle = reservationsDuration > 0 ? reservationsDuration : null
+const dureeMeta = metadata.dureeHeures || null
+const dureeEstimee = daysDiff * 7 // fallback si rien d'autre
+
+const duree = dureeReelle ?? dureeMeta ?? dureeEstimee
+```
+
+---
+
+### Amélioration — MonthDetailModal : affichage nom formateur
+
+**Contexte** :
+- Actuellement : les créneaux dans `MonthDetailModal` affichent l'acronyme de formation (ex: "ACE", "SERTI")
+- Manque : le nom du formateur assigné à la session ce jour-là
+
+**UI suggérée pour chaque créneau** :
+```
+╔══════════════════════╗
+║  ACE  ←acronyme      ║
+║  L. Dupont ←formateur║
+║  6/10 ←capacité      ║
+╚══════════════════════╝
+```
+
+**Données disponibles** : `session.formateur` est déjà dans le payload API `/api/planning/salles`
+**Modification** : `MonthDetailModal.tsx` — passer `formateur` dans `getActiviteSalleCreneau()` et l'afficher dans le rendu
+
+---
+
+### Amélioration — Tooltip au survol des cellules planning
+
+**Contexte** :
+- Sur la vue annuelle (`/admin/planning`), survoler une cellule de mois affiche le pourcentage uniquement
+- Manque : tooltip avec détail (sessions actives ce mois, formateurs, nb inscrits)
+
+**UI suggérée** :
+```
+[Hover sur "65% - Mars"] →
+┌─────────────────────────────┐
+│ Atelier B — Mars 2026       │
+│ 65% d'occupation            │
+│ ─────────────────────────── │
+│ • CAP Bijouterie (L. Dupont)│
+│   01/03 → 31/03 — 10/10    │
+│ • Init. Sertissage (Petit)  │
+│   15/03 → 22/03 — 6/10     │
+└─────────────────────────────┘
+```
+
+**Implémentation** : Composant `Tooltip` custom avec `position: fixed` au survol, données déjà disponibles dans le state.
+
+---
+
+### État récapitulatif des tâches section 11
+
+| Amélioration | Priorité | Complexité | Statut |
+|-------------|----------|------------|--------|
+| Bug capacité "0/50" | HAUTE | Faible | ⏳ À investiguer |
+| DayDetailModal (granularité 30min) | HAUTE | Moyenne | ⏳ À implémenter |
+| Formule occupation par heures | MOYENNE | Faible | ⏳ À implémenter |
+| Fallback durée session (0h) | MOYENNE | Faible | ⏳ À implémenter |
+| Affichage formateur dans MonthDetailModal | BASSE | Faible | ⏳ À implémenter |
+| Tooltip survol cellules planning | BASSE | Faible | ⏳ À implémenter |
+
+---
+
+## 12. Refonte PlanningWeekView — Vue Timeline Google Calendar (Session 01/03/2026)
+
+### Contexte
+
+Le composant `MonthDetailModal` affichait une grille de cases 2h × 7 jours pour les salles. L'utilisateur voulait un planning type **Google Calendar vue semaine** avec granularité 30 minutes et blocs positionnés en absolute.
+
+### Composant PlanningWeekView.tsx — Réécriture Complète
+
+**Fichier** : `src/components/admin/PlanningWeekView.tsx` (~323 lignes)
+
+**Constantes** :
+```typescript
+const SLOT_HEIGHT = 40        // px par créneau de 30 min
+const START_HOUR = 8          // 08:00
+const END_HOUR = 21           // 21:00
+const TOTAL_SLOTS = 26        // (21 - 8) × 2
+const GRID_HEIGHT = 1040      // SLOT_HEIGHT × TOTAL_SLOTS
+```
+
+**Structure** :
+```
+┌─ Navigation semaine (mois + "Semaine du X au Y" + ← →)
+├─ Header jours (sticky top, nom jour + numéro)
+├─ Corps :
+│   ├─ Lignes de grille horizontales (rendues une seule fois sur toute la largeur)
+│   ├─ Colonne heures (56px fixe, labels :00 en jaune + :30 en gris)
+│   └─ 7 colonnes jours (flex-1, position relative)
+│       ├─ Blocs événements (position absolute, top/height calculés)
+│       └─ "Libre" en bas si aucun bloc
+└─ Légende (4 couleurs : CAP, Sertissage/CAO, Événement, Bloqué, Disponible)
+```
+
+### Bug CSS Critique : `rgba(var())` invalide en inline styles
+
+**Problème** : Toutes les lignes de grille étaient invisibles (fond noir total).
+
+**Cause racine** : `rgba(var(--border), 0.2)` est **invalide** en CSS inline (`style={{}}`). La fonction `var()` retourne `"r, g, b"` qui ne peut pas être utilisé dans `rgba()` en attributs style JavaScript.
+
+**Solution** : Remplacer TOUTES les références `rgba(var(...))` par des couleurs hex avec canal alpha :
+```typescript
+const LINE_HOUR_COLOR = '#d4af37'   // Jaune ABJ pour heures pleines
+const LINE_HALF_COLOR = '#ffffff30' // Blanc semi-transparent pour demi-heures
+const COL_BORDER = '#ffffff10'      // Séparation colonnes jours
+```
+
+### Amélioration Visuelle des Lignes de Grille
+
+**Lignes heures pleines** : Jaune ABJ `#d4af37`, épaisseur 2px, opacity 0.45
+**Lignes demi-heures** : Blanc `#ffffff30`, épaisseur 1px, opacity 1
+
+```typescript
+{gridLines.map((line, i) => (
+  <div
+    className="absolute left-0 right-0"
+    style={{
+      top: line.isHour ? line.top - 1 : line.top,
+      height: line.isHour ? 2 : 1,
+      backgroundColor: line.isHour ? LINE_HOUR_COLOR : LINE_HALF_COLOR,
+      opacity: line.isHour ? 0.45 : 1,
+    }}
+  />
+))}
+```
+
+**Labels horaires** :
+- `:00` en jaune ABJ `#d4af37`, `text-[11px] font-medium`
+- `:30` en gris `#666`, `text-[9px]`
+
+### Bordures Blocs Formations — 2px sur 4 côtés
+
+Les blocs de formations/événements ont une bordure de 2px pleine sur les 4 côtés pour se détacher visuellement de la grille :
+
+```typescript
+style={{
+  top,
+  height: Math.max(height, SLOT_HEIGHT - 2),
+  backgroundColor: c.bg,
+  border: `2px solid ${c.border}`,
+}}
+```
+
+**Palette couleurs blocs** :
+| Clé | Formation | Background | Bordure | Texte |
+|-----|-----------|------------|---------|-------|
+| `cap` | CAP / Formation | `#22c55e20` | `#22c55e` | `#4ade80` |
+| `serti` | Sertissage / CAO | `#3b82f620` | `#3b82f6` | `#60a5fa` |
+| `event` | Événement | `#eab30825` | `#eab308` | `#facc15` |
+| `block` | Bloqué | `#ef444420` | `#ef4444` | `#f87171` |
+| `other` | Autre | `#d4af3720` | `#d4af37` | `#fbbf24` |
+
+### Fix Sessions Fragmentées — Confiance aux Réservations
+
+**Problème** : Une session avec jours non consécutifs (ex: lundi et mardi sur 2 semaines) affichait des blocs pour TOUS les jours entre `dateDebut` et `dateFin`.
+
+**Cause** : Le fallback (lignes 151-157) dessinait un bloc 09:00-17:00 pour chaque jour dans la plage `dateDebut → dateFin`, sans vérifier si la session avait des réservations spécifiques en base.
+
+**Solution** : Si la session a des réservations dans `reservations_salles`, on fait confiance aux réservations (jours fragmentés) et on saute le fallback :
+
+```typescript
+for (const sess of sessions) {
+  if (sessionIds.has(sess.id)) continue
+  // Si la session a des réservations en base, on les utilise (pas de fallback)
+  const sessionADesReservations = reservations.some(r => r.idSession === sess.id)
+  if (sessionADesReservations) continue
+  // Fallback uniquement pour sessions SANS aucune réservation
+  const sd = new Date(sess.dateDebut); const sf = new Date(sess.dateFin)
+  if (jour < sd || jour > sf) continue
+  blocks.push({ ... }) // Bloc 09:00-17:00 par défaut
+}
+```
+
+**Priorité d'affichage des blocs** :
+1. **Réservations** (priorité max) : Heures exactes depuis `reservations_salles.dateDebut/dateFin`
+2. **Événements** sans réservation : Heures depuis `evenements.heureDebut/heureFin`
+3. **Sessions** sans aucune réservation : Fallback 09:00-17:00 tous les jours de la plage
+
+### Navigation Semaine
+
+- État `semaineOffset` (0 = première semaine du mois)
+- Découpage du mois en semaines de 7 jours max
+- Boutons ← → avec indicateur `1/5` (semaine courante / total)
+- Si dernière semaine a moins de 7 jours, colonnes vides ajoutées
+
+### Intégration dans MonthDetailModal
+
+Le composant `MonthDetailModal.tsx` utilise `PlanningWeekView` uniquement pour la vue salle :
+```typescript
+if (type === 'salle') {
+  return (
+    <div style={{ height: '90vh' }}>
+      <PlanningWeekView
+        mois={mois} annee={annee}
+        sessions={sessions} evenements={evenements}
+        reservations={reservations}
+      />
+    </div>
+  )
+}
+// Vue formateur : grille créneaux Matin/Après-midi/Soir (inchangée)
+```
+
+### Commits
+
+- `fix: PlanningWeekView — réécriture complète timeline 30min (hex colors, grid lines, blocs absolute)`
+- `fix: renforcement lignes grille — heures jaune ABJ 2px, demi-heures blanc, labels :30`
+- `fix: bordures blocs formation — 2px plein sur 4 côtés pour visibilité`
+- `fix: sessions fragmentées — confiance réservations si elles existent, skip fallback dateDebut→dateFin`
+
+### Leçons Apprises
+
+1. **JAMAIS utiliser `rgba(var(...))` en inline styles** — Toujours hex avec alpha (`#rrggbbaa`)
+2. **Les lignes de grille doivent être rendues une seule fois** sur toute la largeur (pas par colonne)
+3. **Les réservations sont la source de vérité** pour les jours occupés — le fallback `dateDebut → dateFin` n'est qu'un dernier recours
+4. **Modifications visuelles minimales** — ne pas réécrire tout le composant quand seule la couleur/épaisseur change
