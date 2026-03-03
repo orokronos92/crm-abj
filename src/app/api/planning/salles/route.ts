@@ -42,9 +42,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Récupérer les sessions qui chevauchent l'année
+    // Note : pas de filtre idSalle car les sessions CAP ont leurs salles
+    // stockées dans reservationSalle (plusieurs salles par session), pas dans session.idSalle
     const sessions = await prisma.session.findMany({
       where: {
-        idSalle: { not: null },
         dateDebut: { lte: finAnnee },
         dateFin: { gte: debutAnnee },
         statutSession: { notIn: ['ANNULEE'] }
@@ -84,10 +85,12 @@ export async function GET(request: NextRequest) {
     })
 
     // Récupérer les réservations détaillées (créneaux horaires) si elles existent
+    // C'est LA source primaire pour les sessions multi-salles (CAP : chaque matière
+    // peut être dans une salle différente, n8n crée une reservationSalle par matière)
     const reservations = await prisma.reservationSalle.findMany({
       where: {
-        dateDebut: { gte: debutAnnee },
-        dateFin: { lte: finAnnee },
+        dateDebut: { lte: finAnnee },
+        dateFin: { gte: debutAnnee },
         statut: { not: 'ANNULE' }
       },
       select: {
@@ -101,22 +104,40 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Index des sessions par id pour lookup rapide
+    const sessionsById = new Map(sessions.map(s => [s.idSession, s]))
+
     // Calculer l'occupation par salle et par mois
     const sallesAvecOccupation = salles.map(salle => {
-      const sessionsDeSalle = sessions.filter(s => s.idSalle === salle.idSalle)
-      const evenementsDeSalle = evenements.filter(e => e.salle === salle.nom)
+      // Source primaire : reservationSalle (couvre les sessions multi-salles créées par n8n)
       const reservationsDeSalle = reservations.filter(r => r.idSalle === salle.idSalle)
+
+      // Source secondaire : sessions dont idSalle correspond directement (sessions simples)
+      const sessionsDeSalleDirect = sessions.filter(s =>
+        s.idSalle === salle.idSalle &&
+        // Ne pas double-compter si une reservationSalle existe déjà pour cette session+salle
+        !reservationsDeSalle.some(r => r.idSession === s.idSession)
+      )
+
+      const evenementsDeSalle = evenements.filter(e => e.salle === salle.nom)
 
       const mois = Array.from({ length: 12 }, (_, moisIdx) => {
         const debutMois = new Date(annee, moisIdx, 1)
         const finMois = new Date(annee, moisIdx + 1, 0, 23, 59, 59)
         const nbJoursDansMois = new Date(annee, moisIdx + 1, 0).getDate()
 
-        // Sessions du mois
-        const sessionsCeMois = sessionsDeSalle.filter(session => {
-          const sessionDebut = new Date(session.dateDebut)
-          const sessionFin = new Date(session.dateFin)
-          return sessionDebut <= finMois && sessionFin >= debutMois
+        // Réservations de la salle ce mois
+        const reservationsCeMois = reservationsDeSalle.filter(r => {
+          const rDebut = new Date(r.dateDebut)
+          const rFin = new Date(r.dateFin)
+          return rDebut <= finMois && rFin >= debutMois
+        })
+
+        // Sessions directes (sans reservationSalle) ce mois
+        const sessionsDirCeMois = sessionsDeSalleDirect.filter(s => {
+          const sDebut = new Date(s.dateDebut)
+          const sFin = new Date(s.dateFin)
+          return sDebut <= finMois && sFin >= debutMois
         })
 
         // Événements du mois
@@ -125,22 +146,28 @@ export async function GET(request: NextRequest) {
           return evtDate >= debutMois && evtDate <= finMois
         })
 
-        // Réservations détaillées du mois (créneaux horaires)
-        const reservationsCeMois = reservationsDeSalle.filter(r => {
-          const rDebut = new Date(r.dateDebut)
-          return rDebut >= debutMois && rDebut <= finMois
-        })
-
         // Calculer les jours réellement occupés (Set pour éviter doublons)
         const joursOccupes = new Set<number>()
 
-        sessionsCeMois.forEach(session => {
-          const sessionDebut = new Date(session.dateDebut)
-          const sessionFin = new Date(session.dateFin)
-          // Limiter au mois courant
-          const dateDebutEffective = sessionDebut < debutMois ? debutMois : sessionDebut
-          const dateFinEffective = sessionFin > finMois ? finMois : sessionFin
+        // Jours via reservationSalle (source principale pour sessions CAP multi-salles)
+        reservationsCeMois.forEach(r => {
+          const rDebut = new Date(r.dateDebut)
+          const rFin = new Date(r.dateFin)
+          const dateDebutEffective = rDebut < debutMois ? debutMois : rDebut
+          const dateFinEffective = rFin > finMois ? finMois : rFin
+          const current = new Date(dateDebutEffective)
+          while (current <= dateFinEffective) {
+            joursOccupes.add(current.getDate())
+            current.setDate(current.getDate() + 1)
+          }
+        })
 
+        // Jours via sessions directes (sessions simples sans reservationSalle)
+        sessionsDirCeMois.forEach(s => {
+          const sDebut = new Date(s.dateDebut)
+          const sFin = new Date(s.dateFin)
+          const dateDebutEffective = sDebut < debutMois ? debutMois : sDebut
+          const dateFinEffective = sFin > finMois ? finMois : sFin
           const current = new Date(dateDebutEffective)
           while (current <= dateFinEffective) {
             joursOccupes.add(current.getDate())
@@ -156,6 +183,15 @@ export async function GET(request: NextRequest) {
         const occupation = joursOccupes.size > 0
           ? Math.round((joursOccupes.size / nbJoursDansMois) * 100)
           : 0
+
+        // Sessions associées à cette salle ce mois (via reservations OU direct)
+        const sessionIdsViares = new Set(reservationsCeMois.map(r => r.idSession).filter(Boolean))
+        const sessionsDirIds = new Set(sessionsDirCeMois.map(s => s.idSession))
+        const allSessionIds = new Set([...sessionIdsViares, ...sessionsDirIds])
+
+        const sessionsCeMois = [...allSessionIds]
+          .map(id => sessionsById.get(id!))
+          .filter(Boolean) as typeof sessions
 
         return {
           moisIndex: moisIdx,
