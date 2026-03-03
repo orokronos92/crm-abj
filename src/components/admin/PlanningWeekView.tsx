@@ -28,6 +28,7 @@ interface Reservation {
   dateDebut: string
   dateFin: string
   statut: string
+  matiere?: string | null
 }
 
 interface Block {
@@ -128,7 +129,11 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
         if (r.idSession) {
           sessionIds.add(r.idSession)
           const sess = sessions.find(s => s.id === r.idSession)
-          if (sess) { label = acronyme(sess.formation || sess.nom || 'Formation'); ck = getColorKey(sess.codeFormation || '') }
+          if (sess) {
+            // Priorité à la matière (sessions CAP multi-salles), sinon acronyme de la formation
+            label = r.matiere || acronyme(sess.formation || sess.nom || 'Formation')
+            ck = getColorKey(sess.codeFormation || '')
+          }
         } else if (r.idEvenement) {
           eventIds.add(r.idEvenement)
           const ev = evenements.find(e => e.idEvenement === r.idEvenement)
