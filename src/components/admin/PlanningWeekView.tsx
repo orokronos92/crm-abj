@@ -34,6 +34,7 @@ interface Reservation {
 interface Block {
   id: string
   label: string
+  sublabel?: string  // Nom de la session affiché en petit sous la matière
   startSlot: number
   endSlot: number
   colorKey: string
@@ -125,6 +126,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
         const s0 = timeToSlot(rd.getHours(), rd.getMinutes())
         const s1 = timeToSlot(rf.getHours(), rf.getMinutes())
         let label = 'Réservé'
+        let sublabel: string | undefined
         let ck = 'other'
         if (r.idSession) {
           sessionIds.add(r.idSession)
@@ -132,6 +134,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
           if (sess) {
             // Priorité à la matière (sessions CAP multi-salles), sinon acronyme de la formation
             label = r.matiere || acronyme(sess.formation || sess.nom || 'Formation')
+            sublabel = sess.nom || sess.formation || undefined
             ck = getColorKey(sess.codeFormation || '')
           }
         } else if (r.idEvenement) {
@@ -139,7 +142,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
           const ev = evenements.find(e => e.idEvenement === r.idEvenement)
           label = ev?.titre || 'Événement'; ck = 'event'
         }
-        blocks.push({ id: `r${r.id}`, label, startSlot: s0, endSlot: Math.max(s0 + 1, s1), colorKey: ck, horaires: `${slotToTime(s0)} – ${slotToTime(s1)}` })
+        blocks.push({ id: `r${r.id}`, label, sublabel, startSlot: s0, endSlot: Math.max(s0 + 1, s1), colorKey: ck, horaires: `${slotToTime(s0)} – ${slotToTime(s1)}` })
       }
 
       for (const ev of evenements) {
@@ -282,7 +285,10 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
                     >
                       <div className="px-1.5 py-1 flex flex-col h-full overflow-hidden">
                         <span className="text-[11px] font-bold leading-tight truncate" style={{ color: c.text }}>{block.label}</span>
-                        {height >= SLOT_HEIGHT * 1.5 && (
+                        {block.sublabel && height >= SLOT_HEIGHT * 1.5 && (
+                          <span className="text-[9px] leading-tight truncate mt-0.5" style={{ color: c.text, opacity: 0.6 }}>{block.sublabel}</span>
+                        )}
+                        {height >= SLOT_HEIGHT * 2 && (
                           <span className="text-[9px] mt-0.5" style={{ color: c.text, opacity: 0.7 }}>{block.horaires}</span>
                         )}
                       </div>
