@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
         dateDebut: true,
         dateFin: true,
         statut: true,
+        matiere: true,
       }
     })
 
@@ -225,6 +226,7 @@ export async function GET(request: NextRequest) {
             dateDebut: r.dateDebut,
             dateFin: r.dateFin,
             statut: r.statut,
+            matiere: r.matiere,
           })),
         }
       })

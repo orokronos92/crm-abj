@@ -406,9 +406,17 @@ export default function PlanningPage() {
                             const occupation = moisData?.occupation ?? 0
                             const sessionsCeMois = moisData?.sessions ?? []
                             const evenementsCeMois = moisData?.evenements ?? []
+                            const reservationsCeMois = moisData?.reservations ?? []
                             const nbSessions = sessionsCeMois.length
                             const nbEvenements = evenementsCeMois.length
                             const nbTotal = nbSessions + nbEvenements
+
+                            // Matières distinctes dans cette salle ce mois (via reservationSalle)
+                            const matieresCeMois = [...new Set(
+                              reservationsCeMois
+                                .map((r: any) => r.matiere)
+                                .filter(Boolean)
+                            )] as string[]
 
                             return (
                               <div
@@ -463,6 +471,22 @@ export default function PlanningPage() {
                                               • {sess.formation}
                                             </p>
                                           ))}
+                                        </>
+                                      )}
+                                      {/* Matières enseignées dans cette salle ce mois (sessions CAP multi-salles) */}
+                                      {matieresCeMois.length > 0 && (
+                                        <>
+                                          <p className="text-xs font-semibold text-[rgb(var(--accent))] mt-2 mb-1">🎓 Matières :</p>
+                                          {matieresCeMois.slice(0, 4).map((mat, idx) => (
+                                            <p key={idx} className="text-xs text-[rgb(var(--muted-foreground))] ml-3">
+                                              • {mat}
+                                            </p>
+                                          ))}
+                                          {matieresCeMois.length > 4 && (
+                                            <p className="text-xs text-[rgb(var(--muted-foreground))] ml-3 italic">
+                                              +{matieresCeMois.length - 4} autre(s)
+                                            </p>
+                                          )}
                                         </>
                                       )}
                                       {nbEvenements > 0 && (
