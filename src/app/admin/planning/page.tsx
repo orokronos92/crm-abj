@@ -459,7 +459,7 @@ export default function PlanningPage() {
                                 </div>
 
                                 {/* Tooltip détaillé au survol */}
-                                {nbTotal > 0 && (
+                                {(nbTotal > 0 || reservationsCeMois.length > 0) && (
                                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/cell:block z-10">
                                     <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg p-3 shadow-xl whitespace-nowrap">
                                       <p className="text-xs font-bold text-[rgb(var(--foreground))] mb-2">{moisLabels[moisIdx]} {anneeSelectionnee}</p>
