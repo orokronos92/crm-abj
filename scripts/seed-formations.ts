@@ -56,6 +56,7 @@ HISTOIRE DE L'ART & DU BIJOU :
 DESSIN TECHNIQUE & ART :
 - Codifications du dessin technique, plans orthogonaux, perspectives
 - Dessin gouaché : représentation fidèle des matériaux (métaux, pierres, perles)`,
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder', 'laminoir', 'machine_polissage', 'outils_sertissage'],
     actif: true,
   },
 
@@ -79,6 +80,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser ses premières créations',
     ],
     programme: 'Initiation aux techniques de base : postures, gestuelles, outils, travail du métal (découpage, limage, assemblage). Réalisation d\'un bijou simple.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder'],
     actif: true,
   },
   {
@@ -98,6 +100,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser des pièces plus complexes',
     ],
     programme: 'Perfectionnement : mises en forme avancées, brasage, finitions. Réalisation d\'une pièce de bijouterie créateur.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder'],
     actif: true,
   },
   {
@@ -117,6 +120,7 @@ DESSIN TECHNIQUE & ART :
       'Atteindre un niveau professionnel',
     ],
     programme: 'Techniques avancées : constructions complexes, sertissage intégré, finitions professionnelles. Projet créateur personnel.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder'],
     actif: true,
   },
 
@@ -140,6 +144,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser une pièce technique simple',
     ],
     programme: 'Initiation aux techniques de base : sciage, limage, perçage, traçage, découpage. Travail de précision sur métal.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder'],
     actif: true,
   },
   {
@@ -159,6 +164,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser des pièces techniques complexes',
     ],
     programme: 'Perfectionnement : mises en forme (pince, laminage, embouti), brasage, ajustage de précision.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder', 'laminoir'],
     actif: true,
   },
   {
@@ -178,6 +184,7 @@ DESSIN TECHNIQUE & ART :
       'Gérer un projet technique complexe de bout en bout',
     ],
     programme: 'Techniques avancées de fabrication, finitions de haute qualité, réalisation d\'une pièce technique professionnelle.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder', 'laminoir', 'machine_polissage'],
     actif: true,
   },
 
@@ -201,6 +208,7 @@ DESSIN TECHNIQUE & ART :
       'Comprendre la mise en valeur des pierres',
     ],
     programme: 'Initiation joaillerie : techniques de base pour les montures, initiation à la mise en valeur des pierres, gestes fondamentaux.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder'],
     actif: true,
   },
   {
@@ -220,6 +228,7 @@ DESSIN TECHNIQUE & ART :
       'Améliorer la précision des détails',
     ],
     programme: 'Perfectionnement joaillerie : montures complexes, ajustage précis, techniques de mise en valeur des gemmes.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder'],
     actif: true,
   },
   {
@@ -239,6 +248,7 @@ DESSIN TECHNIQUE & ART :
       'Concevoir et mener un projet joaillier complet',
     ],
     programme: 'Techniques avancées de joaillerie : montures complexes, précision maximale, réalisation d\'une pièce de haute joaillerie.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder'],
     actif: true,
   },
 
@@ -262,6 +272,7 @@ DESSIN TECHNIQUE & ART :
       'Comprendre les principes de base du sertissage',
     ],
     programme: 'Initiation sertissage : confection des outils (échoppe, onglet), serti clos taille ronde, serti clos taille ovale.',
+    equipementRequis: ['etabli_sertissage', 'outils_sertissage', 'microscope'],
     actif: true,
   },
   {
@@ -281,6 +292,7 @@ DESSIN TECHNIQUE & ART :
       'Affiner la précision du sertissage',
     ],
     programme: 'Perfectionnement sertissage : serti griffes, différentes configurations (4 griffes, 6 griffes), travail sur diverses formes de pierres.',
+    equipementRequis: ['etabli_sertissage', 'outils_sertissage', 'microscope'],
     actif: true,
   },
   {
@@ -300,6 +312,7 @@ DESSIN TECHNIQUE & ART :
       'Atteindre un niveau professionnel en sertissage',
     ],
     programme: 'Sertissage avancé : sertissage à grains, pavé, techniques complexes, réalisation d\'une pièce de haute précision.',
+    equipementRequis: ['etabli_sertissage', 'outils_sertissage', 'microscope'],
     actif: true,
   },
 
@@ -323,6 +336,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser son premier repoussé',
     ],
     programme: 'Initiation ciselure : outils (matoirs, ciselers), pose de mat, tracé, technique du repoussé. Réalisation d\'une plaque décorée.',
+    equipementRequis: ['etabli', 'outils_ciselure', 'masse_ciselure'],
     actif: true,
   },
   {
@@ -342,6 +356,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser des motifs plus complexes',
     ],
     programme: 'Perfectionnement ciselure : tracé avancé, fond descendu, repoussé en relief. Réalisation d\'une pièce avec motif complexe.',
+    equipementRequis: ['etabli', 'outils_ciselure', 'masse_ciselure'],
     actif: true,
   },
   {
@@ -361,6 +376,7 @@ DESSIN TECHNIQUE & ART :
       'Atteindre un niveau professionnel en ciselure',
     ],
     programme: 'Ciselure avancée : reprise de fonte, lancés, techniques de finition professionnelles. Réalisation d\'une pièce de maître.',
+    equipementRequis: ['etabli', 'outils_ciselure', 'masse_ciselure'],
     actif: true,
   },
 
@@ -384,6 +400,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser une première pièce émaillée',
     ],
     programme: 'Initiation émail grand feu : matériaux (émaux, fours), préparation des supports, techniques décoratives au choix parmi : cloisonné, champlevé, basse-taille. Cuisson et finitions.',
+    equipementRequis: ['four_email', 'outils_emaillage'],
     actif: true,
   },
   {
@@ -405,6 +422,7 @@ DESSIN TECHNIQUE & ART :
       'Créer une composition émaillée cloisonnée',
     ],
     programme: 'Perfectionnement cloisonné : pose des cloisons (au fil ou au ruban), remplissage des émaux, cuisson, ponçage et polissage. Réalisation d\'un bijou cloisonné.',
+    equipementRequis: ['four_email', 'outils_emaillage'],
     actif: true,
   },
   {
@@ -426,6 +444,7 @@ DESSIN TECHNIQUE & ART :
       'Créer une pièce en émail champlevé',
     ],
     programme: 'Perfectionnement champlevé : taille des alvéoles, remplissage d\'émail, cuissons successives, finitions. Réalisation d\'un bijou champlevé.',
+    equipementRequis: ['four_email', 'outils_emaillage', 'etabli'],
     actif: true,
   },
   {
@@ -448,6 +467,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser une pièce de haute orfèvrerie émaillée',
     ],
     programme: 'Plique-à-jour : construction d\'un réseau de cloisons sans fond, remplissage d\'émail translucide, cuissons multiples, retrait du support, finitions. Réalisation d\'une pièce plique-à-jour.',
+    equipementRequis: ['four_email', 'outils_emaillage', 'etabli'],
     actif: true,
   },
 
@@ -471,6 +491,7 @@ DESSIN TECHNIQUE & ART :
       'Identifier les principales gemmes',
     ],
     programme: 'Initiation gemmologie : classification des gemmes, cristallographie de base, instruments (loupe, réfractomètre, polariscope), identification des pierres les plus communes.',
+    equipementRequis: ['loupe', 'refractometre', 'polariscope', 'microscope', 'salle_cours'],
     actif: true,
   },
   {
@@ -490,6 +511,7 @@ DESSIN TECHNIQUE & ART :
       'Détecter les traitements sur les pierres',
     ],
     programme: 'Gemmologie de laboratoire : spectroscope, filtre Chelsea, microscope gemmologique, identification des inclusions, détection des traitements et synthétiques.',
+    equipementRequis: ['loupe', 'refractometre', 'polariscope', 'microscope', 'spectroscope', 'salle_cours'],
     actif: true,
   },
 
@@ -513,6 +535,7 @@ DESSIN TECHNIQUE & ART :
       'Comprendre les principes des tailles émeraude et brillant',
     ],
     programme: 'Initiation taille lapidaire : machines (tours lapidaires, disques diamantés), cabochon (demi-sphère), taille émeraude, initiation taille brillant.',
+    equipementRequis: ['tour_lapidaire', 'disques_diamantes'],
     actif: true,
   },
   {
@@ -532,6 +555,7 @@ DESSIN TECHNIQUE & ART :
       'Améliorer la précision et les proportions',
     ],
     programme: 'Perfectionnement lapidaire : taille ovale (proportions, facettes), taille coussin, calcul des angles de réfraction, polissage des facettes.',
+    equipementRequis: ['tour_lapidaire', 'disques_diamantes'],
     actif: true,
   },
   {
@@ -551,6 +575,7 @@ DESSIN TECHNIQUE & ART :
       'Gérer les formes asymétriques complexes',
     ],
     programme: 'Lapidaire avancé : taille navette (marquise), taille poire, gestion des formes irrégulières, optimisation du rendement de la pierre brute.',
+    equipementRequis: ['tour_lapidaire', 'disques_diamantes'],
     actif: true,
   },
   {
@@ -570,6 +595,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser des tailles fantaisie personnalisées',
     ],
     programme: 'Expertise lapidaire : analyse d\'une taille existante, retaille pour ajustage, tailles fantaisie sur mesure, polissage final de précision.',
+    equipementRequis: ['tour_lapidaire', 'disques_diamantes'],
     actif: true,
   },
 
@@ -593,6 +619,7 @@ DESSIN TECHNIQUE & ART :
       'Comprendre le lien entre maquette et bijou final',
     ],
     programme: 'Initiation maquette : matériaux (cire dure, cire souple, Plastiline), outils, réalisation de volumes géométriques, initiation à l\'interprétation de volumes.',
+    equipementRequis: ['etabli', 'outils_cire'],
     actif: true,
   },
   {
@@ -612,6 +639,7 @@ DESSIN TECHNIQUE & ART :
       'Préparer une maquette pour la fonte à cire perdue',
     ],
     programme: 'Perfectionnement maquette : formes organiques, assemblages complexes, préparation des jets de coulée, introduction à la fonte à cire perdue.',
+    equipementRequis: ['etabli', 'outils_cire'],
     actif: true,
   },
   {
@@ -631,6 +659,7 @@ DESSIN TECHNIQUE & ART :
       'Créer des prototypes professionnels',
     ],
     programme: 'Maquette avancée : sculpture de précision, projets créateurs complets, réalisation d\'un prototype professionnel en cire prêt à la fonte.',
+    equipementRequis: ['etabli', 'outils_cire'],
     actif: true,
   },
 
@@ -659,6 +688,7 @@ DESSIN TECHNIQUE & ART :
       'Préparer des fichiers pour l\'impression 3D ou la FAO',
     ],
     programme: 'Formation distanciel : installation du logiciel (2h), modélisation 3D (24h) : interface, outils de base, création de volumes, bagues, pendentifs, application des textures et matières, export pour impression 3D.',
+    equipementRequis: ['ordinateur', 'logiciel_cao'],
     actif: true,
   },
 
@@ -682,6 +712,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser des pièces de haute fantaisie',
     ],
     programme: 'Initiation haute fantaisie : enfilage de perles (colliers, bracelets), techniques de nœuds, tissage de perles, montage sur fil. Réalisation d\'une pièce complète.',
+    equipementRequis: ['etabli_fantaisie', 'outils_perles'],
     actif: true,
   },
   {
@@ -701,6 +732,7 @@ DESSIN TECHNIQUE & ART :
       'Réaliser des pièces originales en haute fantaisie',
     ],
     programme: 'Perfectionnement haute fantaisie : tissage peyote et brick stitch, techniques avancées de nœuds, créations composites. Réalisation d\'un projet personnel.',
+    equipementRequis: ['etabli_fantaisie', 'outils_perles'],
     actif: true,
   },
   {
@@ -720,6 +752,7 @@ DESSIN TECHNIQUE & ART :
       'Développer son style et sa signature créatrice',
     ],
     programme: 'Haute fantaisie avancée : techniques mixtes, projets créateurs personnels, réalisation d\'une collection capsule.',
+    equipementRequis: ['etabli_fantaisie', 'outils_perles'],
     actif: true,
   },
 
@@ -744,6 +777,7 @@ DESSIN TECHNIQUE & ART :
       'Savoir analyser et décrire une pièce bijoutière',
     ],
     programme: 'Histoire du bijou : de la Préhistoire à l\'Antiquité (Égypte, Grèce, Rome), Moyen-Âge, Renaissance, XVIIe-XVIIIe siècles, Art Nouveau et Art Déco, époque contemporaine. Analyse stylistique et technique des pièces.',
+    equipementRequis: ['salle_cours', 'materiel_dessin'],
     actif: true,
   },
 
@@ -767,6 +801,7 @@ DESSIN TECHNIQUE & ART :
       'Maîtriser les vues, perspectives et coupes',
     ],
     programme: 'Dessin technique bijouterie : normes et codifications, plans orthogonaux (vue de face, profil, dessus), perspectives cavalière et isométrique, vues de coupe et de section. Application sur des bijoux.',
+    equipementRequis: ['salle_cours', 'materiel_dessin'],
     actif: true,
   },
   {
@@ -786,6 +821,7 @@ DESSIN TECHNIQUE & ART :
       'Créer des rendus professionnels de bijoux',
     ],
     programme: 'Gouaché bijouterie : matériaux et pigments, techniques de rendu des métaux (or, argent, platine), pierres précieuses (diamant, rubis, émeraude), perles et matières organiques. Réalisation de rendus complets.',
+    equipementRequis: ['salle_cours', 'materiel_dessin'],
     actif: true,
   },
 
@@ -809,6 +845,7 @@ DESSIN TECHNIQUE & ART :
       'Maîtriser les obligations légales pour exercer',
     ],
     programme: 'Douane : réglementation importation/exportation des métaux précieux et pierres. Garantie : poinçons de maître, poinçons de titre, poinçons d\'importation, contrôle du bureau de garantie, obligations légales.',
+    equipementRequis: ['salle_cours'],
     actif: true,
   },
 
@@ -832,6 +869,7 @@ DESSIN TECHNIQUE & ART :
       'Maîtriser les gestes de base dans les deux disciplines',
     ],
     programme: 'Projet bijou transversal : réalisation d\'un élément en bijouterie (support métal), émaillage partiel de cet élément (technique découverte au choix), assemblage et finitions. Réalisation d\'un bijou complet.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder', 'four_email', 'outils_emaillage'],
     actif: true,
   },
   {
@@ -851,6 +889,7 @@ DESSIN TECHNIQUE & ART :
       'Assembler bijouterie et lapidaire en un bijou complet',
     ],
     programme: 'Projet bijou transversal : taille d\'un cabochon en pierre naturelle (initiation lapidaire), réalisation d\'une monture en métal adaptée, mise en valeur de la pierre, assemblage et finitions.',
+    equipementRequis: ['etabli', 'outils_bijouterie', 'lampe_a_souder', 'tour_lapidaire', 'disques_diamantes'],
     actif: true,
   },
   {
@@ -870,6 +909,7 @@ DESSIN TECHNIQUE & ART :
       'Créer une pièce unique mêlant les deux disciplines',
     ],
     programme: 'Projet transversal : ciselure pour obtenir un effet de texturage sur métal, émaillage partiel d\'un élément du projet, finitions. Réalisation d\'une pièce artistique unique.',
+    equipementRequis: ['etabli', 'outils_ciselure', 'masse_ciselure', 'four_email', 'outils_emaillage'],
     actif: true,
   },
 ]

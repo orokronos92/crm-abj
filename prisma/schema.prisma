@@ -400,7 +400,8 @@ model Formation {
   description    String?
   prerequis      String[] @default([])
   objectifs      String[] @default([])
-  programme      String?
+  programme         String?
+  equipementRequis  String[] @default([]) @map("equipement_requis")
   actif             Boolean  @default(true)
   idFormateurAttire Int?     @map("id_formateur_attire") // Formateur attitré optionnel (formations courtes)
   creeLe            DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
