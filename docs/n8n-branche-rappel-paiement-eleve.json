@@ -1,0 +1,214 @@
+{
+  "_commentaire": "=======================================================================",
+  "_commentaire2": "BRANCHE 6 — ENVOYER_RAPPEL_PAIEMENT_ELEVE",
+  "_commentaire3": "À coller dans maildispatcher.json :",
+  "_commentaire4": "  1. Ajouter les 8 nœuds dans le tableau 'nodes'",
+  "_commentaire5": "  2. Ajouter les connections dans 'connections'",
+  "_commentaire6": "  3. Connecter Switch output5 → '🔍 Get Eleve Rappel'",
+  "_commentaire7": "=======================================================================",
+
+  "nodes_a_ajouter": [
+
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  e.id_eleve,\n  e.numero_dossier,\n  e.formation_suivie,\n  c.id_candidat,\n  c.id_prospect,\n  c.montant_total_formation,\n  c.montant_prise_en_charge,\n  c.reste_a_charge,\n  c.mode_financement,\n  p.nom,\n  p.prenom,\n  p.emails[1] AS email,\n  p.telephones[1] AS telephone\nFROM eleves e\nJOIN candidats c ON c.id_candidat = e.id_candidat\nJOIN prospects p ON p.id_prospect = c.id_prospect\nWHERE e.id_eleve = $1\nLIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [parseInt($('When Executed by Another Workflow').item.json.body.entiteId)] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [-96, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567801",
+      "name": "🔍 Get Eleve Rappel",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const eleve = $input.first().json;\nconst webhook = $('When Executed by Another Workflow').first().json;\nconst body = webhook.body;\nconst meta = body.metadonnees || {};\n\nconst timestamp = Date.now();\nconst random = Math.random().toString(36).substring(2, 8);\nconst idEmail = 'EMAIL_RAPPEL_' + eleve.id_eleve + '_' + timestamp + '_' + random;\n\n// Calcul du reste à payer\nconst montantTotal = parseFloat(eleve.montant_total_formation) || parseFloat(meta.montantTotal) || 0;\nconst montantPaye = parseFloat(eleve.montant_prise_en_charge) || parseFloat(meta.montantPaye) || 0;\nconst resteAPayer = eleve.reste_a_charge != null\n  ? parseFloat(eleve.reste_a_charge)\n  : (parseFloat(meta.resteAPayer) || (montantTotal - montantPaye));\n\nconst formation = eleve.formation_suivie || meta.formation || 'Formation ABJ';\nconst modeFinancement = eleve.mode_financement || meta.modeFinancement || '';\n\nconst objet = 'Rappel de paiement — ' + formation + ' (Dossier ' + eleve.numero_dossier + ')';\n\nconst contenu = 'Bonjour ' + eleve.prenom + ',' +\n  '\\n\\nNous vous contactons au sujet du règlement de votre formation.' +\n  '\\n\\n📋 Récapitulatif de votre dossier :' +\n  '\\n- Formation : ' + formation +\n  '\\n- N° Dossier : ' + eleve.numero_dossier +\n  '\\n- Mode de financement : ' + modeFinancement +\n  '\\n- Montant total : ' + montantTotal.toLocaleString('fr-FR') + ' €' +\n  '\\n- Montant réglé : ' + montantPaye.toLocaleString('fr-FR') + ' €' +\n  '\\n- Reste à payer : ' + resteAPayer.toLocaleString('fr-FR') + ' €' +\n  '\\n\\nNous vous remercions de bien vouloir procéder au règlement du solde restant dans les plus brefs délais.' +\n  '\\n\\nPour toute question, n\\'hésitez pas à nous contacter.' +\n  '\\n\\nCordialement,' +\n  '\\nL\\'Académie de Bijouterie Joaillerie';\n\nreturn [{\n  json: {\n    id_email: idEmail,\n    id_eleve: eleve.id_eleve,\n    id_prospect: eleve.id_prospect,\n    numero_dossier: eleve.numero_dossier,\n    correlation_id: body.correlationId,\n    sens: 'sortant',\n    email_expediteur: 'contact@academiedebijouteriejoaillerie.fr',\n    nom_expediteur: 'ABJ',\n    email_destinataire: meta.destinataire || eleve.email,\n    objet: objet,\n    contenu: contenu,\n    montant_total: montantTotal,\n    montant_paye: montantPaye,\n    reste_a_payer: resteAPayer,\n    eleve_nom: eleve.nom,\n    eleve_prenom: eleve.prenom\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [144, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567802",
+      "name": "📧 Préparer Rappel Paiement"
+    },
+
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO historique_emails (\n  id_email,\n  id_prospect,\n  date_reception,\n  sens,\n  email_expediteur,\n  nom_expediteur,\n  email_destinataire,\n  objet,\n  contenu,\n  statut,\n  reponse_envoyee\n) VALUES (\n  $1, $2, NOW(), $3, $4, $5, $6, $7, $8, 'ENVOYE', true\n)\nRETURNING *",
+        "options": {
+          "queryReplacement": "={{ [$('📧 Préparer Rappel Paiement').item.json.id_email, $('📧 Préparer Rappel Paiement').item.json.id_prospect, $('📧 Préparer Rappel Paiement').item.json.sens, $('📧 Préparer Rappel Paiement').item.json.email_expediteur, $('📧 Préparer Rappel Paiement').item.json.nom_expediteur, $('📧 Préparer Rappel Paiement').item.json.email_destinataire, $('📧 Préparer Rappel Paiement').item.json.objet, $('📧 Préparer Rappel Paiement').item.json.contenu] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [384, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567803",
+      "name": "💾 Insert Email Rappel",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE prospects\nSET\n  date_dernier_contact = NOW(),\n  derniere_action = 'RAPPEL_PAIEMENT_ENVOYE',\n  nb_echanges = nb_echanges + 1,\n  modifie_le = NOW()\nWHERE id_prospect = $1",
+        "options": {
+          "queryReplacement": "={{ [$('📧 Préparer Rappel Paiement').item.json.id_prospect] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [624, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567804",
+      "name": "📝 MAJ Prospect Rappel",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [864, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567805",
+      "name": "Wait Rappel",
+      "webhookId": "wait-rappel-paiement-eleve"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/webhook/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"correlationId\": \"{{ $('When Executed by Another Workflow').item.json.body.correlationId }}\",\n  \"status\": \"success\",\n  \"response\": \"rappel_sent\",\n  \"data\": {\n    \"idEmail\": \"{{ $('📧 Préparer Rappel Paiement').item.json.id_email }}\",\n    \"idEleve\": \"{{ $('📧 Préparer Rappel Paiement').item.json.id_eleve }}\",\n    \"numeroDossier\": \"{{ $('📧 Préparer Rappel Paiement').item.json.numero_dossier }}\",\n    \"destinataire\": \"{{ $('📧 Préparer Rappel Paiement').item.json.email_destinataire }}\",\n    \"resteAPayer\": {{ $('📧 Préparer Rappel Paiement').item.json.reste_a_payer }}\n  },\n  \"executionId\": \"{{ $execution.id }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1104, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567806",
+      "name": "✅ Callback Rappel Paiement"
+    },
+
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1344, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567807",
+      "name": "Wait2 Rappel",
+      "webhookId": "wait2-rappel-paiement-eleve"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/notifications/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sourceAgent\": \"n8n\",\n  \"categorie\": \"ELEVE\",\n  \"type\": \"RAPPEL_PAIEMENT_ENVOYE\",\n  \"priorite\": \"NORMALE\",\n  \"titre\": \"Rappel de paiement envoyé\",\n  \"message\": \"Rappel de paiement envoyé à {{ $('📧 Préparer Rappel Paiement').item.json.eleve_prenom }} {{ $('📧 Préparer Rappel Paiement').item.json.eleve_nom }} — Reste à payer : {{ $('📧 Préparer Rappel Paiement').item.json.reste_a_payer }} €\",\n  \"audience\": \"ADMIN\",\n  \"entiteType\": \"eleve\",\n  \"entiteId\": \"{{ $('📧 Préparer Rappel Paiement').item.json.id_eleve }}\",\n  \"lienAction\": \"/admin/eleves\",\n  \"actionRequise\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1584, 1008],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567808",
+      "name": "🔔 Notif Rappel Paiement"
+    },
+
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"action\": \"ENVOYER_RAPPEL_PAIEMENT_ELEVE\",\n  \"message\": \"Rappel de paiement envoyé\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1808, 1024],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567809",
+      "name": "✅ Respond Rappel Paiement"
+    }
+
+  ],
+
+  "connections_a_ajouter": {
+    "🔍 Get Eleve Rappel": {
+      "main": [[{ "node": "📧 Préparer Rappel Paiement", "type": "main", "index": 0 }]]
+    },
+    "📧 Préparer Rappel Paiement": {
+      "main": [[{ "node": "💾 Insert Email Rappel", "type": "main", "index": 0 }]]
+    },
+    "💾 Insert Email Rappel": {
+      "main": [[{ "node": "📝 MAJ Prospect Rappel", "type": "main", "index": 0 }]]
+    },
+    "📝 MAJ Prospect Rappel": {
+      "main": [[{ "node": "Wait Rappel", "type": "main", "index": 0 }]]
+    },
+    "Wait Rappel": {
+      "main": [[{ "node": "✅ Callback Rappel Paiement", "type": "main", "index": 0 }]]
+    },
+    "✅ Callback Rappel Paiement": {
+      "main": [[{ "node": "Wait2 Rappel", "type": "main", "index": 0 }]]
+    },
+    "Wait2 Rappel": {
+      "main": [[{ "node": "🔔 Notif Rappel Paiement", "type": "main", "index": 0 }]]
+    },
+    "🔔 Notif Rappel Paiement": {
+      "main": [[{ "node": "✅ Respond Rappel Paiement", "type": "main", "index": 0 }]]
+    }
+  },
+
+  "switch_output5_a_connecter": {
+    "_note": "Dans connections.Switch.main, l'index 5 (output5) est actuellement []. Le remplacer par :",
+    "valeur": [{ "node": "🔍 Get Eleve Rappel", "type": "main", "index": 0 }]
+  }
+}

@@ -441,20 +441,45 @@ export default function PlanningPage() {
                                   </span>
                                 </div>
 
-                                {/* Pourcentage d'occupation */}
-                                <div className="flex-1 flex items-center justify-center">
+                                {/* Pourcentage d'occupation + matières visibles */}
+                                <div className="flex-1 flex flex-col items-center justify-center px-1">
                                   {occupation === 0 ? (
                                     <div className="text-xs font-medium" style={{ color: 'rgb(34, 197, 94)' }}>
                                       Libre
                                     </div>
                                   ) : (
-                                    <div className="text-3xl font-bold" style={{
-                                      color: occupation < 50 ? 'rgb(234, 179, 8)'
-                                        : occupation < 80 ? 'rgb(249, 115, 22)'
-                                        : 'rgb(239, 68, 68)'
-                                    }}>
-                                      {occupation}%
-                                    </div>
+                                    <>
+                                      <div className="text-2xl font-bold leading-none" style={{
+                                        color: occupation < 50 ? 'rgb(234, 179, 8)'
+                                          : occupation < 80 ? 'rgb(249, 115, 22)'
+                                          : 'rgb(239, 68, 68)'
+                                      }}>
+                                        {occupation}%
+                                      </div>
+                                      {/* Matières directement visibles sur la tuile */}
+                                      {matieresCeMois.length > 0 && (
+                                        <div className="mt-1 flex flex-col items-center gap-0.5 w-full">
+                                          {matieresCeMois.slice(0, 2).map((mat, idx) => (
+                                            <div key={idx} className="text-[9px] leading-tight text-center truncate w-full px-0.5 opacity-80" style={{
+                                              color: occupation < 50 ? 'rgb(234, 179, 8)'
+                                                : occupation < 80 ? 'rgb(249, 115, 22)'
+                                                : 'rgb(239, 68, 68)'
+                                            }}>
+                                              {mat}
+                                            </div>
+                                          ))}
+                                          {matieresCeMois.length > 2 && (
+                                            <div className="text-[9px] leading-tight text-center opacity-60" style={{
+                                              color: occupation < 50 ? 'rgb(234, 179, 8)'
+                                                : occupation < 80 ? 'rgb(249, 115, 22)'
+                                                : 'rgb(239, 68, 68)'
+                                            }}>
+                                              +{matieresCeMois.length - 2}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                 </div>
 

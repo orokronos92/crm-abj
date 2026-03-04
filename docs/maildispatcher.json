@@ -1,0 +1,1550 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const webhook = $('When Executed by Another Workflow').first().json;\nconst body = webhook.body;\nconst meta = body.metadonnees || {};\nconst entite = body.entiteData || {};\n\nconst timestamp = Date.now();\nconst random = Math.random().toString(36).substring(2, 8);\nconst idEmail = 'EMAIL_' + body.entiteId + '_' + timestamp + '_' + random;\n\nreturn [{\n  json: {\n    id_email: idEmail,\n    id_prospect: body.entiteId,\n    correlation_id: body.correlationId,\n    sens: 'sortant',\n    email_expediteur: 'contact@academiedebijouteriejoaillerie.fr',\n    nom_expediteur: 'ABJ',\n    email_destinataire: meta.destinataire || entite.email,\n    objet: meta.objet || 'Information ABJ',\n    contenu: meta.contenu || '',\n    prospect_nom: entite.nom,\n    prospect_prenom: entite.prenom\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -416
+      ],
+      "id": "a61c3f4b-ec4c-4b0d-8a7d-d3cb66216e45",
+      "name": "📧 Préparer Email"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO historique_emails (\n  id_email,\n  id_prospect,\n  date_reception,\n  sens,\n  email_expediteur,\n  nom_expediteur,\n  email_destinataire,\n  objet,\n  contenu,\n  statut,\n  reponse_envoyee\n) VALUES (\n  $1, $2, NOW(), $3, $4, $5, $6, $7, $8, 'ENVOYE', true\n)\nRETURNING *",
+        "options": {
+          "queryReplacement": "={{ [$json.id_email, $json.id_prospect, $json.sens, $json.email_expediteur, $json.nom_expediteur, $json.email_destinataire, $json.objet, $json.contenu] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        64,
+        -416
+      ],
+      "id": "0e19b8bf-a747-4640-b223-239fdf46b678",
+      "name": "💾 Insert Email",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE prospects SET\n  date_dernier_contact = NOW(),\n  derniere_action = 'EMAIL_ENVOYE',\n  nb_echanges = nb_echanges + 1,\n  modifie_le = NOW()\nWHERE id_prospect = $1\nRETURNING id_prospect, nb_echanges",
+        "options": {
+          "queryReplacement": "={{ [$('📧 Préparer Email').item.json.id_prospect] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        224,
+        -416
+      ],
+      "id": "bcc66a5a-82ed-4ba6-b80c-d57b396cd056",
+      "name": "📝 MAJ Prospect Email",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/webhook/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"correlationId\": \"{{ $('When Executed by Another Workflow').item.json.body.correlationId }}\",\n  \"status\": \"success\",\n  \"response\": \"email_sent\",\n  \"data\": {\n    \"idEmail\": \"{{ $('📧 Préparer Email').item.json.id_email }}\",\n    \"idProspect\": \"{{ $('📧 Préparer Email').item.json.id_prospect }}\",\n    \"destinataire\": \"{{ $('📧 Préparer Email').item.json.email_destinataire }}\",\n    \"objet\": \"{{ $('📧 Préparer Email').item.json.objet }}\"\n  },\n  \"executionId\": \"{{ $execution.id }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        -416
+      ],
+      "id": "095db380-4466-4593-9de1-46353c7256c7",
+      "name": "✅ Callback Email"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/notifications/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sourceAgent\": \"n8n\",\n  \"categorie\": \"PROSPECT\",\n  \"type\": \"EMAIL_ENVOYE\",\n  \"priorite\": \"BASSE\",\n  \"titre\": \"Email envoyé\",\n  \"message\": \"Email envoyé à {{ $('📧 Préparer Email').item.json.prospect_prenom }} {{ $('📧 Préparer Email').item.json.prospect_nom }} ({{ $('📧 Préparer Email').item.json.email_destinataire }})\",\n  \"audience\": \"ADMIN\",\n  \"entiteType\": \"prospect\",\n  \"entiteId\": \"{{ $('📧 Préparer Email').item.json.id_prospect }}\",\n  \"lienAction\": \"/admin/prospects\",\n  \"actionRequise\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        912,
+        -416
+      ],
+      "id": "5fabe09f-fd96-4e77-8859-45b16da0a484",
+      "name": "🔔 Notif Email"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"action\": \"ENVOYER_EMAIL\",\n  \"message\": \"Email enregistré\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1104,
+        -416
+      ],
+      "id": "0f23d8ab-74dd-45ea-a702-0b3e5a6446cd",
+      "name": "✅ Respond Email"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -416
+      ],
+      "id": "bdc95dc6-cea2-4134-b56a-873a2db8a938",
+      "name": "Wait6",
+      "webhookId": "817398be-c2f9-4e5a-9a3d-a924529fa0d6"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        736,
+        -416
+      ],
+      "id": "08d4d818-4079-49e1-b1b4-72b94005b840",
+      "name": "Wait7",
+      "webhookId": "fdb3270d-460d-4fa0-8f2f-e641b9d5fb0e"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -592,
+        256
+      ],
+      "id": "096399ee-4e5d-4057-81c4-247fc8db741e",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "content": "MAIL DU MODAL PROSPECT"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        -320
+      ],
+      "id": "c2e50a30-bc8f-431b-9df5-c08406b5568e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.actionType }}",
+                    "rightValue": "ENVOYER_EMAIL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d9f73b53-4b49-484f-a764-139a1a4ab28e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9ec13b44-e55c-42af-8c04-c50443c4e01a",
+                    "leftValue": "={{ $json.body.actionType }}",
+                    "rightValue": "ENVOYER_MESSAGE_ELEVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "77439547-bbbd-468f-a72c-d549b19b4eba",
+                    "leftValue": "={{ $json.body.actionType }}",
+                    "rightValue": "ENVOYER_MESSAGE_CANDIDAT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "33ffba1f-b150-4aab-8fb8-60f340291203",
+                    "leftValue": "={{ $json.body.actionType }}",
+                    "rightValue": "ENVOYER_MESSAGE_FORMATEUR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "74ad6cab-1a2b-48ea-a76b-6b1e1e03bb5a",
+                    "leftValue": "={{ $json.body.actionType }}",
+                    "rightValue": "DEMANDER_DOCUMENT_FORMATEUR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d91efc9e-2b83-4c37-95af-3676b36e6e5b",
+                    "leftValue": "={{ $json.body.actionType }}",
+                    "rightValue": "ENVOYER_RAPPEL_PAIEMENT_ELEVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -384,
+        256
+      ],
+      "id": "e00f78e6-fd11-4179-8a99-3419f463d35a",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  e.id_eleve,\n  e.numero_dossier,\n  c.id_candidat,\n  c.id_prospect,\n  p.nom,\n  p.prenom,\n  p.emails[1] AS email\nFROM eleves e\nJOIN candidats c ON c.id_candidat = e.id_candidat\nJOIN prospects p ON p.id_prospect = c.id_prospect\nWHERE e.id_eleve = $1\nLIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [$('When Executed by Another Workflow').item.json.body.entiteId] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -112,
+        -64
+      ],
+      "id": "0127042c-871b-4be3-906e-e9ffe65f35b1",
+      "name": "🔍 Get Eleve + Prospect",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const eleve = $input.first().json;\nconst webhook = $('When Executed by Another Workflow').first().json;\nconst body = webhook.body;\nconst meta = body.metadonnees || {};\n\nconst timestamp = Date.now();\nconst random = Math.random().toString(36).substring(2, 8);\nconst idEmail = 'EMAIL_' + eleve.id_prospect + '_' + timestamp + '_' + random;\n\nreturn [{\n  json: {\n    id_email: idEmail,\n    id_prospect: eleve.id_prospect,\n    id_eleve: eleve.id_eleve,\n    correlation_id: body.correlationId,\n    sens: 'sortant',\n    email_expediteur: 'contact@academiedebijouteriejoaillerie.fr',\n    nom_expediteur: 'ABJ',\n    email_destinataire: meta.destinataire || eleve.email,\n    objet: meta.objet || 'Information ABJ',\n    contenu: meta.contenu || '',\n    eleve_nom: eleve.nom,\n    eleve_prenom: eleve.prenom,\n    numero_dossier: eleve.numero_dossier\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -64
+      ],
+      "id": "8177681b-7502-4f9e-a208-25c64004688c",
+      "name": "📧 Préparer Email Eleve"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE prospects SET\n  date_dernier_contact = NOW(),\n  derniere_action = 'EMAIL_ENVOYE',\n  nb_echanges = nb_echanges + 1,\n  modifie_le = NOW()\nWHERE id_prospect = $1\nRETURNING id_prospect, nb_echanges",
+        "options": {
+          "queryReplacement": "={{ [$('📧 Préparer Email Eleve').item.json.id_prospect] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        608,
+        -64
+      ],
+      "id": "6d15b461-7935-476c-8769-a96e172eeddd",
+      "name": "📝 MAJ Prospect",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        -64
+      ],
+      "id": "8cc07f7c-b6cc-4553-a79d-d18a0e8d2994",
+      "name": "Wait",
+      "webhookId": "wait-email-eleve"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1328,
+        -64
+      ],
+      "id": "76cd868d-5a6a-4703-aa24-04e570948f0d",
+      "name": "Wait2",
+      "webhookId": "wait-notif-email-eleve"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO historique_emails (\n  id_email,\n  id_prospect,\n  date_reception,\n  sens,\n  email_expediteur,\n  nom_expediteur,\n  email_destinataire,\n  objet,\n  contenu,\n  statut,\n  reponse_envoyee\n) VALUES (\n  $1, $2, NOW(), $3, $4, $5, $6, $7, $8, 'ENVOYE', true\n)\nRETURNING *",
+        "options": {
+          "queryReplacement": "={{ [$json.id_email, $json.id_prospect, $json.sens, $json.email_expediteur, $json.nom_expediteur, $json.email_destinataire, $json.objet, $json.contenu] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        368,
+        -64
+      ],
+      "id": "4026d2e2-366d-411a-aff1-3b3d8e930b3a",
+      "name": "💾 Insert Email1",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/webhook/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"correlationId\": \"{{ $('When Executed by Another Workflow').item.json.body.correlationId }}\",\n  \"status\": \"success\",\n  \"response\": \"email_sent\",\n  \"data\": {\n    \"idEmail\": \"{{ $('📧 Préparer Email Eleve').item.json.id_email }}\",\n    \"idProspect\": \"{{ $('📧 Préparer Email Eleve').item.json.id_prospect }}\",\n    \"idEleve\": \"{{ $('📧 Préparer Email Eleve').item.json.id_eleve }}\",\n    \"destinataire\": \"{{ $('📧 Préparer Email Eleve').item.json.email_destinataire }}\",\n    \"objet\": \"{{ $('📧 Préparer Email Eleve').item.json.objet }}\"\n  },\n  \"executionId\": \"{{ $execution.id }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1088,
+        -64
+      ],
+      "id": "e838dc2f-6558-4841-9fa7-636fd4e596e8",
+      "name": "✅ Callback Email1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/notifications/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sourceAgent\": \"n8n\",\n  \"categorie\": \"ELEVE\",\n  \"type\": \"EMAIL_ENVOYE\",\n  \"priorite\": \"BASSE\",\n  \"titre\": \"Email envoyé à un élève\",\n  \"message\": \"Email envoyé à {{ $('📧 Préparer Email Eleve').item.json.eleve_prenom }} {{ $('📧 Préparer Email Eleve').item.json.eleve_nom }} ({{ $('📧 Préparer Email Eleve').item.json.email_destinataire }})\",\n  \"audience\": \"ADMIN\",\n  \"entiteType\": \"eleve\",\n  \"entiteId\": \"{{ $('📧 Préparer Email Eleve').item.json.id_eleve }}\",\n  \"lienAction\": \"/admin/eleves\",\n  \"actionRequise\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        -64
+      ],
+      "id": "def54691-9155-42c1-ad6c-34a7041d9f63",
+      "name": "🔔 Notif Email1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"action\": \"ENVOYER_EMAIL_ELEVE\",\n  \"message\": \"Email enregistré\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1808,
+        -64
+      ],
+      "id": "ec10727d-4bd9-4da1-ae35-728d2056865b",
+      "name": "✅ Respond Email1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  c.id_candidat,\n  c.numero_dossier,\n  c.id_prospect,\n  p.nom,\n  p.prenom,\n  p.emails[1] AS email\nFROM candidats c\nJOIN prospects p ON p.id_prospect = c.id_prospect\nWHERE c.id_candidat = $1\nLIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [$('When Executed by Another Workflow').item.json.body.entiteId] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -112,
+        160
+      ],
+      "id": "32339921-9a53-4bd3-aec9-9dcc66d5a9f1",
+      "name": "🔍 Get Candidat + Prospect",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const candidat = $input.first().json;\nconst webhook = $('When Executed by Another Workflow').first().json;\nconst body = webhook.body;\nconst meta = body.metadonnees || {};\n\nconst timestamp = Date.now();\nconst random = Math.random().toString(36).substring(2, 8);\nconst idEmail = 'EMAIL_' + candidat.id_prospect + '_' + timestamp + '_' + random;\n\nreturn [{\n  json: {\n    id_email: idEmail,\n    id_prospect: candidat.id_prospect,\n    id_candidat: candidat.id_candidat,\n    correlation_id: body.correlationId,\n    sens: 'sortant',\n    email_expediteur: 'contact@academiedebijouteriejoaillerie.fr',\n    nom_expediteur: 'ABJ',\n    email_destinataire: meta.destinataire || candidat.email,\n    objet: meta.objet || 'Information ABJ',\n    contenu: meta.contenu || '',\n    candidat_nom: candidat.nom,\n    candidat_prenom: candidat.prenom,\n    numero_dossier: candidat.numero_dossier\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        160
+      ],
+      "id": "79c0027d-7f72-4e02-856b-dfcca997e200",
+      "name": "📧 Préparer Email Candidat"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO historique_emails (\n  id_email,\n  id_prospect,\n  date_reception,\n  sens,\n  email_expediteur,\n  nom_expediteur,\n  email_destinataire,\n  objet,\n  contenu,\n  statut,\n  reponse_envoyee\n) VALUES (\n  $1, $2, NOW(), $3, $4, $5, $6, $7, $8, 'ENVOYE', true\n)\nRETURNING *",
+        "options": {
+          "queryReplacement": "={{ [$json.id_email, $json.id_prospect, $json.sens, $json.email_expediteur, $json.nom_expediteur, $json.email_destinataire, $json.objet, $json.contenu] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        368,
+        160
+      ],
+      "id": "3660c2f4-ba6f-40ac-9bad-02fc39b22c2c",
+      "name": "💾 Insert Email Candidat",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE prospects SET\n  date_dernier_contact = NOW(),\n  derniere_action = 'EMAIL_ENVOYE',\n  nb_echanges = nb_echanges + 1,\n  modifie_le = NOW()\nWHERE id_prospect = $1\nRETURNING id_prospect, nb_echanges",
+        "options": {
+          "queryReplacement": "={{ [$('📧 Préparer Email Candidat').item.json.id_prospect] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        608,
+        160
+      ],
+      "id": "f4713e8e-0b7b-4df9-8e84-e327df1ee809",
+      "name": "📝 MAJ Prospect Candidat",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        160
+      ],
+      "id": "81800dd6-537a-4152-9e02-1c1afd69417a",
+      "name": "Wait Candidat",
+      "webhookId": "wait-email-candidat-001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/webhook/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"correlationId\": \"{{ $('When Executed by Another Workflow').item.json.body.correlationId }}\",\n  \"status\": \"success\",\n  \"response\": \"email_sent\",\n  \"data\": {\n    \"idEmail\": \"{{ $('📧 Préparer Email Candidat').item.json.id_email }}\",\n    \"idProspect\": \"{{ $('📧 Préparer Email Candidat').item.json.id_prospect }}\",\n    \"idCandidat\": \"{{ $('📧 Préparer Email Candidat').item.json.id_candidat }}\",\n    \"destinataire\": \"{{ $('📧 Préparer Email Candidat').item.json.email_destinataire }}\",\n    \"objet\": \"{{ $('📧 Préparer Email Candidat').item.json.objet }}\"\n  },\n  \"executionId\": \"{{ $execution.id }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1088,
+        160
+      ],
+      "id": "3e66c44c-2b68-4818-a748-b427407bd866",
+      "name": "✅ Callback Email Candidat"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1328,
+        160
+      ],
+      "id": "355374cd-acd5-41ae-8c69-9977ca97f7be",
+      "name": "Wait2 Candidat",
+      "webhookId": "wait-notif-email-candidat-001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/notifications/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sourceAgent\": \"n8n\",\n  \"categorie\": \"CANDIDAT\",\n  \"type\": \"EMAIL_ENVOYE\",\n  \"priorite\": \"BASSE\",\n  \"titre\": \"Email envoyé à un candidat\",\n  \"message\": \"Email envoyé à {{ $('📧 Préparer Email Candidat').item.json.candidat_prenom }} {{ $('📧 Préparer Email Candidat').item.json.candidat_nom }} ({{ $('📧 Préparer Email Candidat').item.json.email_destinataire }})\",\n  \"audience\": \"ADMIN\",\n  \"entiteType\": \"candidat\",\n  \"entiteId\": \"{{ $('📧 Préparer Email Candidat').item.json.id_candidat }}\",\n  \"lienAction\": \"/admin/candidats\",\n  \"actionRequise\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        160
+      ],
+      "id": "96bd1818-d2b3-4d3d-a5bc-97d622a9fcdc",
+      "name": "🔔 Notif Email Candidat"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"action\": \"ENVOYER_EMAIL_CANDIDAT\",\n  \"message\": \"Email enregistré\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1808,
+        160
+      ],
+      "id": "6a4dd5a2-81a0-4f41-b99a-9853dd39e5a6",
+      "name": "✅ Respond Email Candidat"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  f.id_formateur,\n  f.nom,\n  f.prenom,\n  f.email,\n  f.telephone,\n  f.specialites\nFROM formateurs f\nWHERE f.id_formateur = $1\nLIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [parseInt($('When Executed by Another Workflow').item.json.body.entiteId)] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -128,
+        432
+      ],
+      "id": "19d257a5-5d3e-4691-8544-7e0cd8531dfb",
+      "name": "🔍 Get Formateur",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const formateur = $input.first().json;\nconst webhook = $('When Executed by Another Workflow').first().json;\nconst body = webhook.body;\nconst meta = body.metadonnees || {};\n\nconst timestamp = Date.now();\nconst random = Math.random().toString(36).substring(2, 8);\nconst idEmail = 'EMAIL_FORM_' + formateur.id_formateur + '_' + timestamp + '_' + random;\n\nreturn [{\n  json: {\n    id_email: idEmail,\n    id_formateur: formateur.id_formateur,\n    correlation_id: body.correlationId,\n    sens: 'sortant',\n    email_expediteur: 'contact@academiedebijouteriejoaillerie.fr',\n    nom_expediteur: 'ABJ',\n    email_destinataire: meta.destinataire || formateur.email,\n    objet: meta.objet || 'Information ABJ',\n    contenu: meta.contenu || '',\n    formateur_nom: formateur.nom,\n    formateur_prenom: formateur.prenom\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        432
+      ],
+      "id": "5ab74814-d26b-4937-9e83-bed40f0fba6d",
+      "name": "📧 Préparer Email Formateur"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO historique_emails (\n  id_email,\n  date_reception,\n  sens,\n  email_expediteur,\n  nom_expediteur,\n  email_destinataire,\n  objet,\n  contenu,\n  statut,\n  reponse_envoyee\n) VALUES (\n  $1, NOW(), $2, $3, $4, $5, $6, $7, 'ENVOYE', true\n)\nRETURNING *",
+        "options": {
+          "queryReplacement": "={{ [$json.id_email, $json.sens, $json.email_expediteur, $json.nom_expediteur, $json.email_destinataire, $json.objet, $json.contenu] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        352,
+        432
+      ],
+      "id": "30a55ae1-bf8f-4ecb-a351-6202466358dc",
+      "name": "💾 Insert Email Formateur",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        432
+      ],
+      "id": "5129c568-cb92-4989-9742-7de00d3c4ad1",
+      "name": "Wait Formateur",
+      "webhookId": "wait-formateur-email"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/webhook/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"notificationId\": {{ $('When Executed by Another Workflow').item.json.body.notificationId }},\n  \"status\": \"success\",\n  \"response\": \"email_sent\",\n  \"data\": {\n    \"idEmail\": \"{{ $('📧 Préparer Email Formateur').item.json.id_email }}\",\n    \"idFormateur\": \"{{ $('📧 Préparer Email Formateur').item.json.id_formateur }}\",\n    \"destinataire\": \"{{ $('📧 Préparer Email Formateur').item.json.email_destinataire }}\",\n    \"objet\": \"{{ $('📧 Préparer Email Formateur').item.json.objet }}\"\n  },\n  \"executionId\": \"{{ $execution.id }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        832,
+        432
+      ],
+      "id": "59bbcc65-d79f-48d7-9e87-b79200ab0258",
+      "name": "✅ Callback Email Formateur"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        432
+      ],
+      "id": "425a530e-2454-4cde-b6c9-806bcc4d6f09",
+      "name": "Wait2 Formateur",
+      "webhookId": "wait2-formateur-email"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/notifications/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sourceAgent\": \"n8n\",\n  \"categorie\": \"FORMATEUR\",\n  \"type\": \"EMAIL_ENVOYE\",\n  \"priorite\": \"BASSE\",\n  \"titre\": \"Email envoyé à un formateur\",\n  \"message\": \"Email envoyé à {{ $('📧 Préparer Email Formateur').item.json.formateur_prenom }} {{ $('📧 Préparer Email Formateur').item.json.formateur_nom }} ({{ $('📧 Préparer Email Formateur').item.json.email_destinataire }})\",\n  \"audience\": \"ADMIN\",\n  \"entiteType\": \"formateur\",\n  \"entiteId\": \"{{ $('📧 Préparer Email Formateur').item.json.id_formateur }}\",\n  \"lienAction\": \"/admin/formateurs\",\n  \"actionRequise\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1312,
+        432
+      ],
+      "id": "784ec1a8-ad88-4eb0-b410-6925e6903de6",
+      "name": "🔔 Notif Email Formateur"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"action\": \"ENVOYER_EMAIL_FORMATEUR\",\n  \"message\": \"Email enregistré\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1552,
+        432
+      ],
+      "id": "0eb23ed7-51fe-4f03-aff5-ef2fc144b507",
+      "name": "✅ Respond Email Formateur"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  f.id_formateur,\n  f.nom,\n  f.prenom,\n  f.email,\n  f.telephone\nFROM formateurs f\nWHERE f.id_formateur = $1\nLIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [parseInt($('When Executed by Another Workflow').item.json.body.entiteId)] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -96,
+        672
+      ],
+      "id": "fa94faca-0a92-4b7a-8e92-6a25d152259b",
+      "name": "🔍 Get Formateur Doc",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const formateur = $input.first().json;\nconst webhook = $('When Executed by Another Workflow').first().json;\nconst body = webhook.body;\nconst meta = body.metadonnees || {};\n\nconst timestamp = Date.now();\nconst random = Math.random().toString(36).substring(2, 8);\nconst idEmail = 'EMAIL_DOC_' + formateur.id_formateur + '_' + timestamp + '_' + random;\n\nreturn [{\n  json: {\n    id_email: idEmail,\n    id_formateur: formateur.id_formateur,\n    notification_id: parseInt(body.notificationId) || 0,\n    sens: 'sortant',\n    email_expediteur: 'contact@academiedebijouteriejoaillerie.fr',\n    nom_expediteur: 'ABJ',\n    email_destinataire: meta.destinataire || formateur.email,\n    objet: 'Demande de document : ' + (meta.libelleDocument || 'Document'),\n    contenu: meta.contenu || ('Bonjour ' + formateur.prenom + ',\\n\\nNous vous prions de bien vouloir nous transmettre le document suivant : ' + (meta.libelleDocument || 'document requis') + '.\\n\\nMotif : ' + (meta.motif || 'Document requis pour votre dossier') + '\\n\\nCordialement,\\nL\\'Acad\\u00e9mie de Bijouterie Joaillerie'),\n    code_type_document: meta.codeTypeDocument || '',\n    libelle_document: meta.libelleDocument || '',\n    motif: meta.motif || '',\n    formateur_nom: formateur.nom,\n    formateur_prenom: formateur.prenom\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        672
+      ],
+      "id": "cbc88ea9-99b1-4db5-b2a3-8737d391ee18",
+      "name": "📧 Préparer Demande Doc"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE documents_formateur\nSET statut = 'ATTENDU',\n    commentaire = $3,\n    modifie_le = NOW()\nWHERE id_formateur = $1\n  AND code_type_document = $2\n  AND statut != 'VALIDE'\nRETURNING *",
+        "options": {
+          "queryReplacement": "={{ [$json.id_formateur, $json.code_type_document, $json.motif] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        384,
+        672
+      ],
+      "id": "a71282c2-1356-4da3-81b1-e8ec313ab93f",
+      "name": "💾 MAJ Document Attendu",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO historique_emails (\n  id_email,\n  date_reception,\n  sens,\n  email_expediteur,\n  nom_expediteur,\n  email_destinataire,\n  objet,\n  contenu,\n  statut,\n  reponse_envoyee\n) VALUES (\n  $1, NOW(), $2, $3, $4, $5, $6, $7, 'ENVOYE', true\n)\nRETURNING *",
+        "options": {
+          "queryReplacement": "={{ [$('📧 Préparer Demande Doc').item.json.id_email, $('📧 Préparer Demande Doc').item.json.sens, $('📧 Préparer Demande Doc').item.json.email_expediteur, $('📧 Préparer Demande Doc').item.json.nom_expediteur, $('📧 Préparer Demande Doc').item.json.email_destinataire, $('📧 Préparer Demande Doc').item.json.objet, $('📧 Préparer Demande Doc').item.json.contenu] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        624,
+        672
+      ],
+      "id": "b78238f9-e399-49b1-b5e3-fd409f7ffec9",
+      "name": "💾 Insert Email Doc",
+      "credentials": {
+        "postgres": {
+          "id": "FbRrDuph9vQyoUOV",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        672
+      ],
+      "id": "00cd311c-ac25-4f83-94cd-89c486844125",
+      "name": "Wait Doc",
+      "webhookId": "wait-doc-formateur"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/webhook/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"notificationId\": {{ Number($('📧 Préparer Demande Doc').item.json.notification_id) }},\n  \"status\": \"success\",\n  \"response\": \"demande_sent\",\n  \"data\": {\n    \"idEmail\": \"{{ $('📧 Préparer Demande Doc').item.json.id_email }}\",\n    \"idFormateur\": \"{{ $('📧 Préparer Demande Doc').item.json.id_formateur }}\",\n    \"codeTypeDocument\": \"{{ $('📧 Préparer Demande Doc').item.json.code_type_document }}\",\n    \"destinataire\": \"{{ $('📧 Préparer Demande Doc').item.json.email_destinataire }}\"\n  },\n  \"executionId\": \"{{ $execution.id }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        672
+      ],
+      "id": "da321a0b-7d52-4387-bd77-a419d3bee699",
+      "name": "✅ Callback Doc Formateur"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        672
+      ],
+      "id": "06cae63f-1986-4338-9ef9-65e6101d1670",
+      "name": "Wait2 Doc",
+      "webhookId": "wait2-doc-formateur"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm-abj.academiedebijouteriejoaillerie.fr/api/notifications/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "dev-key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"sourceAgent\": \"n8n\",\n  \"categorie\": \"FORMATEUR\",\n  \"type\": \"DOCUMENT_DEMANDE\",\n  \"priorite\": \"NORMALE\",\n  \"titre\": \"Document demandé à un formateur\",\n  \"message\": \"Demande de {{ $('📧 Préparer Demande Doc').item.json.libelle_document }} envoyée à {{ $('📧 Préparer Demande Doc').item.json.formateur_prenom }} {{ $('📧 Préparer Demande Doc').item.json.formateur_nom }}\",\n  \"audience\": \"ADMIN\",\n  \"entiteType\": \"formateur\",\n  \"entiteId\": \"{{ $('📧 Préparer Demande Doc').item.json.id_formateur }}\",\n  \"lienAction\": \"/admin/formateurs\",\n  \"actionRequise\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1584,
+        672
+      ],
+      "id": "106cdf59-28f1-4648-9bb3-da95a66a73d8",
+      "name": "🔔 Notif Doc Formateur"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"action\": \"DEMANDER_DOCUMENT_FORMATEUR\",\n  \"message\": \"Demande de document envoyée\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1808,
+        688
+      ],
+      "id": "886be735-7ad0-4f39-9269-94d005807681",
+      "name": "✅ Respond Doc Formateur"
+    }
+  ],
+  "connections": {
+    "📧 Préparer Email": {
+      "main": [
+        [
+          {
+            "node": "💾 Insert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Insert Email": {
+      "main": [
+        [
+          {
+            "node": "📝 MAJ Prospect Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 MAJ Prospect Email": {
+      "main": [
+        [
+          {
+            "node": "Wait6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Callback Email": {
+      "main": [
+        [
+          {
+            "node": "Wait7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔔 Notif Email": {
+      "main": [
+        [
+          {
+            "node": "✅ Respond Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait6": {
+      "main": [
+        [
+          {
+            "node": "✅ Callback Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait7": {
+      "main": [
+        [
+          {
+            "node": "🔔 Notif Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "📧 Préparer Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔍 Get Eleve + Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔍 Get Candidat + Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔍 Get Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔍 Get Formateur Doc",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "🔍 Get Eleve + Prospect": {
+      "main": [
+        [
+          {
+            "node": "📧 Préparer Email Eleve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📧 Préparer Email Eleve": {
+      "main": [
+        [
+          {
+            "node": "💾 Insert Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 MAJ Prospect": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "✅ Callback Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "🔔 Notif Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Insert Email1": {
+      "main": [
+        [
+          {
+            "node": "📝 MAJ Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Callback Email1": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔔 Notif Email1": {
+      "main": [
+        [
+          {
+            "node": "✅ Respond Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Get Candidat + Prospect": {
+      "main": [
+        [
+          {
+            "node": "📧 Préparer Email Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📧 Préparer Email Candidat": {
+      "main": [
+        [
+          {
+            "node": "💾 Insert Email Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Insert Email Candidat": {
+      "main": [
+        [
+          {
+            "node": "📝 MAJ Prospect Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 MAJ Prospect Candidat": {
+      "main": [
+        [
+          {
+            "node": "Wait Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Candidat": {
+      "main": [
+        [
+          {
+            "node": "✅ Callback Email Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Callback Email Candidat": {
+      "main": [
+        [
+          {
+            "node": "Wait2 Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2 Candidat": {
+      "main": [
+        [
+          {
+            "node": "🔔 Notif Email Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔔 Notif Email Candidat": {
+      "main": [
+        [
+          {
+            "node": "✅ Respond Email Candidat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Get Formateur": {
+      "main": [
+        [
+          {
+            "node": "📧 Préparer Email Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📧 Préparer Email Formateur": {
+      "main": [
+        [
+          {
+            "node": "💾 Insert Email Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Insert Email Formateur": {
+      "main": [
+        [
+          {
+            "node": "Wait Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Formateur": {
+      "main": [
+        [
+          {
+            "node": "✅ Callback Email Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Callback Email Formateur": {
+      "main": [
+        [
+          {
+            "node": "Wait2 Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2 Formateur": {
+      "main": [
+        [
+          {
+            "node": "🔔 Notif Email Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔔 Notif Email Formateur": {
+      "main": [
+        [
+          {
+            "node": "✅ Respond Email Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Get Formateur Doc": {
+      "main": [
+        [
+          {
+            "node": "📧 Préparer Demande Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📧 Préparer Demande Doc": {
+      "main": [
+        [
+          {
+            "node": "💾 MAJ Document Attendu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 MAJ Document Attendu": {
+      "main": [
+        [
+          {
+            "node": "💾 Insert Email Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Insert Email Doc": {
+      "main": [
+        [
+          {
+            "node": "Wait Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Doc": {
+      "main": [
+        [
+          {
+            "node": "✅ Callback Doc Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Callback Doc Formateur": {
+      "main": [
+        [
+          {
+            "node": "Wait2 Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2 Doc": {
+      "main": [
+        [
+          {
+            "node": "🔔 Notif Doc Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔔 Notif Doc Formateur": {
+      "main": [
+        [
+          {
+            "node": "✅ Respond Doc Formateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "5012b68dde564fb150afb86a491d532a18e570f162c9e0a5e2f430eff6626df4"
+  }
+}

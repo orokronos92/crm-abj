@@ -70,7 +70,19 @@
       "Bash(if grep -q \"''use client''\" \"$file\")",
       "Bash(then)",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "WebFetch(domain:www.academiedebijouteriejoaillerie.fr)",
+      "WebFetch(domain:academiedebijouteriejoaillerie.fr)",
+      "WebSearch",
+      "Bash(node -e:*)",
+      "Bash(docker ps:*)",
+      "Bash(tr:*)",
+      "Bash(/c/crm_abj/docs/roadmap.md:*)",
+      "Bash(/c/crm_abj/docs/roadmapv1important.md:*)",
+      "Bash(head:*)",
+      "Bash(cat:*)",
+      "Bash(cd:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
