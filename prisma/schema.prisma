@@ -149,6 +149,8 @@ model Candidat {
   // Liens Drive
   urlDossierDrive  String? @map("url_dossier_drive")
   urlFicheCandidat String? @map("url_fiche_candidat")
+  urlDossierMinio  String? @map("url_dossier_minio")
+  urlFicheMinio    String? @map("url_fiche_minio")
 
   // Notes et traçabilité
   notes           String?
@@ -189,6 +191,11 @@ model DocumentCandidat {
   idDrive      String? @map("id_drive")
   mimeType     String? @map("mime_type")
   tailleOctets Int?    @map("taille_octets")
+
+  // Stockage Minio
+  urlMinio    String? @map("url_minio")
+  minioKey    String? @map("minio_key")
+  minioBucket String? @default("documents-crm") @map("minio_bucket")
 
   // Statut et validation
   statut         String    @default("ATTENDU")
@@ -627,6 +634,12 @@ model DocumentFormateur {
   urlFichier       String    @map("url_fichier")
   nomFichier       String?   @map("nom_fichier")
   tailleFichier    Int?      @map("taille_fichier")
+
+  // Stockage Minio
+  urlMinio    String? @map("url_minio")
+  minioKey    String? @map("minio_key")
+  minioBucket String? @default("documents-crm") @map("minio_bucket")
+
   dateDocument     DateTime? @map("date_document") @db.Date
   dateExpiration   DateTime? @map("date_expiration") @db.Date
   statut           String    @default("RECU") // ATTENDU | RECU | VALIDE | EXPIRE | REJETE
