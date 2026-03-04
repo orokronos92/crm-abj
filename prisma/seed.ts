@@ -68,73 +68,10 @@ async function main() {
   // ============================================================
   console.log('📚 Création des formations...')
 
+  // Les formations du catalogue officiel sont gérées par scripts/seed-formations.ts
+  // On récupère simplement le CAP_ATBJ pour la session de test ci-dessous
   const formations = await Promise.all([
-    prisma.formation.upsert({
-      where: { codeFormation: 'CAP_BJ' },
-      update: {},
-      create: {
-        codeFormation: 'CAP_BJ',
-        nom: 'CAP Bijouterie-Joaillerie',
-        categorie: 'CAP',
-        dureeJours: 180,
-        dureeHeures: 1200,
-        niveauRequis: '3ème',
-        diplomeDelivre: 'CAP Bijouterie-Joaillerie',
-        tarifStandard: 8500,
-        description: 'Formation complète au métier de bijoutier-joaillier',
-        prerequis: ['Niveau 3ème', 'Dextérité manuelle', 'Sens artistique'],
-        objectifs: [
-          'Maîtriser les techniques de base de la bijouterie',
-          'Créer des bijoux simples',
-          'Connaître les métaux et pierres'
-        ],
-        actif: true
-      }
-    }),
-    prisma.formation.upsert({
-      where: { codeFormation: 'INIT_BJ' },
-      update: {},
-      create: {
-        codeFormation: 'INIT_BJ',
-        nom: 'Initiation Bijouterie',
-        categorie: 'FORMATION_COURTE',
-        dureeJours: 5,
-        dureeHeures: 35,
-        niveauRequis: 'Aucun',
-        diplomeDelivre: 'Attestation de formation',
-        tarifStandard: 750,
-        description: 'Découverte des techniques de base de la bijouterie',
-        prerequis: [],
-        objectifs: [
-          'Découvrir les outils et techniques',
-          'Réaliser un premier bijou',
-          'Comprendre les métiers de la bijouterie'
-        ],
-        actif: true
-      }
-    }),
-    prisma.formation.upsert({
-      where: { codeFormation: 'PERF_SERTISSAGE' },
-      update: {},
-      create: {
-        codeFormation: 'PERF_SERTISSAGE',
-        nom: 'Perfectionnement Sertissage',
-        categorie: 'PERFECTIONNEMENT',
-        dureeJours: 10,
-        dureeHeures: 70,
-        niveauRequis: 'CAP ou expérience',
-        diplomeDelivre: 'Attestation de perfectionnement',
-        tarifStandard: 1500,
-        description: 'Techniques avancées de sertissage',
-        prerequis: ['CAP ou 2 ans d\'expérience', 'Maîtrise des outils de base'],
-        objectifs: [
-          'Maîtriser le sertissage à grains',
-          'Apprendre le serti clos',
-          'Réaliser des sertis complexes'
-        ],
-        actif: true
-      }
-    })
+    prisma.formation.findUniqueOrThrow({ where: { codeFormation: 'CAP_ATBJ' } })
   ])
 
   console.log('✅ Formations créées')
@@ -441,8 +378,8 @@ async function main() {
       adresse: '15 rue de la Paix',
       codePostal: '75002',
       ville: 'Paris',
-      formationsSouhaitees: ['CAP_BJ'],
-      formationPrincipale: 'CAP_BJ',
+      formationsSouhaitees: ['CAP_ATBJ'],
+      formationPrincipale: 'CAP_ATBJ',
       modeFinancement: 'CPF',
       situationActuelle: 'Demandeur d\'emploi',
       niveauEtudes: 'Baccalauréat',
@@ -554,7 +491,7 @@ async function main() {
   const session = await prisma.session.create({
     data: {
       idFormation: formations[0].idFormation, // CAP_BJ
-      nomSession: 'CAP BJ - Session Printemps 2024',
+      nomSession: 'CAP ATBJ - Session Printemps 2024',
       dateDebut: new Date('2024-03-01'),
       dateFin: new Date('2024-09-30'),
       capaciteMax: 12,
