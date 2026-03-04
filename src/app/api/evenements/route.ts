@@ -98,27 +98,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ===== CRÉATION DE L'ÉVÉNEMENT =====
+    // ===== CRÉATION DE L'ÉVÉNEMENT + RÉSERVATION SALLE =====
 
     // TODO: Récupérer l'userId depuis la session NextAuth
     // Pour l'instant, on utilise null (sera ajouté après connexion auth)
     const userId = null
 
-    const evenement = await prisma.evenement.create({
-      data: {
-        type,
-        titre,
-        description: body.description || null,
-        date: dateEvenement,
-        heureDebut,
-        heureFin,
-        salle,
-        nombreParticipants: parseInt(String(nombreParticipants), 10),
-        participantsInscrits: body.participantsInscrits ? parseInt(String(body.participantsInscrits), 10) : 0,
-        statut: body.statut || 'PLANIFIE',
-        notes: body.notes || null,
-        creePar: userId
+    // Résoudre l'idSalle depuis le nom (pour reservations_salles)
+    const salleRecord = await prisma.salle.findFirst({
+      where: { nom: salle },
+      select: { idSalle: true }
+    })
+
+    // Construire les datetime complets pour la réservation
+    const dateDebutReservation = new Date(`${date}T${heureDebut}:00`)
+    const dateFinReservation = new Date(`${date}T${heureFin}:00`)
+
+    // Transaction : événement + réservation salle en une seule opération atomique
+    const evenement = await prisma.$transaction(async (tx) => {
+      const evt = await tx.evenement.create({
+        data: {
+          type,
+          titre,
+          description: body.description || null,
+          date: dateEvenement,
+          heureDebut,
+          heureFin,
+          salle,
+          nombreParticipants: parseInt(String(nombreParticipants), 10),
+          participantsInscrits: body.participantsInscrits ? parseInt(String(body.participantsInscrits), 10) : 0,
+          statut: body.statut || 'PLANIFIE',
+          notes: body.notes || null,
+          creePar: userId
+        }
+      })
+
+      // Insérer dans reservations_salles si la salle existe en base
+      if (salleRecord) {
+        await tx.reservationSalle.create({
+          data: {
+            idSalle: salleRecord.idSalle,
+            idEvenement: evt.idEvenement,
+            dateDebut: dateDebutReservation,
+            dateFin: dateFinReservation,
+            statut: 'CONFIRME'
+          }
+        })
+      } else {
+        console.warn(`⚠️ Salle "${salle}" introuvable en base — réservation_salle non créée pour l'événement`)
       }
+
+      return evt
     })
 
     return NextResponse.json({
