@@ -245,6 +245,23 @@ export const candidatWebhooks = {
   },
 
   /**
+   * Notifier n8n de la validation d'une étape du parcours candidat
+   */
+  async validerEtape(data: {
+    numeroDossier: string
+    etape: string
+    idProspect: string | null
+    nom: string | null
+    prenom: string | null
+    dateValidation: string
+    validePar: string | null
+    observation: string | null
+    exempt: boolean
+  }): Promise<WebhookResponse> {
+    return callWebhook('/candidat/etape-validee', data)
+  },
+
+  /**
    * Générer et envoyer un devis pour un candidat
    */
   async genererDevis(data: {

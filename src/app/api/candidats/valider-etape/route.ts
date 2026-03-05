@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sseManager } from '@/lib/sse-manager'
+import { candidatWebhooks } from '@/lib/webhook-client'
 
 /**
  * API Endpoint: Valider une étape du parcours candidat
@@ -105,24 +106,17 @@ export async function POST(request: NextRequest) {
       creeLe: new Date()
     })
 
-    // Webhook n8n asynchrone (fire-and-forget pour notification uniquement)
-    fetch(`${process.env.N8N_WEBHOOK_BASE_URL || 'http://localhost:5678/webhook'}/candidat/etape-validee`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.N8N_API_KEY || ''}`
-      },
-      body: JSON.stringify({
-        numeroDossier: candidat.numeroDossier,
-        etape,
-        idProspect: candidat.idProspect,
-        nom: candidat.prospect?.nom,
-        prenom: candidat.prospect?.prenom,
-        dateValidation: dateAEnregistrer.toISOString(),
-        validePar: validePar || null,
-        observation: observation || null,
-        exempt: isExempt,
-      })
+    // Webhook n8n via webhook-client (retry automatique + logging journal_erreurs)
+    candidatWebhooks.validerEtape({
+      numeroDossier: candidat.numeroDossier,
+      etape,
+      idProspect: candidat.idProspect,
+      nom: candidat.prospect?.nom ?? null,
+      prenom: candidat.prospect?.prenom ?? null,
+      dateValidation: dateAEnregistrer.toISOString(),
+      validePar: validePar || null,
+      observation: observation || null,
+      exempt: isExempt,
     }).catch(err => {
       console.error(`[API] ⚠️ Webhook n8n échoué (non bloquant):`, err.message)
     })
