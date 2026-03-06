@@ -98,9 +98,12 @@ export async function GET(request: NextRequest) {
         idSalle: true,
         idSession: true,
         idEvenement: true,
+        idCandidat: true,
+        token: true,
         dateDebut: true,
         dateFin: true,
         statut: true,
+        expiresAt: true,
         matiere: true,
       }
     })
@@ -219,15 +222,28 @@ export async function GET(request: NextRequest) {
             heureFin: e.heureFin,
             participants: e.nombreParticipants,
           })),
-          reservations: reservationsCeMois.map(r => ({
-            id: r.idReservation,
-            idSession: r.idSession,
-            idEvenement: r.idEvenement,
-            dateDebut: r.dateDebut,
-            dateFin: r.dateFin,
-            statut: r.statut,
-            matiere: r.matiere,
-          })),
+          reservations: reservationsCeMois
+            .filter(r => r.idCandidat === null)
+            .map(r => ({
+              id: r.idReservation,
+              idSession: r.idSession,
+              idEvenement: r.idEvenement,
+              dateDebut: r.dateDebut,
+              dateFin: r.dateFin,
+              statut: r.statut,
+              matiere: r.matiere,
+            })),
+          holds: reservationsCeMois
+            .filter(r => r.idCandidat !== null)
+            .map(r => ({
+              idReservation: r.idReservation,
+              token: r.token,
+              idCandidat: r.idCandidat,
+              statut: r.statut,
+              expiresAt: r.expiresAt,
+              dateDebut: r.dateDebut,
+              dateFin: r.dateFin,
+            })),
         }
       })
 

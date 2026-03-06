@@ -41,6 +41,16 @@ interface Block {
   horaires: string
 }
 
+interface HoldRdv {
+  idReservation: number
+  token: string
+  idCandidat: number | null
+  statut: string
+  expiresAt: string | Date | null
+  dateDebut: string | Date
+  dateFin: string | Date
+}
+
 interface PlanningWeekViewProps {
   mois: number
   annee: number
@@ -61,6 +71,7 @@ interface PlanningWeekViewProps {
     type: string
   }>
   reservations: Reservation[]
+  holds?: HoldRdv[]
 }
 
 const COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -92,7 +103,7 @@ function acronyme(nom: string): string {
   return nom.split(/[\s/\-]+/).filter(Boolean).map(w => w[0]?.toUpperCase() || '').join('').slice(0, 5)
 }
 
-export function PlanningWeekView({ mois, annee, sessions, evenements, reservations }: PlanningWeekViewProps) {
+export function PlanningWeekView({ mois, annee, sessions, evenements, reservations, holds = [] }: PlanningWeekViewProps) {
   const [semaineOffset, setSemaineOffset] = useState(0)
 
   const nbJours = new Date(annee, mois + 1, 0).getDate()
@@ -296,8 +307,45 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
                   )
                 })}
 
+                {/* Holds RDV (PREVUE / CONFIRMEE / expirés) */}
+                {holds
+                  .filter(h => {
+                    const d = new Date(h.dateDebut)
+                    return d.getDate() === jourNum && d.getMonth() === mois && d.getFullYear() === annee
+                  })
+                  .map(hold => {
+                    const rd = new Date(hold.dateDebut)
+                    const rf = new Date(hold.dateFin)
+                    const s0 = timeToSlot(rd.getHours(), rd.getMinutes())
+                    const s1 = timeToSlot(rf.getHours(), rf.getMinutes())
+                    const top = s0 * SLOT_HEIGHT + 1
+                    const height = Math.max((Math.max(s0 + 1, s1) - s0) * SLOT_HEIGHT - 2, SLOT_HEIGHT - 2)
+                    const isExpired = hold.expiresAt && new Date(hold.expiresAt) < new Date()
+                    const isConfirmee = hold.statut === 'CONFIRMEE'
+                    const bg = isExpired ? 'rgba(156,163,175,0.2)' : isConfirmee ? 'rgba(34,197,94,0.2)' : 'rgba(249,115,22,0.2)'
+                    const border = isExpired ? '#9ca3af' : isConfirmee ? '#22c55e' : '#f97316'
+                    const label = isExpired ? '⏰ Expiré' : isConfirmee ? '✅ RDV confirmé' : '⏳ RDV en attente'
+                    const horaire = `${slotToTime(s0)} – ${slotToTime(Math.max(s0 + 1, s1))}`
+                    return (
+                      <div
+                        key={`hold-${hold.idReservation}`}
+                        className="absolute left-[2px] right-[2px] rounded-sm overflow-hidden"
+                        style={{ top, height, backgroundColor: bg, borderLeft: `3px solid ${border}` }}
+                        title={`${label}\n${horaire}`}
+                      >
+                        <div className="px-1.5 py-1 flex flex-col h-full overflow-hidden">
+                          <span className="text-[10px] font-bold leading-tight truncate" style={{ color: border }}>{label}</span>
+                          {height >= SLOT_HEIGHT * 2 && (
+                            <span className="text-[9px] mt-0.5" style={{ color: border, opacity: 0.8 }}>{horaire}</span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
+                }
+
                 {/* "Libre" en bas de la colonne si aucun bloc */}
-                {blocks.length === 0 && (
+                {blocks.length === 0 && holds.filter(h => new Date(h.dateDebut).getDate() === jourNum && new Date(h.dateDebut).getMonth() === mois && new Date(h.dateDebut).getFullYear() === annee).length === 0 && (
                   <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
                     <span className="text-xs" style={{ color: '#555' }}>Libre</span>
                   </div>
@@ -324,6 +372,14 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
             <span style={{ color: '#888' }}>{label}</span>
           </div>
         ))}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(249,115,22,0.2)', borderLeft: '3px solid #f97316' }} />
+          <span style={{ color: '#888' }}>RDV en attente</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(34,197,94,0.2)', borderLeft: '3px solid #22c55e' }} />
+          <span style={{ color: '#888' }}>RDV confirmé</span>
+        </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }} />
           <span style={{ color: '#888' }}>Disponible</span>

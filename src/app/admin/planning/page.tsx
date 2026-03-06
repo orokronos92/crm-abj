@@ -407,6 +407,10 @@ export default function PlanningPage() {
                             const sessionsCeMois = moisData?.sessions ?? []
                             const evenementsCeMois = moisData?.evenements ?? []
                             const reservationsCeMois = moisData?.reservations ?? []
+                            const holdsCeMois = (moisData?.holds ?? []) as Array<{ statut: string; expiresAt: string | null }>
+                            const nbHoldsActifs = holdsCeMois.filter(
+                              h => h.statut === 'PREVUE' && (!h.expiresAt || new Date(h.expiresAt) > new Date())
+                            ).length
                             const nbSessions = sessionsCeMois.length
                             const nbEvenements = evenementsCeMois.length
                             const nbTotal = nbSessions + nbEvenements
@@ -483,8 +487,17 @@ export default function PlanningPage() {
                                   )}
                                 </div>
 
+                                {/* Badge holds RDV en attente */}
+                                {nbHoldsActifs > 0 && (
+                                  <div className="absolute bottom-1 left-0 right-0 flex justify-center">
+                                    <span className="text-[9px] px-1 py-0.5 rounded" style={{ backgroundColor: 'rgba(249,115,22,0.25)', color: '#f97316' }}>
+                                      {nbHoldsActifs} RDV⏳
+                                    </span>
+                                  </div>
+                                )}
+
                                 {/* Tooltip détaillé au survol */}
-                                {(nbTotal > 0 || reservationsCeMois.length > 0) && (
+                                {(nbTotal > 0 || reservationsCeMois.length > 0 || holdsCeMois.length > 0) && (
                                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/cell:block z-10">
                                     <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg p-3 shadow-xl whitespace-nowrap">
                                       <p className="text-xs font-bold text-[rgb(var(--foreground))] mb-2">{moisLabels[moisIdx]} {anneeSelectionnee}</p>
@@ -523,6 +536,9 @@ export default function PlanningPage() {
                                             </p>
                                           ))}
                                         </>
+                                      )}
+                                      {nbHoldsActifs > 0 && (
+                                        <p className="text-xs font-semibold mt-2 mb-1" style={{ color: '#f97316' }}>⏳ {nbHoldsActifs} RDV en attente</p>
                                       )}
                                       {nbTotal > 4 && (
                                         <p className="text-xs text-[rgb(var(--muted-foreground))] mt-2 italic">
@@ -886,6 +902,11 @@ export default function PlanningPage() {
           reservations={
             modalMoisOuvert.type === 'salle'
               ? (salles.find((s: any) => s.nom === modalMoisOuvert.salle)?.mois?.[modalMoisOuvert.mois]?.reservations ?? [])
+              : []
+          }
+          holds={
+            modalMoisOuvert.type === 'salle'
+              ? (salles.find((s: any) => s.nom === modalMoisOuvert.salle)?.mois?.[modalMoisOuvert.mois]?.holds ?? [])
               : []
           }
           disponibilites={

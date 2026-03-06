@@ -25,6 +25,16 @@ interface Disponibilite {
   type: string
 }
 
+interface HoldRdv {
+  idReservation: number
+  token: string
+  idCandidat: number | null
+  statut: string
+  expiresAt: Date | null
+  dateDebut: Date
+  dateFin: Date
+}
+
 interface MonthDetailModalProps {
   type: 'salle' | 'formateur'
   titre: string
@@ -35,6 +45,7 @@ interface MonthDetailModalProps {
   evenements?: any[]
   reservations?: Reservation[]
   disponibilites?: Disponibilite[]
+  holds?: HoldRdv[]
   salle?: string
 }
 
@@ -42,7 +53,7 @@ export function MonthDetailModal({
   type, titre, mois, annee, onClose,
   sessions = [], evenements = [],
   reservations = [], disponibilites = [],
-  salle
+  holds = [], salle
 }: MonthDetailModalProps) {
 
   // ─── Vue SALLE : PlanningWeekView (timeline 30 min) ───
@@ -69,6 +80,7 @@ export function MonthDetailModal({
               sessions={sessions}
               evenements={evenements}
               reservations={reservations}
+              holds={holds}
             />
           </div>
         </div>
