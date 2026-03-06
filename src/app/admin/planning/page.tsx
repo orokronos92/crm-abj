@@ -538,7 +538,19 @@ export default function PlanningPage() {
                                         </>
                                       )}
                                       {nbHoldsActifs > 0 && (
-                                        <p className="text-xs font-semibold mt-2 mb-1" style={{ color: '#f97316' }}>⏳ {nbHoldsActifs} RDV en attente</p>
+                                        <>
+                                          <p className="text-xs font-semibold mt-2 mb-1" style={{ color: '#f97316' }}>⏳ {nbHoldsActifs} RDV en attente/confirmé(s)</p>
+                                          {holdsCeMois
+                                            .filter(h => h.statut === 'PREVUE' && (!h.expiresAt || new Date(h.expiresAt) > new Date()))
+                                            .concat(holdsCeMois.filter(h => h.statut === 'CONFIRMEE') as typeof holdsCeMois)
+                                            .slice(0, 4)
+                                            .map((h: any, idx: number) => (
+                                              <p key={idx} className="text-xs text-[rgb(var(--muted-foreground))] ml-3">
+                                                {h.statut === 'CONFIRMEE' ? '✅' : '⏳'} {h.nomCandidat || (h.numeroDossier ? `#${h.numeroDossier}` : `Candidat #${h.idCandidat}`)}
+                                              </p>
+                                            ))
+                                          }
+                                        </>
                                       )}
                                       {nbTotal > 4 && (
                                         <p className="text-xs text-[rgb(var(--muted-foreground))] mt-2 italic">

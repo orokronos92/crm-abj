@@ -49,6 +49,8 @@ interface HoldRdv {
   expiresAt: string | Date | null
   dateDebut: string | Date
   dateFin: string | Date
+  nomCandidat?: string | null
+  numeroDossier?: string | null
 }
 
 interface PlanningWeekViewProps {
@@ -324,19 +326,22 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
                     const isConfirmee = hold.statut === 'CONFIRMEE'
                     const bg = isExpired ? 'rgba(156,163,175,0.2)' : isConfirmee ? 'rgba(34,197,94,0.2)' : 'rgba(249,115,22,0.2)'
                     const border = isExpired ? '#9ca3af' : isConfirmee ? '#22c55e' : '#f97316'
-                    const label = isExpired ? '⏰ Expiré' : isConfirmee ? '✅ RDV confirmé' : '⏳ RDV en attente'
+                    const statutLabel = isExpired ? '⏰ Expiré' : isConfirmee ? '✅ Confirmé' : '⏳ En attente'
+                    const nomAffiche = hold.nomCandidat || (hold.numeroDossier ? `#${hold.numeroDossier}` : `Candidat #${hold.idCandidat}`)
                     const horaire = `${slotToTime(s0)} – ${slotToTime(Math.max(s0 + 1, s1))}`
+                    const tooltipTitle = [statutLabel, nomAffiche, hold.numeroDossier ? `Dossier : ${hold.numeroDossier}` : null, horaire].filter(Boolean).join('\n')
                     return (
                       <div
                         key={`hold-${hold.idReservation}`}
                         className="absolute left-[2px] right-[2px] rounded-sm overflow-hidden"
                         style={{ top, height, backgroundColor: bg, borderLeft: `3px solid ${border}` }}
-                        title={`${label}\n${horaire}`}
+                        title={tooltipTitle}
                       >
                         <div className="px-1.5 py-1 flex flex-col h-full overflow-hidden">
-                          <span className="text-[10px] font-bold leading-tight truncate" style={{ color: border }}>{label}</span>
+                          <span className="text-[10px] font-bold leading-tight truncate" style={{ color: border }}>{statutLabel}</span>
+                          <span className="text-[10px] leading-tight truncate font-medium" style={{ color: border, opacity: 0.9 }}>{nomAffiche}</span>
                           {height >= SLOT_HEIGHT * 2 && (
-                            <span className="text-[9px] mt-0.5" style={{ color: border, opacity: 0.8 }}>{horaire}</span>
+                            <span className="text-[9px] mt-0.5" style={{ color: border, opacity: 0.7 }}>{horaire}</span>
                           )}
                         </div>
                       </div>

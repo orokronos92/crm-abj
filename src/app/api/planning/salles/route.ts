@@ -105,6 +105,12 @@ export async function GET(request: NextRequest) {
         statut: true,
         expiresAt: true,
         matiere: true,
+        candidat: {
+          select: {
+            numeroDossier: true,
+            prospect: { select: { nom: true, prenom: true } }
+          }
+        }
       }
     })
 
@@ -243,6 +249,10 @@ export async function GET(request: NextRequest) {
               expiresAt: r.expiresAt,
               dateDebut: r.dateDebut,
               dateFin: r.dateFin,
+              nomCandidat: r.candidat
+                ? `${r.candidat.prospect?.prenom ?? ''} ${r.candidat.prospect?.nom ?? ''}`.trim() || null
+                : null,
+              numeroDossier: r.candidat?.numeroDossier ?? null,
             })),
         }
       })

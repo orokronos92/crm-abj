@@ -33,6 +33,8 @@ interface HoldRdv {
   expiresAt: Date | null
   dateDebut: Date
   dateFin: Date
+  nomCandidat?: string | null
+  numeroDossier?: string | null
 }
 
 interface MonthDetailModalProps {
