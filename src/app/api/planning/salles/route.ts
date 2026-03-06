@@ -228,8 +228,9 @@ export async function GET(request: NextRequest) {
             heureFin: e.heureFin,
             participants: e.nombreParticipants,
           })),
+          // Réservations de session/cours : pas de token (créées par n8n pour planifier des cours)
           reservations: reservationsCeMois
-            .filter(r => r.idCandidat === null)
+            .filter(r => r.token === null)
             .map(r => ({
               id: r.idReservation,
               idSession: r.idSession,
@@ -239,8 +240,10 @@ export async function GET(request: NextRequest) {
               statut: r.statut,
               matiere: r.matiere,
             })),
+          // Holds RDV entretien : ont un token (et idLot). idCandidat est null avant confirmation,
+          // renseigné après que le candidat ait choisi son créneau.
           holds: reservationsCeMois
-            .filter(r => r.idCandidat !== null)
+            .filter(r => r.token !== null)
             .map(r => ({
               idReservation: r.idReservation,
               token: r.token,

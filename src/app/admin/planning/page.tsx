@@ -407,9 +407,9 @@ export default function PlanningPage() {
                             const sessionsCeMois = moisData?.sessions ?? []
                             const evenementsCeMois = moisData?.evenements ?? []
                             const reservationsCeMois = moisData?.reservations ?? []
-                            const holdsCeMois = (moisData?.holds ?? []) as Array<{ statut: string; expiresAt: string | null }>
+                            const holdsCeMois = (moisData?.holds ?? []) as Array<{ statut: string; expiresAt: string | null; idCandidat: number | null; nomCandidat?: string | null; numeroDossier?: string | null }>
                             const nbHoldsActifs = holdsCeMois.filter(
-                              h => h.statut === 'PREVUE' && (!h.expiresAt || new Date(h.expiresAt) > new Date())
+                              h => (h.statut === 'PREVUE' && (!h.expiresAt || new Date(h.expiresAt) > new Date())) || h.statut === 'CONFIRMEE'
                             ).length
                             const nbSessions = sessionsCeMois.length
                             const nbEvenements = evenementsCeMois.length
