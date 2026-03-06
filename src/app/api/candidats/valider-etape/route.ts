@@ -95,36 +95,38 @@ export async function POST(request: NextRequest) {
     console.log(`[API] ✅ Étape "${etape}" ${actionLabel} pour candidat ${candidat.numeroDossier}`)
 
     // ─── Créneaux proposés : mode lot ────────────────────────────────────────
-    // Logique : Yasmina propose les mêmes créneaux à plusieurs candidats (en lot).
-    // On crée 1 hold PREVUE par créneau (sans idCandidat) la première fois.
-    // Si un hold existe déjà pour ce créneau (même salle + même horaire, statut PREVUE),
-    // on réutilise son token. Ainsi tous les candidats du lot reçoivent les mêmes liens.
-    // Premier candidat à confirmer "prend" le créneau (idCandidat associé à ce moment).
+    // Yasmina saisit des plages horaires → slots générés côté client → envoyés ici.
+    // Un lotToken UUID est généré pour ce groupe de créneaux.
+    // Chaque hold PREVUE reçoit cet idLot (UUID partagé).
+    // Les candidats reçoivent 1 lien /admission/rdv/choisir?lot=TOKEN&candidat=ID
+    // qui affiche tous les créneaux disponibles du lot en mini-calendrier.
     const isRdvEtape = etape === 'entretienTelephonique' || etape === 'entretien_telephonique'
     const slots = Array.isArray(proposedSlots) && proposedSlots.length > 0 ? proposedSlots : null
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
-    type EnrichedSlot = {
+    type SlotSimple = {
       date: string
       heureDebut: string
       heureFin: string
       idSalle: number
       nomSalle: string
-      token: string
-      confirmUrl: string
     }
 
-    let enrichedSlots: EnrichedSlot[] | undefined
+    let lotToken: string | undefined
+    let lotUrl: string | undefined
+    let enrichedSlots: SlotSimple[] | undefined
 
     if (isRdvEtape && slots) {
       const expiration = new Date(Date.now() + 72 * 60 * 60 * 1000) // +72h
+      lotToken = randomUUID()
+      lotUrl = `${appUrl}/admission/rdv/choisir?lot=${lotToken}&candidat=${candidat.idCandidat}`
 
       const created = await Promise.all(
-        slots.map(async (slot: { date: string; heureDebut: string; heureFin: string; idSalle: number; nomSalle: string }) => {
+        slots.map(async (slot: SlotSimple) => {
           const dateDebut = new Date(`${slot.date}T${slot.heureDebut}:00`)
           const dateFin   = new Date(`${slot.date}T${slot.heureFin}:00`)
 
-          // Chercher un hold existant pour ce créneau (partagé entre candidats du lot)
+          // Chercher un hold existant pour ce créneau exact (mode lot partagé)
           const holdExistant = await prisma.reservationSalle.findFirst({
             where: {
               idSalle:   slot.idSalle,
@@ -132,24 +134,24 @@ export async function POST(request: NextRequest) {
               dateFin,
               statut:    'PREVUE',
               token:     { not: null },
-              // Pas encore expiré
               OR: [
                 { expiresAt: null },
                 { expiresAt: { gt: new Date() } },
               ],
             },
-            select: { token: true },
+            select: { idReservation: true, token: true },
           })
 
-          let token: string
-
           if (holdExistant?.token) {
-            // Créneau déjà créé pour ce lot — on réutilise le même token
-            token = holdExistant.token
-            console.log(`[API] ♻️ Hold existant réutilisé pour créneau ${slot.date} ${slot.heureDebut}`)
+            // Hold existant — on le rattache au nouveau lot
+            await prisma.reservationSalle.update({
+              where: { idReservation: holdExistant.idReservation },
+              data: { idLot: lotToken }
+            })
+            console.log(`[API] ♻️ Hold réutilisé et rattaché au lot ${lotToken!.slice(0, 8)}`)
           } else {
-            // Premier candidat du lot pour ce créneau — on crée le hold global
-            token = randomUUID()
+            // Nouveau hold pour ce créneau
+            const token = randomUUID()
             await prisma.reservationSalle.create({
               data: {
                 idSalle:   slot.idSalle,
@@ -158,10 +160,10 @@ export async function POST(request: NextRequest) {
                 statut:    'PREVUE',
                 token,
                 expiresAt: expiration,
-                // Pas d'idCandidat : le hold est global, associé au premier qui confirme
+                idLot:     lotToken,
               }
             })
-            console.log(`[API] 🏷️ Nouveau hold créé pour créneau ${slot.date} ${slot.heureDebut}`)
+            console.log(`[API] 🏷️ Hold créé — ${slot.date} ${slot.heureDebut}`)
           }
 
           return {
@@ -170,14 +172,12 @@ export async function POST(request: NextRequest) {
             heureFin:   slot.heureFin,
             idSalle:    slot.idSalle,
             nomSalle:   slot.nomSalle,
-            token,
-            confirmUrl: `${appUrl}/admission/rdv/confirm?token=${token}&candidat=${candidat.idCandidat}`,
           }
         })
       )
 
       enrichedSlots = created
-      console.log(`[API] 🏷️ ${created.length} créneau(x) pour candidat ${candidat.numeroDossier} (mode lot)`)
+      console.log(`[API] 🗓️ ${created.length} créneaux — lot ${lotToken} — ${lotUrl}`)
     }
 
     // Notification SSE temps réel
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
       creeLe: new Date()
     })
 
-    // Webhook n8n via webhook-client (retry automatique + logging journal_erreurs)
+    // Webhook n8n — payload avec lotUrl (1 lien unique vers le mini-calendrier)
     candidatWebhooks.validerEtape({
       numeroDossier: candidat.numeroDossier,
       etape,
@@ -206,7 +206,17 @@ export async function POST(request: NextRequest) {
       validePar: validePar || null,
       observation: observation || null,
       exempt: isExempt,
-      ...(enrichedSlots ? { proposedSlots: enrichedSlots } : {}),
+      ...(lotToken && enrichedSlots ? {
+        lotToken,
+        lotUrl,
+        nbCreneaux: enrichedSlots.length,
+        slots: enrichedSlots.map(s => ({
+          date:       s.date,
+          heureDebut: s.heureDebut,
+          heureFin:   s.heureFin,
+          nomSalle:   s.nomSalle,
+        })),
+      } : {}),
     }).catch(err => {
       console.error(`[API] ⚠️ Webhook n8n échoué (non bloquant):`, err.message)
     })
@@ -219,6 +229,7 @@ export async function POST(request: NextRequest) {
         numeroDossier: candidat.numeroDossier,
         dateValidation: new Date().toISOString(),
         holdsCreated: enrichedSlots?.length ?? 0,
+        ...(lotToken ? { lotToken, lotUrl } : {}),
       }
     })
 

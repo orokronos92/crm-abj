@@ -986,6 +986,7 @@ model ReservationSalle {
   token            String?   @unique                           // Token unique pour lien confirmation candidat
   expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6) // Expiration du hold (72h)
   idCandidat       Int?      @map("id_candidat")              // Candidat concerné par le hold
+  idLot            String?   @map("id_lot")                   // UUID partagé entre tous les holds d'un même appel valider-etape
 
   creeLe           DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe        DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
@@ -1005,6 +1006,7 @@ model ReservationSalle {
   @@index([typeFormation])
   @@index([token])
   @@index([idCandidat, statut])
+  @@index([idLot])
   @@map("reservations_salles")
 }
 
