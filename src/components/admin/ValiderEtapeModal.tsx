@@ -255,23 +255,6 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
               />
             </div>
 
-            {/* Observation */}
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
-                <FileText className="w-3.5 h-3.5 inline mr-1.5" />
-                Observation
-                <span className="text-xs text-[rgb(var(--muted-foreground))] ml-1">(optionnel)</span>
-              </label>
-              <textarea
-                value={formData.observation}
-                onChange={(e) => handleChange('observation', e.target.value)}
-                placeholder="Notes sur l'étape, points importants, commentaires..."
-                rows={3}
-                className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none resize-none"
-                disabled={submitting}
-              />
-            </div>
-
             {/* Éditeur créneaux — uniquement pour entretien téléphonique */}
             {isEntretienTel && (
               <div className="pt-1 border-t border-[rgba(var(--border),0.3)]">
@@ -283,6 +266,23 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
                 />
               </div>
             )}
+
+            {/* Observation */}
+            <div>
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
+                <FileText className="w-3.5 h-3.5 inline mr-1.5" />
+                Observation
+                <span className="text-xs text-[rgb(var(--muted-foreground))] ml-1">(optionnel)</span>
+              </label>
+              <textarea
+                value={formData.observation}
+                onChange={(e) => handleChange('observation', e.target.value)}
+                placeholder="Notes sur l'étape, points importants, commentaires..."
+                rows={2}
+                className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none resize-none"
+                disabled={submitting}
+              />
+            </div>
           </div>
         </div>
 

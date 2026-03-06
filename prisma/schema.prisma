@@ -167,6 +167,7 @@ model Candidat {
   documentsCandidat     DocumentCandidat[]
   eleve                 Eleve?
   inscriptionsSessions  InscriptionSession[]
+  holdsSalles           ReservationSalle[]    @relation("HoldsCandidat")
 
   @@index([numeroDossier])
   @@index([idProspect])
@@ -980,6 +981,12 @@ model ReservationSalle {
   statut           String   @default("CONFIRME") // PREVUE | CONFIRME | ANNULE
   motifAnnulation  String?  @map("motif_annulation")
   notes            String?
+
+  // === HOLDS RDV ENTRETIEN ===
+  token            String?   @unique                           // Token unique pour lien confirmation candidat
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6) // Expiration du hold (72h)
+  idCandidat       Int?      @map("id_candidat")              // Candidat concerné par le hold
+
   creeLe           DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe        DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 
@@ -988,6 +995,7 @@ model ReservationSalle {
   session          Session?   @relation(fields: [idSession], references: [idSession])
   evenement        Evenement? @relation(fields: [idEvenement], references: [idEvenement])
   formateur        Formateur? @relation("ReservationsFormateur", fields: [idFormateur], references: [idFormateur])
+  candidat         Candidat?  @relation("HoldsCandidat", fields: [idCandidat], references: [idCandidat])
 
   @@index([idSalle, dateDebut, dateFin])
   @@index([idSession])
@@ -995,6 +1003,8 @@ model ReservationSalle {
   @@index([idFormateur])
   @@index([matiere])
   @@index([typeFormation])
+  @@index([token])
+  @@index([idCandidat, statut])
   @@map("reservations_salles")
 }
 
