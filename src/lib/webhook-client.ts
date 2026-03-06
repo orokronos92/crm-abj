@@ -257,6 +257,15 @@ export const candidatWebhooks = {
     validePar: string | null
     observation: string | null
     exempt: boolean
+    proposedSlots?: Array<{
+      date: string
+      heureDebut: string
+      heureFin: string
+      idSalle: number
+      nomSalle: string
+      token: string
+      confirmUrl: string
+    }>
   }): Promise<WebhookResponse> {
     return callWebhook('/candidat/etape-validee', data)
   },

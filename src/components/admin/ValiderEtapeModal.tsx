@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, CheckCircle, AlertCircle, Loader2, User, Calendar, FileText, ClipboardCheck } from 'lucide-react'
+import { ProposedSlotsEditor, type ProposedSlot } from './ProposedSlotsEditor'
 
 export type EtapeType = 'entretienTelephonique' | 'rdvPresentiel' | 'testTechnique' | 'validationPedagogique'
 
@@ -25,17 +26,38 @@ interface ValiderEtapeModalProps {
   onSuccess: () => void
 }
 
+interface Salle {
+  idSalle: number
+  nom: string
+}
+
 export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: ValiderEtapeModalProps) {
   const [submitting, setSubmitting] = useState(false)
   const [actionStatus, setActionStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [salles, setSalles] = useState<Salle[]>([])
+  const [proposedSlots, setProposedSlots] = useState<ProposedSlot[]>([])
 
   const today = new Date().toISOString().split('T')[0]
+  const isEntretienTel = etape === 'entretienTelephonique'
 
   const [formData, setFormData] = useState({
     dateValidation: today,
     validePar: '',
     observation: '',
   })
+
+  // Charger les salles pour l'éditeur de créneaux
+  useEffect(() => {
+    if (!isEntretienTel) return
+    fetch('/api/salles?statut=ACTIVE')
+      .then(r => r.json())
+      .then((data: { salles?: Salle[] }) => {
+        if (Array.isArray(data.salles)) {
+          setSalles(data.salles.map((s: Salle) => ({ idSalle: s.idSalle, nom: s.nom })))
+        }
+      })
+      .catch(() => { /* silencieux */ })
+  }, [isEntretienTel])
 
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -44,6 +66,10 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
   const handleSubmit = async () => {
     if (!formData.validePar.trim()) {
       alert('Veuillez indiquer le nom du validateur')
+      return
+    }
+    if (isEntretienTel && proposedSlots.length > 0 && proposedSlots.length < 3) {
+      alert('Proposez au moins 3 créneaux (ou aucun pour passer sans proposition)')
       return
     }
 
@@ -59,6 +85,7 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
           dateValidation: formData.dateValidation,
           validePar: formData.validePar,
           observation: formData.observation,
+          ...(isEntretienTel && proposedSlots.length >= 3 ? { proposedSlots } : {}),
         }),
       })
 
@@ -103,6 +130,11 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
               <p className="text-sm text-[rgb(var(--foreground))]">
                 📅 Date : <strong>{new Date(formData.dateValidation).toLocaleDateString('fr-FR')}</strong>
               </p>
+              {isEntretienTel && proposedSlots.length >= 3 && (
+                <p className="text-sm text-[rgb(var(--foreground))]">
+                  🗓️ {proposedSlots.length} créneaux RDV transmis à n8n
+                </p>
+              )}
               {formData.observation && (
                 <p className="text-sm text-[rgb(var(--muted-foreground))]">
                   💬 {formData.observation}
@@ -148,9 +180,9 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
   // Formulaire principal
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-md flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-lg flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[rgba(var(--border),0.3)]">
+        <div className="flex items-center justify-between p-5 border-b border-[rgba(var(--border),0.3)] flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg">
               <ClipboardCheck className="w-5 h-5 text-[rgb(var(--accent))]" />
@@ -173,74 +205,89 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
           </button>
         </div>
 
-        {/* Candidat info */}
-        <div className="px-5 pt-4">
-          <div className="flex items-center gap-2 p-3 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.1)] rounded-lg">
-            <User className="w-4 h-4 text-[rgb(var(--accent))] flex-shrink-0" />
-            <span className="text-sm font-medium text-[rgb(var(--foreground))]">
-              {candidat.prenom} {candidat.nom}
-            </span>
-            <span className="text-xs text-[rgb(var(--muted-foreground))] ml-auto">
-              {candidat.numeroDossier}
-            </span>
-          </div>
-        </div>
-
-        {/* Formulaire */}
-        <div className="p-5 space-y-4">
-          {/* Date de validation (auto, readonly) */}
-          <div>
-            <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
-              <Calendar className="w-3.5 h-3.5 inline mr-1.5" />
-              Date de validation
-            </label>
-            <input
-              type="date"
-              value={formData.dateValidation}
-              onChange={(e) => handleChange('dateValidation', e.target.value)}
-              className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none"
-              disabled={submitting}
-            />
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Candidat info */}
+          <div className="px-5 pt-4">
+            <div className="flex items-center gap-2 p-3 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.1)] rounded-lg">
+              <User className="w-4 h-4 text-[rgb(var(--accent))] flex-shrink-0" />
+              <span className="text-sm font-medium text-[rgb(var(--foreground))]">
+                {candidat.prenom} {candidat.nom}
+              </span>
+              <span className="text-xs text-[rgb(var(--muted-foreground))] ml-auto">
+                {candidat.numeroDossier}
+              </span>
+            </div>
           </div>
 
-          {/* Validateur */}
-          <div>
-            <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
-              <User className="w-3.5 h-3.5 inline mr-1.5" />
-              Validé par <span className="text-[rgb(var(--error))]">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.validePar}
-              onChange={(e) => handleChange('validePar', e.target.value)}
-              placeholder="Nom du validateur (ex: Marie Dupont)"
-              className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none"
-              disabled={submitting}
-              required
-              autoFocus
-            />
-          </div>
+          {/* Formulaire */}
+          <div className="p-5 space-y-4">
+            {/* Date de validation */}
+            <div>
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
+                <Calendar className="w-3.5 h-3.5 inline mr-1.5" />
+                Date de validation
+              </label>
+              <input
+                type="date"
+                value={formData.dateValidation}
+                onChange={(e) => handleChange('dateValidation', e.target.value)}
+                className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none"
+                disabled={submitting}
+              />
+            </div>
 
-          {/* Observation */}
-          <div>
-            <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
-              <FileText className="w-3.5 h-3.5 inline mr-1.5" />
-              Observation
-              <span className="text-xs text-[rgb(var(--muted-foreground))] ml-1">(optionnel)</span>
-            </label>
-            <textarea
-              value={formData.observation}
-              onChange={(e) => handleChange('observation', e.target.value)}
-              placeholder="Notes sur l'étape, points importants, commentaires..."
-              rows={3}
-              className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none resize-none"
-              disabled={submitting}
-            />
+            {/* Validateur */}
+            <div>
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
+                <User className="w-3.5 h-3.5 inline mr-1.5" />
+                Validé par <span className="text-[rgb(var(--error))]">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.validePar}
+                onChange={(e) => handleChange('validePar', e.target.value)}
+                placeholder="Nom du validateur (ex: Marie Dupont)"
+                className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none"
+                disabled={submitting}
+                required
+                autoFocus
+              />
+            </div>
+
+            {/* Observation */}
+            <div>
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1.5">
+                <FileText className="w-3.5 h-3.5 inline mr-1.5" />
+                Observation
+                <span className="text-xs text-[rgb(var(--muted-foreground))] ml-1">(optionnel)</span>
+              </label>
+              <textarea
+                value={formData.observation}
+                onChange={(e) => handleChange('observation', e.target.value)}
+                placeholder="Notes sur l'étape, points importants, commentaires..."
+                rows={3}
+                className="w-full px-3 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] text-sm focus:border-[rgb(var(--accent))] focus:outline-none resize-none"
+                disabled={submitting}
+              />
+            </div>
+
+            {/* Éditeur créneaux — uniquement pour entretien téléphonique */}
+            {isEntretienTel && (
+              <div className="pt-1 border-t border-[rgba(var(--border),0.3)]">
+                <ProposedSlotsEditor
+                  slots={proposedSlots}
+                  salles={salles}
+                  onChange={setProposedSlots}
+                  disabled={submitting}
+                />
+              </div>
+            )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))] rounded-b-lg">
+        <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))] rounded-b-lg flex-shrink-0">
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import prisma from '@/lib/prisma'
 import { sseManager } from '@/lib/sse-manager'
 import { candidatWebhooks } from '@/lib/webhook-client'
@@ -8,13 +9,15 @@ import { candidatWebhooks } from '@/lib/webhook-client'
  *
  * Pattern: Synchrone avec notification SSE + webhook n8n
  * - Valide l'étape en BDD (booléen + date)
+ * - Si etape=entretienTelephonique + proposedSlots fournis :
+ *   crée des holds PREVUE dans reservations_salles avec token+expiration 72h
  * - Envoie notification temps réel via SSE
- * - Notifie n8n de la validation (webhook asynchrone)
+ * - Notifie n8n avec les créneaux enrichis (token + confirmUrl)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { idCandidat, etape, dateValidation, validePar, observation, exempt } = body
+    const { idCandidat, etape, dateValidation, validePar, observation, exempt, proposedSlots } = body
 
     // Validation
     if (!idCandidat || !etape) {
@@ -91,6 +94,60 @@ export async function POST(request: NextRequest) {
     const actionLabel = isExempt ? 'exemptée' : 'validée'
     console.log(`[API] ✅ Étape "${etape}" ${actionLabel} pour candidat ${candidat.numeroDossier}`)
 
+    // ─── Créneaux proposés : créer les holds ──────────────────────────────────
+    const isRdvEtape = etape === 'entretienTelephonique' || etape === 'entretien_telephonique'
+    const slots = Array.isArray(proposedSlots) && proposedSlots.length > 0 ? proposedSlots : null
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+    type EnrichedSlot = {
+      date: string
+      heureDebut: string
+      heureFin: string
+      idSalle: number
+      nomSalle: string
+      token: string
+      confirmUrl: string
+    }
+
+    let enrichedSlots: EnrichedSlot[] | undefined
+
+    if (isRdvEtape && slots) {
+      const expiration = new Date(Date.now() + 72 * 60 * 60 * 1000) // +72h
+
+      const created = await Promise.all(
+        slots.map(async (slot: { date: string; heureDebut: string; heureFin: string; idSalle: number; nomSalle: string }) => {
+          const token = randomUUID()
+          const dateDebut = new Date(`${slot.date}T${slot.heureDebut}:00`)
+          const dateFin   = new Date(`${slot.date}T${slot.heureFin}:00`)
+
+          await prisma.reservationSalle.create({
+            data: {
+              idSalle:    slot.idSalle,
+              dateDebut,
+              dateFin,
+              statut:     'PREVUE',
+              token,
+              expiresAt:  expiration,
+              idCandidat: candidat.idCandidat,
+            }
+          })
+
+          return {
+            date:       slot.date,
+            heureDebut: slot.heureDebut,
+            heureFin:   slot.heureFin,
+            idSalle:    slot.idSalle,
+            nomSalle:   slot.nomSalle,
+            token,
+            confirmUrl: `${appUrl}/admission/rdv/confirm?token=${token}`,
+          }
+        })
+      )
+
+      enrichedSlots = created
+      console.log(`[API] 🏷️ ${created.length} hold(s) créé(s) pour candidat ${candidat.numeroDossier}`)
+    }
+
     // Notification SSE temps réel
     sseManager.broadcast({
       idNotification: Date.now(),
@@ -117,6 +174,7 @@ export async function POST(request: NextRequest) {
       validePar: validePar || null,
       observation: observation || null,
       exempt: isExempt,
+      ...(enrichedSlots ? { proposedSlots: enrichedSlots } : {}),
     }).catch(err => {
       console.error(`[API] ⚠️ Webhook n8n échoué (non bloquant):`, err.message)
     })
@@ -127,7 +185,8 @@ export async function POST(request: NextRequest) {
       data: {
         etape,
         numeroDossier: candidat.numeroDossier,
-        dateValidation: new Date().toISOString()
+        dateValidation: new Date().toISOString(),
+        holdsCreated: enrichedSlots?.length ?? 0,
       }
     })
 

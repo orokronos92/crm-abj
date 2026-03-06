@@ -66,6 +66,8 @@ export default withAuth(
           '/api/sessions',
           '/api/webhook/callback',
           '/api/actions/trigger',
+          '/admission',
+          '/api/admission',
           '/_next',
           '/favicon.ico'
         ]
