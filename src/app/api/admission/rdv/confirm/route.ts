@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     if (reservation.statut === 'ANNULEE') {
       return NextResponse.json(
-        { success: false, error: 'Ce créneau a déjà été pris par un autre candidat ou est annulé' },
+        { success: false, error: 'Ce créneau a déjà été pris par un autre candidat ou est annulé.' },
         { status: 410 }
       )
     }
@@ -72,41 +72,71 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const idCandidat = reservation.idCandidat
+    // Récupérer idCandidat depuis le query param (mode lot : hold sans candidat à la création)
+    const idCandidatParam = request.nextUrl.searchParams.get('candidat')
+    const idCandidatConfirmant = idCandidatParam ? parseInt(idCandidatParam, 10) : reservation.idCandidat
 
-    // Transaction : confirmer ce hold + annuler tous les autres du même candidat
+    // Mode lot : transaction avec vérification de concurrence
+    // Si deux candidats cliquent simultanément, le premier gagne.
+    let confirmed = false
     await prisma.$transaction(async (tx) => {
-      // 1. Confirmer la réservation choisie
-      await tx.reservationSalle.update({
+      // Re-lire le statut dans la transaction pour éviter les race conditions
+      const holdActuel = await tx.reservationSalle.findUnique({
         where: { idReservation: reservation.idReservation },
-        data: { statut: 'CONFIRMEE' }
+        select: { statut: true, idCandidat: true },
       })
 
-      // 2. Annuler les autres holds PREVUE du même candidat (si idCandidat présent)
-      if (idCandidat) {
-        await tx.reservationSalle.updateMany({
-          where: {
-            idCandidat,
-            statut: 'PREVUE',
-            idReservation: { not: reservation.idReservation }
-          },
-          data: { statut: 'ANNULEE' }
-        })
+      if (!holdActuel || holdActuel.statut !== 'PREVUE') {
+        // Créneau déjà pris pendant qu'on vérifiait — ne pas confirmer
+        return
       }
+
+      // Confirmer et associer le candidat
+      await tx.reservationSalle.update({
+        where: { idReservation: reservation.idReservation },
+        data: {
+          statut:     'CONFIRMEE',
+          idCandidat: idCandidatConfirmant ?? null,
+        }
+      })
+
+      confirmed = true
     })
 
-    console.log(`[ADMISSION] ✅ RDV confirmé — token ${token.slice(0, 8)}... — candidat ${reservation.candidat?.numeroDossier}`)
+    // Créneau pris entre notre vérification et la transaction
+    if (!confirmed) {
+      return NextResponse.json(
+        { success: false, error: 'Ce créneau vient d\'être pris par un autre candidat. Veuillez choisir un autre créneau.' },
+        { status: 409 }
+      )
+    }
+
+    console.log(`[ADMISSION] ✅ RDV confirmé — token ${token.slice(0, 8)}... — candidat ${idCandidatConfirmant ?? 'inconnu'}`)
+
+    // Recharger les infos pour la réponse (le candidat vient peut-être d'être associé)
+    const reservationFinale = await prisma.reservationSalle.findUnique({
+      where: { idReservation: reservation.idReservation },
+      include: {
+        salle: { select: { nom: true } },
+        candidat: {
+          select: {
+            numeroDossier: true,
+            prospect: { select: { nom: true, prenom: true } }
+          }
+        }
+      }
+    })
 
     return NextResponse.json({
       success: true,
       alreadyConfirmed: false,
       rdv: {
-        salle: reservation.salle?.nom,
+        salle: reservationFinale?.salle?.nom ?? reservation.salle?.nom,
         dateDebut: reservation.dateDebut,
         dateFin: reservation.dateFin,
-        numeroDossier: reservation.candidat?.numeroDossier,
-        prenom: reservation.candidat?.prospect?.prenom,
-        nom: reservation.candidat?.prospect?.nom,
+        numeroDossier: reservationFinale?.candidat?.numeroDossier,
+        prenom: reservationFinale?.candidat?.prospect?.prenom,
+        nom: reservationFinale?.candidat?.prospect?.nom,
       }
     })
 

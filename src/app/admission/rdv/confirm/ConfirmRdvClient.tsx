@@ -14,7 +14,7 @@ interface RdvInfo {
   nom?: string
 }
 
-type Status = 'loading' | 'success' | 'already' | 'expired' | 'invalid' | 'error'
+type Status = 'loading' | 'success' | 'already' | 'expired' | 'invalid' | 'taken' | 'error'
 
 export function ConfirmRdvClient() {
   const searchParams = useSearchParams()
@@ -35,7 +35,9 @@ export function ConfirmRdvClient() {
         const data = await r.json()
         if (!r.ok) {
           setErrorMsg(data.error ?? 'Erreur inconnue')
-          if (r.status === 410) {
+          if (r.status === 409) {
+            setStatus('taken')
+          } else if (r.status === 410) {
             setStatus(data.error?.includes('expiré') ? 'expired' : 'invalid')
           } else if (r.status === 404) {
             setStatus('invalid')
@@ -152,6 +154,25 @@ export function ConfirmRdvClient() {
             <h2 className="text-lg font-bold text-[rgb(var(--foreground))]">Lien expiré</h2>
             <p className="text-sm text-[rgb(var(--muted-foreground))]">
               {errorMsg || 'Ce lien de confirmation a expiré (72h). Contactez l\'ABJ pour obtenir de nouveaux créneaux.'}
+            </p>
+            <a
+              href="mailto:contact@abj.fr"
+              className="px-5 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium text-sm"
+            >
+              Contacter l'ABJ
+            </a>
+          </div>
+        )}
+
+        {/* Créneau pris en concurrence (mode lot) */}
+        {status === 'taken' && (
+          <div className="flex flex-col items-center gap-4 text-center py-4">
+            <div className="p-3 bg-[rgba(var(--warning),0.1)] rounded-full">
+              <Clock className="w-12 h-12 text-[rgb(var(--warning))]" />
+            </div>
+            <h2 className="text-lg font-bold text-[rgb(var(--foreground))]">Créneau déjà pris</h2>
+            <p className="text-sm text-[rgb(var(--muted-foreground))]">
+              {errorMsg || 'Ce créneau vient d\'être confirmé par un autre candidat. Veuillez choisir l\'un des autres créneaux proposés ou contacter l\'ABJ.'}
             </p>
             <a
               href="mailto:contact@abj.fr"

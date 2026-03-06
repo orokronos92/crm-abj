@@ -94,7 +94,12 @@ export async function POST(request: NextRequest) {
     const actionLabel = isExempt ? 'exemptée' : 'validée'
     console.log(`[API] ✅ Étape "${etape}" ${actionLabel} pour candidat ${candidat.numeroDossier}`)
 
-    // ─── Créneaux proposés : créer les holds ──────────────────────────────────
+    // ─── Créneaux proposés : mode lot ────────────────────────────────────────
+    // Logique : Yasmina propose les mêmes créneaux à plusieurs candidats (en lot).
+    // On crée 1 hold PREVUE par créneau (sans idCandidat) la première fois.
+    // Si un hold existe déjà pour ce créneau (même salle + même horaire, statut PREVUE),
+    // on réutilise son token. Ainsi tous les candidats du lot reçoivent les mêmes liens.
+    // Premier candidat à confirmer "prend" le créneau (idCandidat associé à ce moment).
     const isRdvEtape = etape === 'entretienTelephonique' || etape === 'entretien_telephonique'
     const slots = Array.isArray(proposedSlots) && proposedSlots.length > 0 ? proposedSlots : null
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -116,21 +121,48 @@ export async function POST(request: NextRequest) {
 
       const created = await Promise.all(
         slots.map(async (slot: { date: string; heureDebut: string; heureFin: string; idSalle: number; nomSalle: string }) => {
-          const token = randomUUID()
           const dateDebut = new Date(`${slot.date}T${slot.heureDebut}:00`)
           const dateFin   = new Date(`${slot.date}T${slot.heureFin}:00`)
 
-          await prisma.reservationSalle.create({
-            data: {
-              idSalle:    slot.idSalle,
+          // Chercher un hold existant pour ce créneau (partagé entre candidats du lot)
+          const holdExistant = await prisma.reservationSalle.findFirst({
+            where: {
+              idSalle:   slot.idSalle,
               dateDebut,
               dateFin,
-              statut:     'PREVUE',
-              token,
-              expiresAt:  expiration,
-              idCandidat: candidat.idCandidat,
-            }
+              statut:    'PREVUE',
+              token:     { not: null },
+              // Pas encore expiré
+              OR: [
+                { expiresAt: null },
+                { expiresAt: { gt: new Date() } },
+              ],
+            },
+            select: { token: true },
           })
+
+          let token: string
+
+          if (holdExistant?.token) {
+            // Créneau déjà créé pour ce lot — on réutilise le même token
+            token = holdExistant.token
+            console.log(`[API] ♻️ Hold existant réutilisé pour créneau ${slot.date} ${slot.heureDebut}`)
+          } else {
+            // Premier candidat du lot pour ce créneau — on crée le hold global
+            token = randomUUID()
+            await prisma.reservationSalle.create({
+              data: {
+                idSalle:   slot.idSalle,
+                dateDebut,
+                dateFin,
+                statut:    'PREVUE',
+                token,
+                expiresAt: expiration,
+                // Pas d'idCandidat : le hold est global, associé au premier qui confirme
+              }
+            })
+            console.log(`[API] 🏷️ Nouveau hold créé pour créneau ${slot.date} ${slot.heureDebut}`)
+          }
 
           return {
             date:       slot.date,
@@ -139,13 +171,13 @@ export async function POST(request: NextRequest) {
             idSalle:    slot.idSalle,
             nomSalle:   slot.nomSalle,
             token,
-            confirmUrl: `${appUrl}/admission/rdv/confirm?token=${token}`,
+            confirmUrl: `${appUrl}/admission/rdv/confirm?token=${token}&candidat=${candidat.idCandidat}`,
           }
         })
       )
 
       enrichedSlots = created
-      console.log(`[API] 🏷️ ${created.length} hold(s) créé(s) pour candidat ${candidat.numeroDossier}`)
+      console.log(`[API] 🏷️ ${created.length} créneau(x) pour candidat ${candidat.numeroDossier} (mode lot)`)
     }
 
     // Notification SSE temps réel
