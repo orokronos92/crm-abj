@@ -87,6 +87,6 @@ export const config = {
     '/formateur/:path*',
     '/eleve/:path*',
     '/api/:path*',
-    '/((?!connexion|_next/static|_next/image|favicon.ico).*)'
+    '/((?!connexion|admission|_next/static|_next/image|favicon.ico).*)'
   ]
 }
