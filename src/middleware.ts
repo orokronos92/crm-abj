@@ -40,7 +40,7 @@ export default withAuth(
     }
 
     // Protection des API routes
-    if (path.startsWith('/api') && !path.startsWith('/api/auth')) {
+    if (path.startsWith('/api') && !path.startsWith('/api/auth') && !path.startsWith('/api/admission') && !path.startsWith('/api/webhook/') && !path.startsWith('/api/notifications/ingest')) {
       // Vérifications spécifiques pour certaines API
       if (path.startsWith('/api/prospects') && userRole !== ROLES.ADMIN) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
