@@ -68,8 +68,8 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
       alert('Veuillez indiquer le nom du validateur')
       return
     }
-    if (isEntretienTel && proposedSlots.length > 0 && proposedSlots.length < 3) {
-      alert('Proposez au moins 3 créneaux (ou aucun pour passer sans proposition)')
+    if (isEntretienTel && proposedSlots.length > 0 && proposedSlots.length < 1) {
+      alert('Proposez au moins 1 créneau (ou aucun pour passer sans proposition)')
       return
     }
 
@@ -85,7 +85,7 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
           dateValidation: formData.dateValidation,
           validePar: formData.validePar,
           observation: formData.observation,
-          ...(isEntretienTel && proposedSlots.length >= 3 ? { proposedSlots } : {}),
+          ...(isEntretienTel && proposedSlots.length > 0 ? { proposedSlots } : {}),
         }),
       })
 
@@ -130,9 +130,9 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
               <p className="text-sm text-[rgb(var(--foreground))]">
                 📅 Date : <strong>{new Date(formData.dateValidation).toLocaleDateString('fr-FR')}</strong>
               </p>
-              {isEntretienTel && proposedSlots.length >= 3 && (
+              {isEntretienTel && proposedSlots.length > 0 && (
                 <p className="text-sm text-[rgb(var(--foreground))]">
-                  🗓️ {proposedSlots.length} créneaux RDV transmis à n8n
+                  🗓️ {proposedSlots.length} créneaux — 1 lien de choix transmis à n8n
                 </p>
               )}
               {formData.observation && (
