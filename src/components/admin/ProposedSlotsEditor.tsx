@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Calendar, Clock, MapPin, Info } from 'lucide-react'
-import { randomUUID } from 'crypto'
+import { Plus, Trash2, Calendar, MapPin, Info, Users } from 'lucide-react'
 
-// Interface exportée inchangée — l'API consomme toujours ce format
-export interface ProposedSlot {
-  date: string       // YYYY-MM-DD
-  heureDebut: string // HH:MM
-  heureFin: string   // HH:MM
+/**
+ * Format exporté vers l'API — chaque paire = 2 journées complètes (09h-17h)
+ * L'API crée 2 ReservationSalle séparées + 2 Evenements (ENTRETIEN_PRESENTIEL + TEST_TECHNIQUE)
+ */
+export interface ProposedSlotPair {
+  jour1: string    // YYYY-MM-DD — Jour entretien présentiel
+  jour2: string    // YYYY-MM-DD — Jour test technique
   idSalle: number
   nomSalle: string
+  capacite: number // Nombre de places disponibles pour ces 2 jours
 }
 
 interface Salle {
@@ -19,100 +21,63 @@ interface Salle {
 }
 
 export interface ProposedSlotsEditorProps {
-  slots: ProposedSlot[]
+  slots: ProposedSlotPair[]
   salles: Salle[]
-  onChange: (slots: ProposedSlot[]) => void
+  onChange: (slots: ProposedSlotPair[]) => void
   disabled?: boolean
 }
 
-// Plage horaire saisie par Yasmina
-interface Plage {
+interface Paire {
   id: string
-  date: string
-  heureDebut: string
-  heureFin: string
+  jour1: string
+  jour2: string
   idSalle: number
   nomSalle: string
-  dureeCreneauMin: number  // 30 | 60 | 90 | 120
+  capacite: number
 }
 
-const MAX_PLAGES = 4
-const DUREES = [
-  { value: 30,  label: '30 min' },
-  { value: 60,  label: '1 heure' },
-  { value: 90,  label: '1h30' },
-  { value: 120, label: '2 heures' },
-]
+const MAX_PAIRES = 4
 
-function buildEmptyPlage(salles: Salle[]): Plage {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
+function buildEmptyPaire(salles: Salle[]): Paire {
+  const j1 = new Date()
+  j1.setDate(j1.getDate() + 1)
+  const j2 = new Date(j1)
+  j2.setDate(j2.getDate() + 1)
   return {
-    id:              typeof window !== 'undefined' ? crypto.randomUUID() : String(Date.now()),
-    date:            tomorrow.toISOString().split('T')[0],
-    heureDebut:      '09:00',
-    heureFin:        '12:00',
-    idSalle:         salles[0]?.idSalle ?? 0,
-    nomSalle:        salles[0]?.nom ?? '',
-    dureeCreneauMin: 60,
+    id:       typeof window !== 'undefined' ? crypto.randomUUID() : String(Date.now()),
+    jour1:    j1.toISOString().split('T')[0],
+    jour2:    j2.toISOString().split('T')[0],
+    idSalle:  salles[0]?.idSalle ?? 0,
+    nomSalle: salles[0]?.nom ?? '',
+    capacite: 8,
   }
-}
-
-// Génère les créneaux individuels à partir d'une plage
-function genererCreneaux(plage: Plage): ProposedSlot[] {
-  const slots: ProposedSlot[] = []
-  const [hDebutH, hDebutM] = plage.heureDebut.split(':').map(Number)
-  const [hFinH, hFinM]     = plage.heureFin.split(':').map(Number)
-
-  let currentMin = hDebutH * 60 + hDebutM
-  const finMin   = hFinH   * 60 + hFinM
-
-  while (currentMin + plage.dureeCreneauMin <= finMin) {
-    const startH = Math.floor(currentMin / 60)
-    const startM = currentMin % 60
-    const endMin = currentMin + plage.dureeCreneauMin
-    const endH   = Math.floor(endMin / 60)
-    const endM   = endMin % 60
-
-    slots.push({
-      date:       plage.date,
-      heureDebut: `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`,
-      heureFin:   `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
-      idSalle:    plage.idSalle,
-      nomSalle:   plage.nomSalle,
-    })
-
-    currentMin += plage.dureeCreneauMin
-  }
-
-  return slots
-}
-
-function nbCreneaux(plage: Plage): number {
-  return genererCreneaux(plage).length
 }
 
 export function ProposedSlotsEditor({ salles, onChange, disabled = false }: ProposedSlotsEditorProps) {
-  const [plages, setPlages] = useState<Plage[]>([])
+  const [paires, setPaires] = useState<Paire[]>([])
 
-  // Recalculer tous les slots et notifier le parent
   useEffect(() => {
-    const allSlots = plages.flatMap(genererCreneaux)
-    onChange(allSlots)
+    onChange(paires.map(p => ({
+      jour1:    p.jour1,
+      jour2:    p.jour2,
+      idSalle:  p.idSalle,
+      nomSalle: p.nomSalle,
+      capacite: p.capacite,
+    })))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plages])
+  }, [paires])
 
   const handleAdd = () => {
-    if (plages.length >= MAX_PLAGES) return
-    setPlages(prev => [...prev, buildEmptyPlage(salles)])
+    if (paires.length >= MAX_PAIRES) return
+    setPaires(prev => [...prev, buildEmptyPaire(salles)])
   }
 
   const handleRemove = (id: string) => {
-    setPlages(prev => prev.filter(p => p.id !== id))
+    setPaires(prev => prev.filter(p => p.id !== id))
   }
 
-  const handleChange = (id: string, field: keyof Omit<Plage, 'id'>, value: string | number) => {
-    setPlages(prev => prev.map(p => {
+  const handleChange = (id: string, field: keyof Omit<Paire, 'id'>, value: string | number) => {
+    setPaires(prev => prev.map(p => {
       if (p.id !== id) return p
       if (field === 'idSalle') {
         const salle = salles.find(s => s.idSalle === Number(value))
@@ -122,19 +87,17 @@ export function ProposedSlotsEditor({ salles, onChange, disabled = false }: Prop
     }))
   }
 
-  const totalCreneaux = plages.reduce((sum, p) => sum + nbCreneaux(p), 0)
-
   return (
     <div className="space-y-3">
       {/* En-tête */}
       <div className="flex items-center gap-2">
         <Calendar className="w-4 h-4 text-[rgb(var(--accent))]" />
         <span className="text-sm font-medium text-[rgb(var(--foreground))]">
-          Plages horaires proposées
+          Périodes d'entretien proposées
         </span>
-        {totalCreneaux > 0 && (
+        {paires.length > 0 && (
           <span className="ml-auto text-xs font-semibold text-[rgb(var(--accent))] bg-[rgba(var(--accent),0.1)] px-2 py-0.5 rounded-full">
-            → {totalCreneaux} créneaux
+            {paires.length} période{paires.length > 1 ? 's' : ''}
           </span>
         )}
       </div>
@@ -143,134 +106,111 @@ export function ProposedSlotsEditor({ salles, onChange, disabled = false }: Prop
       <div className="flex items-start gap-2 p-2.5 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.15)] rounded-lg">
         <Info className="w-3.5 h-3.5 text-[rgb(var(--accent))] flex-shrink-0 mt-0.5" />
         <p className="text-xs text-[rgb(var(--muted-foreground))] leading-relaxed">
-          Saisissez des plages horaires (ex: 09h–12h). Le système découpe automatiquement
-          en créneaux. Les candidats reçoivent <strong>1 lien</strong> vers un mini-calendrier
-          pour choisir leur créneau.
+          Chaque période = <strong>2 jours complets</strong> (09h–17h) : Jour 1 entretien présentiel, Jour 2 test technique.
+          Les jours peuvent être consécutifs ou séparés. Le candidat s'inscrit sur les 2 jours à la fois.
         </p>
       </div>
 
-      {/* Liste des plages */}
-      {plages.length === 0 && (
+      {/* Liste des paires */}
+      {paires.length === 0 && (
         <p className="text-xs text-[rgb(var(--muted-foreground))] text-center py-3">
-          Aucune plage — ajoutez-en au moins une
+          Aucune période — ajoutez-en au moins une
         </p>
       )}
 
-      {plages.map((plage) => {
-        const n = nbCreneaux(plage)
-        return (
-          <div
-            key={plage.id}
-            className="p-3 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.4)] rounded-lg space-y-2"
-          >
-            {/* Header plage */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[rgb(var(--accent))]">
-                Plage
-              </span>
-              <div className="flex items-center gap-2">
-                {n > 0 && (
-                  <span className="text-xs text-[rgb(var(--muted-foreground))]">
-                    → {n} créneau{n > 1 ? 'x' : ''} de {plage.dureeCreneauMin} min
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleRemove(plage.id)}
-                  disabled={disabled}
-                  className="p-1 hover:bg-[rgba(var(--error),0.1)] rounded text-[rgb(var(--error))] transition-colors disabled:opacity-50"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+      {paires.map((paire, idx) => (
+        <div
+          key={paire.id}
+          className="p-3 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.4)] rounded-lg space-y-2"
+        >
+          {/* Header paire */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[rgb(var(--accent))]">
+              Période {idx + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleRemove(paire.id)}
+              disabled={disabled}
+              className="p-1 hover:bg-[rgba(var(--error),0.1)] rounded text-[rgb(var(--error))] transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-            {/* Date */}
+          {/* Jour 1 */}
+          <div>
+            <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
+              <Calendar className="w-3 h-3" />
+              Jour 1 — Entretien présentiel
+            </label>
+            <input
+              type="date"
+              value={paire.jour1}
+              min={new Date().toISOString().split('T')[0]}
+              onChange={e => handleChange(paire.id, 'jour1', e.target.value)}
+              disabled={disabled}
+              className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
+            />
+          </div>
+
+          {/* Jour 2 */}
+          <div>
+            <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
+              <Calendar className="w-3 h-3" />
+              Jour 2 — Test technique
+            </label>
+            <input
+              type="date"
+              value={paire.jour2}
+              min={paire.jour1 || new Date().toISOString().split('T')[0]}
+              onChange={e => handleChange(paire.id, 'jour2', e.target.value)}
+              disabled={disabled}
+              className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
+            />
+          </div>
+
+          {/* Salle + Capacité */}
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
-                <Calendar className="w-3 h-3" /> Date
+                <MapPin className="w-3 h-3" /> Salle
+              </label>
+              {salles.length === 0 ? (
+                <p className="text-xs text-[rgb(var(--error))]">Aucune salle</p>
+              ) : (
+                <select
+                  value={paire.idSalle}
+                  onChange={e => handleChange(paire.id, 'idSalle', Number(e.target.value))}
+                  disabled={disabled}
+                  className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
+                >
+                  {salles.map(s => (
+                    <option key={s.idSalle} value={s.idSalle}>{s.nom}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
+                <Users className="w-3 h-3" /> Places
               </label>
               <input
-                type="date"
-                value={plage.date}
-                min={new Date().toISOString().split('T')[0]}
-                onChange={e => handleChange(plage.id, 'date', e.target.value)}
+                type="number"
+                value={paire.capacite}
+                min={1}
+                max={50}
+                onChange={e => handleChange(paire.id, 'capacite', parseInt(e.target.value) || 1)}
                 disabled={disabled}
                 className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
               />
             </div>
-
-            {/* Horaires début/fin */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
-                  <Clock className="w-3 h-3" /> Début
-                </label>
-                <input
-                  type="time"
-                  value={plage.heureDebut}
-                  onChange={e => handleChange(plage.id, 'heureDebut', e.target.value)}
-                  disabled={disabled}
-                  className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
-                />
-              </div>
-              <div>
-                <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
-                  <Clock className="w-3 h-3" /> Fin
-                </label>
-                <input
-                  type="time"
-                  value={plage.heureFin}
-                  onChange={e => handleChange(plage.id, 'heureFin', e.target.value)}
-                  disabled={disabled}
-                  className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            {/* Salle + durée créneau */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
-                  <MapPin className="w-3 h-3" /> Salle
-                </label>
-                {salles.length === 0 ? (
-                  <p className="text-xs text-[rgb(var(--error))]">Aucune salle</p>
-                ) : (
-                  <select
-                    value={plage.idSalle}
-                    onChange={e => handleChange(plage.id, 'idSalle', Number(e.target.value))}
-                    disabled={disabled}
-                    className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
-                  >
-                    {salles.map(s => (
-                      <option key={s.idSalle} value={s.idSalle}>{s.nom}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              <div>
-                <label className="flex items-center gap-1 text-xs text-[rgb(var(--muted-foreground))] mb-1">
-                  <Clock className="w-3 h-3" /> Durée / créneau
-                </label>
-                <select
-                  value={plage.dureeCreneauMin}
-                  onChange={e => handleChange(plage.id, 'dureeCreneauMin', Number(e.target.value))}
-                  disabled={disabled}
-                  className="w-full px-2.5 py-1.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded text-[rgb(var(--foreground))] text-xs focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
-                >
-                  {DUREES.map(d => (
-                    <option key={d.value} value={d.value}>{d.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
           </div>
-        )
-      })}
+        </div>
+      ))}
 
       {/* Bouton ajouter */}
-      {plages.length < MAX_PLAGES && (
+      {paires.length < MAX_PAIRES && (
         <button
           type="button"
           onClick={handleAdd}
@@ -278,7 +218,7 @@ export function ProposedSlotsEditor({ salles, onChange, disabled = false }: Prop
           className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-[rgba(var(--accent),0.4)] rounded-lg text-xs text-[rgb(var(--accent))] hover:bg-[rgba(var(--accent),0.05)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="w-3.5 h-3.5" />
-          Ajouter une plage horaire
+          Ajouter une période
         </button>
       )}
     </div>

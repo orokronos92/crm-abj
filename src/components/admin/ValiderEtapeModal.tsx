@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, AlertCircle, Loader2, User, Calendar, FileText, ClipboardCheck } from 'lucide-react'
-import { ProposedSlotsEditor, type ProposedSlot } from './ProposedSlotsEditor'
+import { ProposedSlotsEditor, type ProposedSlotPair } from './ProposedSlotsEditor'
 
 export type EtapeType = 'entretienTelephonique' | 'rdvPresentiel' | 'testTechnique' | 'validationPedagogique'
 
@@ -35,7 +35,7 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
   const [submitting, setSubmitting] = useState(false)
   const [actionStatus, setActionStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [salles, setSalles] = useState<Salle[]>([])
-  const [proposedSlots, setProposedSlots] = useState<ProposedSlot[]>([])
+  const [proposedSlots, setProposedSlots] = useState<ProposedSlotPair[]>([])
 
   const today = new Date().toISOString().split('T')[0]
   const isEntretienTel = etape === 'entretienTelephonique'
@@ -132,7 +132,7 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
               </p>
               {isEntretienTel && proposedSlots.length > 0 && (
                 <p className="text-sm text-[rgb(var(--foreground))]">
-                  🗓️ {proposedSlots.length} créneaux — 1 lien de choix transmis à n8n
+                  🗓️ {proposedSlots.length} période{proposedSlots.length > 1 ? 's' : ''} (2j chacune) — lien de choix transmis à n8n
                 </p>
               )}
               {formData.observation && (

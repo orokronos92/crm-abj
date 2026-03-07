@@ -94,90 +94,187 @@ export async function POST(request: NextRequest) {
     const actionLabel = isExempt ? 'exemptée' : 'validée'
     console.log(`[API] ✅ Étape "${etape}" ${actionLabel} pour candidat ${candidat.numeroDossier}`)
 
-    // ─── Créneaux proposés : mode lot ────────────────────────────────────────
-    // Yasmina saisit des plages horaires → slots générés côté client → envoyés ici.
-    // Un lotToken UUID est généré pour ce groupe de créneaux.
-    // Chaque hold PREVUE reçoit cet idLot (UUID partagé).
+    // ─── Périodes proposées : mode lot 2 jours ───────────────────────────────
+    // Chaque période = 2 journées complètes (09h-17h) : Jour 1 entretien, Jour 2 test technique.
+    // Un lotToken UUID est généré par appel. Chaque paire crée 2 ReservationSalle (même idLot).
     // Les candidats reçoivent 1 lien /admission/rdv/choisir?lot=TOKEN&candidat=ID
-    // qui affiche tous les créneaux disponibles du lot en mini-calendrier.
+    // La paire est représentée par le token du Jour 1 (entretien).
+    // Pour chaque paire de dates, on upsert les Evenements ENTRETIEN_PRESENTIEL et TEST_TECHNIQUE.
     const isRdvEtape = etape === 'entretienTelephonique' || etape === 'entretien_telephonique'
-    const slots = Array.isArray(proposedSlots) && proposedSlots.length > 0 ? proposedSlots : null
+    const paires = Array.isArray(proposedSlots) && proposedSlots.length > 0 ? proposedSlots : null
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
-    type SlotSimple = {
-      date: string
-      heureDebut: string
-      heureFin: string
+    type PaireSlot = {
+      jour1: string    // YYYY-MM-DD
+      jour2: string    // YYYY-MM-DD
       idSalle: number
       nomSalle: string
+      capacite: number
     }
 
     let lotToken: string | undefined
     let lotUrl: string | undefined
-    let enrichedSlots: SlotSimple[] | undefined
+    let nbPairesCreees = 0
 
-    if (isRdvEtape && slots) {
+    if (isRdvEtape && paires) {
       const expiration = new Date(Date.now() + 72 * 60 * 60 * 1000) // +72h
       lotToken = randomUUID()
       lotUrl = `${appUrl}/admission/rdv/choisir?lot=${lotToken}&candidat=${candidat.idCandidat}`
 
-      const created = await Promise.all(
-        slots.map(async (slot: SlotSimple) => {
-          const dateDebut = new Date(`${slot.date}T${slot.heureDebut}:00`)
-          const dateFin   = new Date(`${slot.date}T${slot.heureFin}:00`)
+      await Promise.all(
+        paires.map(async (paire: PaireSlot) => {
+          // Jour 1 : entretien présentiel 09h-17h
+          const debut1 = new Date(`${paire.jour1}T09:00:00`)
+          const fin1   = new Date(`${paire.jour1}T17:00:00`)
+          // Jour 2 : test technique 09h-17h
+          const debut2 = new Date(`${paire.jour2}T09:00:00`)
+          const fin2   = new Date(`${paire.jour2}T17:00:00`)
 
-          // Chercher un hold existant pour ce créneau exact (mode lot partagé)
-          const holdExistant = await prisma.reservationSalle.findFirst({
+          // ── Upsert Evenement ENTRETIEN_PRESENTIEL sur Jour 1 ──────────────
+          const evtEntretienExistant = await prisma.evenement.findFirst({
             where: {
-              idSalle:   slot.idSalle,
-              dateDebut,
-              dateFin,
-              statut:    'PREVUE',
-              token:     { not: null },
-              OR: [
-                { expiresAt: null },
-                { expiresAt: { gt: new Date() } },
-              ],
+              type:  'ENTRETIEN_PRESENTIEL',
+              date:  debut1,
+              salle: paire.nomSalle,
+              statut: { not: 'ANNULE' },
             },
-            select: { idReservation: true, token: true },
+            select: { idEvenement: true, nombreParticipants: true },
           })
 
-          if (holdExistant?.token) {
-            // Hold existant — on le rattache au nouveau lot
+          if (evtEntretienExistant) {
+            // Réutiliser — mettre à jour la capacité si elle a augmenté
+            if (paire.capacite > evtEntretienExistant.nombreParticipants) {
+              await prisma.evenement.update({
+                where: { idEvenement: evtEntretienExistant.idEvenement },
+                data: { nombreParticipants: paire.capacite },
+              })
+            }
+            console.log(`[API] ♻️ Evenement ENTRETIEN_PRESENTIEL réutilisé — ${paire.jour1}`)
+          } else {
+            await prisma.evenement.create({
+              data: {
+                type:              'ENTRETIEN_PRESENTIEL',
+                titre:             `Entretien présentiel — ${new Date(paire.jour1).toLocaleDateString('fr-FR')}`,
+                date:              debut1,
+                heureDebut:        '09:00',
+                heureFin:          '17:00',
+                salle:             paire.nomSalle,
+                nombreParticipants: paire.capacite,
+                statut:            'PLANIFIE',
+              }
+            })
+            console.log(`[API] 🗓️ Evenement ENTRETIEN_PRESENTIEL créé — ${paire.jour1}`)
+          }
+
+          // ── Upsert Evenement TEST_TECHNIQUE sur Jour 2 ────────────────────
+          const evtTestExistant = await prisma.evenement.findFirst({
+            where: {
+              type:  'TEST_TECHNIQUE',
+              date:  debut2,
+              salle: paire.nomSalle,
+              statut: { not: 'ANNULE' },
+            },
+            select: { idEvenement: true, nombreParticipants: true },
+          })
+
+          if (evtTestExistant) {
+            if (paire.capacite > evtTestExistant.nombreParticipants) {
+              await prisma.evenement.update({
+                where: { idEvenement: evtTestExistant.idEvenement },
+                data: { nombreParticipants: paire.capacite },
+              })
+            }
+            console.log(`[API] ♻️ Evenement TEST_TECHNIQUE réutilisé — ${paire.jour2}`)
+          } else {
+            await prisma.evenement.create({
+              data: {
+                type:              'TEST_TECHNIQUE',
+                titre:             `Test technique — ${new Date(paire.jour2).toLocaleDateString('fr-FR')}`,
+                date:              debut2,
+                heureDebut:        '09:00',
+                heureFin:          '17:00',
+                salle:             paire.nomSalle,
+                nombreParticipants: paire.capacite,
+                statut:            'PLANIFIE',
+              }
+            })
+            console.log(`[API] 🔧 Evenement TEST_TECHNIQUE créé — ${paire.jour2}`)
+          }
+
+          // ── Holds ReservationSalle ────────────────────────────────────────
+          // Jour 1 — 1 réservation journée complète (représente la paire entière pour le candidat)
+          const holdExistant1 = await prisma.reservationSalle.findFirst({
+            where: {
+              idSalle:  paire.idSalle,
+              dateDebut: debut1,
+              dateFin:   fin1,
+              statut:    'PREVUE',
+              token:     { not: null },
+              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            },
+            select: { idReservation: true },
+          })
+
+          if (holdExistant1) {
             await prisma.reservationSalle.update({
-              where: { idReservation: holdExistant.idReservation },
+              where: { idReservation: holdExistant1.idReservation },
               data: { idLot: lotToken }
             })
-            console.log(`[API] ♻️ Hold réutilisé et rattaché au lot ${lotToken!.slice(0, 8)}`)
+            console.log(`[API] ♻️ Hold J1 réutilisé — ${paire.jour1}`)
           } else {
-            // Nouveau hold pour ce créneau
-            const token = randomUUID()
             await prisma.reservationSalle.create({
               data: {
-                idSalle:   slot.idSalle,
-                dateDebut,
-                dateFin,
+                idSalle:   paire.idSalle,
+                dateDebut: debut1,
+                dateFin:   fin1,
                 statut:    'PREVUE',
-                token,
+                token:     randomUUID(),
                 expiresAt: expiration,
                 idLot:     lotToken,
               }
             })
-            console.log(`[API] 🏷️ Hold créé — ${slot.date} ${slot.heureDebut}`)
+            console.log(`[API] 🏷️ Hold J1 créé — ${paire.jour1}`)
           }
 
-          return {
-            date:       slot.date,
-            heureDebut: slot.heureDebut,
-            heureFin:   slot.heureFin,
-            idSalle:    slot.idSalle,
-            nomSalle:   slot.nomSalle,
+          // Jour 2 — 1 réservation journée complète (même lot, pas de token propre visible candidat)
+          const holdExistant2 = await prisma.reservationSalle.findFirst({
+            where: {
+              idSalle:  paire.idSalle,
+              dateDebut: debut2,
+              dateFin:   fin2,
+              statut:    'PREVUE',
+              token:     { not: null },
+              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            },
+            select: { idReservation: true },
+          })
+
+          if (holdExistant2) {
+            await prisma.reservationSalle.update({
+              where: { idReservation: holdExistant2.idReservation },
+              data: { idLot: lotToken }
+            })
+            console.log(`[API] ♻️ Hold J2 réutilisé — ${paire.jour2}`)
+          } else {
+            await prisma.reservationSalle.create({
+              data: {
+                idSalle:   paire.idSalle,
+                dateDebut: debut2,
+                dateFin:   fin2,
+                statut:    'PREVUE',
+                token:     randomUUID(),
+                expiresAt: expiration,
+                idLot:     lotToken,
+              }
+            })
+            console.log(`[API] 🏷️ Hold J2 créé — ${paire.jour2}`)
           }
+
+          nbPairesCreees++
         })
       )
 
-      enrichedSlots = created
-      console.log(`[API] 🗓️ ${created.length} créneaux — lot ${lotToken} — ${lotUrl}`)
+      console.log(`[API] ✅ ${nbPairesCreees} paire(s) — lot ${lotToken} — ${lotUrl}`)
     }
 
     // Notification SSE temps réel
@@ -206,16 +303,10 @@ export async function POST(request: NextRequest) {
       validePar: validePar || null,
       observation: observation || null,
       exempt: isExempt,
-      ...(lotToken && enrichedSlots ? {
+      ...(lotToken ? {
         lotToken,
         lotUrl,
-        nbCreneaux: enrichedSlots.length,
-        slots: enrichedSlots.map(s => ({
-          date:       s.date,
-          heureDebut: s.heureDebut,
-          heureFin:   s.heureFin,
-          nomSalle:   s.nomSalle,
-        })),
+        nbPeriodes: nbPairesCreees,
       } : {}),
     }).catch(err => {
       console.error(`[API] ⚠️ Webhook n8n échoué (non bloquant):`, err.message)
@@ -228,7 +319,7 @@ export async function POST(request: NextRequest) {
         etape,
         numeroDossier: candidat.numeroDossier,
         dateValidation: new Date().toISOString(),
-        holdsCreated: enrichedSlots?.length ?? 0,
+        holdsCreated: nbPairesCreees * 2,
         ...(lotToken ? { lotToken, lotUrl } : {}),
       }
     })
