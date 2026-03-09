@@ -38,32 +38,57 @@ export async function GET(request: NextRequest) {
       orderBy: { dateDebut: 'asc' },
     })
 
-    // Grouper par paires : les holds sont toujours par 2 (Jour1 + Jour2)
-    // On les groupe par date unique et on associe le premier = entretien, le second = test
-    const paireMap = new Map<string, { tokenJ1: string; dateJ1: Date; dateJ2: Date; nomSalle: string }>()
-
-    // Collecter les dates uniques triées
     const holdsTriés = [...holds].sort((a, b) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime())
-
-    // Grouper par paires de 2 (chaque paire partage le même idLot)
-    // Stratégie : grouper les holds par proximité de dates (même salle, mêmes 2 dates)
-    // On cherche les paires uniques de (date1, date2)
     const datesUniques = [...new Set(holdsTriés.map(h => new Date(h.dateDebut).toISOString().split('T')[0]))]
+
+    type PaireData = {
+      tokenJ1: string
+      dateJ1: Date
+      dateJ2: Date
+      nomSalle: string
+      placesRestantes: number
+      plein: boolean
+    }
+
+    const paireMap = new Map<string, PaireData>()
 
     for (let i = 0; i < datesUniques.length; i += 2) {
       const date1 = datesUniques[i]
       const date2 = datesUniques[i + 1]
-      if (!date2) break // nombre impair — ignorer le dernier
+      if (!date2) break
 
       const holdJ1 = holdsTriés.find(h => h.dateDebut.toISOString().split('T')[0] === date1)
       const holdJ2 = holdsTriés.find(h => h.dateDebut.toISOString().split('T')[0] === date2)
       if (!holdJ1 || !holdJ2) continue
+
+      // Récupérer l'événement ENTRETIEN_PRESENTIEL du Jour 1 pour connaître la capacité et les inscrits
+      const dateJ1Debut = new Date(holdJ1.dateDebut)
+      dateJ1Debut.setHours(0, 0, 0, 0)
+      const dateJ1Fin = new Date(holdJ1.dateDebut)
+      dateJ1Fin.setHours(23, 59, 59, 999)
+
+      const evtJ1 = await prisma.evenement.findFirst({
+        where: {
+          type:   'ENTRETIEN_PRESENTIEL',
+          date:   { gte: dateJ1Debut, lte: dateJ1Fin },
+          salle:  holdJ1.salle.nom,
+          statut: { not: 'ANNULE' },
+        },
+        select: { nombreParticipants: true, participantsInscrits: true },
+      })
+
+      const capacite = evtJ1?.nombreParticipants ?? 0
+      const inscrits = evtJ1?.participantsInscrits ?? 0
+      const placesRestantes = Math.max(0, capacite - inscrits)
+      const plein = capacite > 0 && placesRestantes === 0
 
       paireMap.set(`${date1}_${date2}`, {
         tokenJ1:  holdJ1.token!,
         dateJ1:   holdJ1.dateDebut,
         dateJ2:   holdJ2.dateDebut,
         nomSalle: holdJ1.salle.nom,
+        placesRestantes,
+        plein,
       })
     }
 
@@ -72,10 +97,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       paires: paires.map(p => ({
-        tokenJ1:  p.tokenJ1,
-        dateJ1:   p.dateJ1,
-        dateJ2:   p.dateJ2,
-        nomSalle: p.nomSalle,
+        tokenJ1:         p.tokenJ1,
+        dateJ1:          p.dateJ1,
+        dateJ2:          p.dateJ2,
+        nomSalle:        p.nomSalle,
+        placesRestantes: p.placesRestantes,
+        plein:           p.plein,
       })),
     })
 

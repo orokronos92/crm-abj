@@ -98,7 +98,7 @@ export async function confirmerCreneauRdv(
     })
   }
 
-  // 6. Transaction avec vérification de concurrence
+  // 6. Transaction : incrémenter participantsInscrits (le hold reste PREVUE tant que le bucket n'est pas plein)
   let confirmed = false
   await prisma.$transaction(async (tx) => {
     const holdActuel = await tx.reservationSalle.findUnique({
@@ -108,27 +108,21 @@ export async function confirmerCreneauRdv(
 
     if (!holdActuel || holdActuel.statut !== 'PREVUE') return
 
-    // Confirmer J1
+    // Relier le candidat au hold J1 (sans changer le statut PREVUE)
     await tx.reservationSalle.update({
       where: { idReservation: holdJ1.idReservation },
-      data: {
-        statut:     'CONFIRMEE',
-        idCandidat: idCandidatConfirmant ?? holdJ1.idCandidat ?? null,
-      }
+      data: { idCandidat: idCandidatConfirmant ?? holdJ1.idCandidat ?? null }
     })
 
-    // Confirmer J2 si trouvé
+    // Relier le candidat au hold J2 si trouvé
     if (holdJ2) {
       await tx.reservationSalle.update({
         where: { idReservation: holdJ2.idReservation },
-        data: {
-          statut:     'CONFIRMEE',
-          idCandidat: idCandidatConfirmant ?? holdJ1.idCandidat ?? null,
-        }
+        data: { idCandidat: idCandidatConfirmant ?? holdJ1.idCandidat ?? null }
       })
     }
 
-    // Décrémenter participantsInscrits sur l'événement ENTRETIEN_PRESENTIEL (Jour 1)
+    // Incrémenter participantsInscrits sur l'événement ENTRETIEN_PRESENTIEL (Jour 1)
     const dateJ1Debut = new Date(holdJ1.dateDebut)
     dateJ1Debut.setHours(0, 0, 0, 0)
     const dateJ1Fin = new Date(holdJ1.dateDebut)

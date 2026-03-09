@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { MonthDetailModal } from '@/components/admin/MonthDetailModal'
 import { EvenementFormModal } from '@/components/admin/EvenementFormModal'
@@ -55,12 +55,14 @@ interface Salle {
   equipements?: string[]
 }
 
-const TYPE_EVENEMENT_CONFIG = {
-  PORTES_OUVERTES: { label: 'Portes ouvertes', icon: PartyPopper, color: 'text-[rgb(var(--accent))]', bg: 'bg-[rgba(var(--accent),0.1)]' },
-  STAGE_INITIATION: { label: 'Stage initiation', icon: GraduationCap, color: 'text-[rgb(var(--info))]', bg: 'bg-[rgba(var(--info),0.1)]' },
-  REUNION: { label: 'Réunion', icon: Briefcase, color: 'text-[rgb(var(--warning))]', bg: 'bg-[rgba(var(--warning),0.1)]' },
-  REMISE_DIPLOME: { label: 'Remise diplômes', icon: Award, color: 'text-[rgb(var(--success))]', bg: 'bg-[rgba(var(--success),0.1)]' },
-  ENTRETIEN: { label: 'Entretien', icon: Phone, color: 'text-[rgb(var(--muted-foreground))]', bg: 'bg-[rgb(var(--secondary))]' },
+const TYPE_EVENEMENT_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
+  PORTES_OUVERTES:      { label: 'Portes ouvertes',     icon: PartyPopper,   color: 'text-[rgb(var(--accent))]',          bg: 'bg-[rgba(var(--accent),0.1)]' },
+  STAGE_INITIATION:     { label: 'Stage initiation',    icon: GraduationCap, color: 'text-[rgb(var(--info))]',            bg: 'bg-[rgba(var(--info),0.1)]' },
+  REUNION:              { label: 'Réunion',             icon: Briefcase,     color: 'text-[rgb(var(--warning))]',         bg: 'bg-[rgba(var(--warning),0.1)]' },
+  REMISE_DIPLOME:       { label: 'Remise diplômes',     icon: Award,         color: 'text-[rgb(var(--success))]',         bg: 'bg-[rgba(var(--success),0.1)]' },
+  ENTRETIEN:            { label: 'Entretien',           icon: Phone,         color: 'text-[rgb(var(--muted-foreground))]', bg: 'bg-[rgb(var(--secondary))]' },
+  ENTRETIEN_PRESENTIEL: { label: 'Entretien présentiel', icon: Users,        color: 'text-[rgb(var(--info))]',            bg: 'bg-[rgba(var(--info),0.1)]' },
+  TEST_TECHNIQUE:       { label: 'Test technique',      icon: BookOpen,      color: 'text-[rgb(var(--warning))]',         bg: 'bg-[rgba(var(--warning),0.1)]' },
 }
 
 export default function PlanningPage() {
@@ -810,7 +812,7 @@ export default function PlanningPage() {
                   </div>
                 ) : (
                   evenements.map((event) => {
-                    const config = TYPE_EVENEMENT_CONFIG[event.type as TypeEvenement]
+                    const config = TYPE_EVENEMENT_CONFIG[event.type] ?? TYPE_EVENEMENT_CONFIG['ENTRETIEN']
                     const Icon = config.icon
 
                     return (

@@ -307,6 +307,7 @@ export async function POST(request: NextRequest) {
         lotToken,
         lotUrl,
         nbPeriodes: nbPairesCreees,
+        nbCreneaux: nbPairesCreees,
       } : {}),
     }).catch(err => {
       console.error(`[API] ⚠️ Webhook n8n échoué (non bloquant):`, err.message)

@@ -10,7 +10,8 @@ interface Paire {
   dateJ1: string
   dateJ2: string
   nomSalle: string
-  pris?: boolean
+  placesRestantes: number
+  plein: boolean
 }
 
 type PageStatus = 'loading' | 'ready' | 'confirmed' | 'error' | 'complet'
@@ -79,8 +80,7 @@ export function ChoisirRdvClient() {
       const data = await res.json()
 
       if (res.status === 409) {
-        setPaires(prev => prev.map(p => p.tokenJ1 === tokenJ1 ? { ...p, pris: true } : p))
-        setMessage('Ce créneau vient d\'être pris. Veuillez en choisir un autre.')
+        setMessage('Cette période vient d\'être complète. Veuillez en choisir une autre.')
         setChoixEnCours(null)
         setTimeout(() => chargerPaires(), 1500)
         return
@@ -105,7 +105,7 @@ export function ChoisirRdvClient() {
     }
   }
 
-  const pairesDisponibles = paires.filter(p => !p.pris)
+  const pairesDisponibles = paires.filter(p => !p.plein)
 
   return (
     <div className="min-h-screen bg-[rgb(var(--background))] flex flex-col items-center p-4 py-10">
@@ -235,17 +235,17 @@ export function ChoisirRdvClient() {
 
                 <div className="space-y-3">
                   {paires.map(paire => {
-                    const isPris = paire.pris
+                    const isPlein = paire.plein
                     const isEnCours = choixEnCours === paire.tokenJ1
 
                     return (
                       <button
                         key={paire.tokenJ1}
-                        onClick={() => !isPris && !choixEnCours && choisirPaire(paire.tokenJ1)}
-                        disabled={isPris || !!choixEnCours}
+                        onClick={() => !isPlein && !choixEnCours && choisirPaire(paire.tokenJ1)}
+                        disabled={isPlein || !!choixEnCours}
                         className={[
                           'w-full p-4 rounded-lg border text-left transition-all',
-                          isPris
+                          isPlein
                             ? 'opacity-40 cursor-not-allowed bg-[rgb(var(--secondary))] border-[rgba(var(--border),0.3)]'
                             : isEnCours
                               ? 'bg-[rgba(var(--accent),0.15)] border-[rgb(var(--accent))] cursor-wait'
@@ -277,13 +277,19 @@ export function ChoisirRdvClient() {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <MapPin className="w-3 h-3 text-[rgb(var(--muted-foreground))]" />
-                              <p className="text-xs text-[rgb(var(--muted-foreground))]">{paire.nomSalle}</p>
+                            <div className="flex items-center justify-between mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <MapPin className="w-3 h-3 text-[rgb(var(--muted-foreground))]" />
+                                <p className="text-xs text-[rgb(var(--muted-foreground))]">{paire.nomSalle}</p>
+                              </div>
+                              {isPlein ? (
+                                <p className="text-xs text-[rgb(var(--error))] font-medium">Complet</p>
+                              ) : (
+                                <p className="text-xs text-[rgb(var(--success))] font-medium">
+                                  {paire.placesRestantes} place{paire.placesRestantes > 1 ? 's' : ''} disponible{paire.placesRestantes > 1 ? 's' : ''}
+                                </p>
+                              )}
                             </div>
-                            {isPris && (
-                              <p className="text-xs text-[rgb(var(--error))] font-medium">Période complète</p>
-                            )}
                           </div>
                         )}
                       </button>
