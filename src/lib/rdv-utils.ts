@@ -176,6 +176,20 @@ export async function confirmerCreneauRdv(
       }
     }
 
+    // Écrire dateRdvPresentiel et dateTestTechnique sur le candidat
+    if (idCandidatConfirmant) {
+      await tx.candidat.update({
+        where: { idCandidat: idCandidatConfirmant },
+        data: { dateRdvPresentiel: new Date(holdJ1.dateDebut) }
+      })
+      if (holdJ2) {
+        await tx.candidat.update({
+          where: { idCandidat: idCandidatConfirmant },
+          data: { dateTestTechnique: new Date(holdJ2.dateDebut) }
+        })
+      }
+    }
+
     confirmed = true
   })
 

@@ -123,12 +123,25 @@ export async function POST(request: NextRequest) {
 
       await Promise.all(
         paires.map(async (paire: PaireSlot) => {
-          // Jour 1 : entretien présentiel 09h-17h
-          const debut1 = new Date(`${paire.jour1}T09:00:00`)
-          const fin1   = new Date(`${paire.jour1}T17:00:00`)
-          // Jour 2 : test technique 09h-17h
-          const debut2 = new Date(`${paire.jour2}T09:00:00`)
-          const fin2   = new Date(`${paire.jour2}T17:00:00`)
+          // Construire les dates en heure Paris pour éviter le décalage UTC
+          // new Date('YYYY-MM-DDTHH:mm:ss') sans suffixe = UTC en Node.js → +1h ou +2h de décalage
+          const toParisUTC = (dateStr: string, time: string): Date => {
+            const probe = new Date(`${dateStr}T12:00:00Z`)
+            const parisHour = parseInt(
+              probe.toLocaleString('en-US', { timeZone: 'Europe/Paris', hour12: false, hour: '2-digit' }).split(':')[0].replace('24', '0')
+            )
+            const offsetMin = ((parisHour - 12 + 24) % 24) * 60
+            const [h, m] = time.split(':').map(Number)
+            const [y, mo, d] = dateStr.split('-').map(Number)
+            return new Date(Date.UTC(y, mo - 1, d, h - Math.floor(offsetMin / 60), m - (offsetMin % 60)))
+          }
+
+          // Jour 1 : entretien présentiel 09h-17h (heure Paris)
+          const debut1 = toParisUTC(paire.jour1, '09:00')
+          const fin1   = toParisUTC(paire.jour1, '17:00')
+          // Jour 2 : test technique 09h-17h (heure Paris)
+          const debut2 = toParisUTC(paire.jour2, '09:00')
+          const fin2   = toParisUTC(paire.jour2, '17:00')
 
           // ── Upsert Evenement ENTRETIEN_PRESENTIEL sur Jour 1 ──────────────
           const evtEntretienExistant = await prisma.evenement.findFirst({
