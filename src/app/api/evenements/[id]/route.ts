@@ -1,9 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // Type pour les paramètres de route dynamique
 type RouteParams = {
   params: Promise<{ id: string }>
+}
+
+/**
+ * GET /api/evenements/[id]
+ * Retourne l'événement + la liste des candidats inscrits (pour ENTRETIEN_PRESENTIEL et TEST_TECHNIQUE)
+ */
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const idEvenement = parseInt(id, 10)
+    if (isNaN(idEvenement)) {
+      return NextResponse.json({ success: false, error: 'ID invalide' }, { status: 400 })
+    }
+
+    const evenement = await prisma.evenement.findUnique({
+      where: { idEvenement },
+      select: {
+        idEvenement: true, type: true, titre: true, date: true,
+        heureDebut: true, heureFin: true, salle: true,
+        nombreParticipants: true, participantsInscrits: true, statut: true
+      }
+    })
+
+    if (!evenement) {
+      return NextResponse.json({ success: false, error: 'Événement introuvable' }, { status: 404 })
+    }
+
+    const isEntretien = evenement.type === 'ENTRETIEN_PRESENTIEL'
+    const isTest = evenement.type === 'TEST_TECHNIQUE'
+
+    if (!isEntretien && !isTest) {
+      return NextResponse.json({ success: true, evenement: { ...evenement, date: evenement.date.toISOString().split('T')[0] }, candidats: [] })
+    }
+
+    const dateDebut = new Date(evenement.date)
+    dateDebut.setHours(0, 0, 0, 0)
+    const dateFin = new Date(evenement.date)
+    dateFin.setHours(23, 59, 59, 999)
+
+    const candidats = await prisma.candidat.findMany({
+      where: isEntretien
+        ? { dateRdvPresentiel: { gte: dateDebut, lte: dateFin } }
+        : { dateTestTechnique: { gte: dateDebut, lte: dateFin } },
+      select: {
+        idCandidat: true,
+        numeroDossier: true,
+        prospect: { select: { nom: true, prenom: true, emails: true, telephones: true } }
+      },
+      orderBy: { numeroDossier: 'asc' }
+    })
+
+    return NextResponse.json({
+      success: true,
+      evenement: { ...evenement, date: evenement.date.toISOString().split('T')[0] },
+      candidats: candidats.map(c => ({
+        idCandidat: c.idCandidat,
+        numeroDossier: c.numeroDossier,
+        nom: c.prospect?.nom ?? '',
+        prenom: c.prospect?.prenom ?? '',
+        email: c.prospect?.emails?.[0] ?? null,
+        telephone: c.prospect?.telephones?.[0] ?? null,
+      }))
+    })
+  } catch (error) {
+    console.error('❌ Erreur GET /api/evenements/[id]:', error)
+    return NextResponse.json({ success: false, error: 'Erreur interne' }, { status: 500 })
+  }
 }
 
 /**
@@ -30,6 +99,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       where: { idEvenement },
       select: {
         idEvenement: true,
+        type: true,
         date: true,
         salle: true,
         statut: true
@@ -121,7 +191,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Préparer les données de mise à jour
-    const dataUpdate: any = {}
+    const dataUpdate: Record<string, unknown> = {}
 
     if (body.type) dataUpdate.type = body.type
     if (body.titre) dataUpdate.titre = body.titre
@@ -134,15 +204,84 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.participantsInscrits !== undefined) dataUpdate.participantsInscrits = parseInt(String(body.participantsInscrits), 10)
     if (body.statut) dataUpdate.statut = body.statut
     if (body.notes !== undefined) dataUpdate.notes = body.notes
-
-    // TODO: Récupérer userId depuis session NextAuth
     dataUpdate.modifiePar = null
 
-    // Mise à jour
-    const evenementUpdated = await prisma.evenement.update({
-      where: { idEvenement },
-      data: dataUpdate
-    })
+    // Cascade sur les holds et candidats si changement de date sur ENTRETIEN/TEST
+    const isRdvType = evenementActuel.type === 'ENTRETIEN_PRESENTIEL' || evenementActuel.type === 'TEST_TECHNIQUE'
+    let holdsModifies = 0
+
+    if (changementDate && isRdvType) {
+      const ancienneDate = new Date(evenementActuel.date)
+      const ancienneDateDebut = new Date(ancienneDate)
+      ancienneDateDebut.setHours(0, 0, 0, 0)
+      const ancienneDateFin = new Date(ancienneDate)
+      ancienneDateFin.setHours(23, 59, 59, 999)
+
+      const nouvelleDate = new Date(body.date)
+      const [annee, moisNum, jourNum] = body.date.split('-').map(Number)
+
+      // Récupérer les holds liés à cette date et salle
+      const holdsLies = await prisma.reservationSalle.findMany({
+        where: {
+          token: { not: null },
+          dateDebut: { gte: ancienneDateDebut, lte: ancienneDateFin },
+          salle: { nom: evenementActuel.salle ?? '' },
+        },
+        select: { idReservation: true, dateDebut: true, dateFin: true }
+      })
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Mettre à jour l'événement
+        await tx.evenement.update({ where: { idEvenement }, data: dataUpdate })
+
+        // 2. Cascade sur les holds
+        for (const hold of holdsLies) {
+          const hDebut = new Date(hold.dateDebut).getHours()
+          const minDebut = new Date(hold.dateDebut).getMinutes()
+          const hFin = new Date(hold.dateFin).getHours()
+          const minFin = new Date(hold.dateFin).getMinutes()
+          await tx.reservationSalle.update({
+            where: { idReservation: hold.idReservation },
+            data: {
+              dateDebut: new Date(annee, moisNum - 1, jourNum, hDebut, minDebut, 0),
+              dateFin:   new Date(annee, moisNum - 1, jourNum, hFin, minFin, 0),
+            }
+          })
+        }
+        holdsModifies = holdsLies.length
+
+        // 3. Cascade sur les dates des candidats inscrits
+        if (evenementActuel.type === 'ENTRETIEN_PRESENTIEL') {
+          await tx.candidat.updateMany({
+            where: { dateRdvPresentiel: { gte: ancienneDateDebut, lte: ancienneDateFin } },
+            data: { dateRdvPresentiel: nouvelleDate }
+          })
+        } else {
+          await tx.candidat.updateMany({
+            where: { dateTestTechnique: { gte: ancienneDateDebut, lte: ancienneDateFin } },
+            data: { dateTestTechnique: nouvelleDate }
+          })
+        }
+      })
+
+      console.log(`[API] ✅ Cascade date événement ${idEvenement} : ${holdsModifies} hold(s) mis à jour`)
+    }
+
+    // Mise à jour simple si pas de cascade nécessaire
+    const evenementUpdated = isRdvType && changementDate
+      ? await prisma.evenement.findUnique({
+          where: { idEvenement },
+          select: {
+            idEvenement: true, type: true, titre: true, description: true,
+            date: true, heureDebut: true, heureFin: true, salle: true,
+            nombreParticipants: true, participantsInscrits: true, statut: true, notes: true, modifieLe: true
+          }
+        })
+      : await prisma.evenement.update({ where: { idEvenement }, data: dataUpdate })
+
+    if (!evenementUpdated) {
+      return NextResponse.json({ success: false, error: 'Événement introuvable après mise à jour' }, { status: 404 })
+    }
 
     return NextResponse.json({
       success: true,

@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { MonthDetailModal } from '@/components/admin/MonthDetailModal'
 import { EvenementFormModal } from '@/components/admin/EvenementFormModal'
+import { EvenementDetailModal } from '@/components/admin/EvenementDetailModal'
 import {
   Calendar,
   Users,
@@ -82,6 +83,9 @@ export default function PlanningPage() {
   // État modal événement
   const [modalEvenementOuvert, setModalEvenementOuvert] = useState(false)
   const [evenementEnEdition, setEvenementEnEdition] = useState<Evenement | null>(null)
+
+  // État modal détail événement (ENTRETIEN_PRESENTIEL / TEST_TECHNIQUE)
+  const [modalDetailEvenementId, setModalDetailEvenementId] = useState<number | null>(null)
 
   // État événements (données réelles depuis API)
   const [evenements, setEvenements] = useState<Evenement[]>([])
@@ -815,8 +819,14 @@ export default function PlanningPage() {
                     const config = TYPE_EVENEMENT_CONFIG[event.type] ?? TYPE_EVENEMENT_CONFIG['ENTRETIEN']
                     const Icon = config.icon
 
+                    const isRdvTile = event.type === 'ENTRETIEN_PRESENTIEL' || event.type === 'TEST_TECHNIQUE'
+
                     return (
-                      <div key={event.idEvenement} className="p-6 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-all">
+                      <div
+                        key={event.idEvenement}
+                        className={`p-6 bg-[rgb(var(--secondary))] rounded-lg hover:bg-[rgba(var(--accent),0.05)] transition-all ${isRdvTile ? 'cursor-pointer' : ''}`}
+                        onClick={isRdvTile ? () => setModalDetailEvenementId(event.idEvenement) : undefined}
+                      >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start gap-3">
                           <div className={`p-3 ${config.bg} rounded-lg`}>
@@ -829,7 +839,7 @@ export default function PlanningPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                           <button
                             onClick={() => handleEditerEvenement(event)}
                             className="p-1.5 hover:bg-[rgb(var(--card))] rounded-lg transition-colors"
@@ -879,8 +889,19 @@ export default function PlanningPage() {
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-[rgb(var(--accent))]" />
                           <div>
-                            <p className="text-xs text-[rgb(var(--muted-foreground))]">Participants</p>
-                            <p className="text-sm font-medium text-[rgb(var(--foreground))]">{event.nombreParticipants}</p>
+                            <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                              {(event.type === 'ENTRETIEN_PRESENTIEL' || event.type === 'TEST_TECHNIQUE') ? 'Inscrits / Capacité' : 'Participants'}
+                            </p>
+                            {(event.type === 'ENTRETIEN_PRESENTIEL' || event.type === 'TEST_TECHNIQUE') ? (
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">
+                                <span className={(event.participantsInscrits ?? 0) >= event.nombreParticipants ? 'text-[rgb(var(--error))]' : 'text-[rgb(var(--success))]'}>
+                                  {event.participantsInscrits ?? 0}
+                                </span>
+                                <span className="text-[rgb(var(--muted-foreground))]"> / {event.nombreParticipants}</span>
+                              </p>
+                            ) : (
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))]">{event.nombreParticipants}</p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -941,6 +962,15 @@ export default function PlanningPage() {
             setEvenementEnEdition(null)
           }}
           onSuccess={refreshEvenements}
+        />
+      )}
+
+      {/* Modal détail entretien/test (liste candidats + modification date avec cascade) */}
+      {modalDetailEvenementId !== null && (
+        <EvenementDetailModal
+          idEvenement={modalDetailEvenementId}
+          onClose={() => setModalDetailEvenementId(null)}
+          onDateChanged={refreshEvenements}
         />
       )}
     </DashboardLayout>

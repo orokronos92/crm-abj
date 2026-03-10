@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
         idSession: true,
         idEvenement: true,
         idCandidat: true,
+        idLot: true,
         token: true,
         dateDebut: true,
         dateFin: true,
@@ -113,6 +114,58 @@ export async function GET(request: NextRequest) {
         }
       }
     })
+
+    // Pour les holds avec idLot, récupérer TOUS les candidats inscrits dans ce lot
+    // (un hold est un bucket collectif : idCandidat ne pointe que vers le dernier ayant validé)
+    const lotsIds = [...new Set(
+      reservations
+        .filter(r => r.token !== null && r.idLot !== null)
+        .map(r => r.idLot as string)
+    )]
+
+    // Map idLot → liste de candidats inscrits
+    const candidatsParLot = new Map<string, Array<{ nom: string; prenom: string; numeroDossier: string | null }>>()
+
+    if (lotsIds.length > 0) {
+      // Récupérer les candidats via les événements ENTRETIEN_PRESENTIEL liés à ce lot
+      // On cherche les candidats dont dateRdvPresentiel est dans le range des holds J1 de ce lot
+      const holdsJ1ParLot = new Map<string, Date>()
+      reservations
+        .filter(r => r.token !== null && r.idLot !== null)
+        .forEach(r => {
+          // On garde la plus ancienne date par lot (c'est le J1)
+          const lotId = r.idLot as string
+          const existing = holdsJ1ParLot.get(lotId)
+          if (!existing || new Date(r.dateDebut) < existing) {
+            holdsJ1ParLot.set(lotId, new Date(r.dateDebut))
+          }
+        })
+
+      for (const [lotId, dateJ1] of holdsJ1ParLot.entries()) {
+        const dateDebut = new Date(dateJ1)
+        dateDebut.setHours(0, 0, 0, 0)
+        const dateFin = new Date(dateJ1)
+        dateFin.setHours(23, 59, 59, 999)
+
+        const candidatsInscrits = await prisma.candidat.findMany({
+          where: {
+            dateRdvPresentiel: { gte: dateDebut, lte: dateFin },
+          },
+          select: {
+            numeroDossier: true,
+            prospect: { select: { nom: true, prenom: true } }
+          }
+        })
+
+        if (candidatsInscrits.length > 0) {
+          candidatsParLot.set(lotId, candidatsInscrits.map(c => ({
+            nom: c.prospect?.nom ?? '',
+            prenom: c.prospect?.prenom ?? '',
+            numeroDossier: c.numeroDossier,
+          })))
+        }
+      }
+    }
 
     // Index des sessions par id pour lookup rapide
     const sessionsById = new Map(sessions.map(s => [s.idSession, s]))
@@ -240,23 +293,39 @@ export async function GET(request: NextRequest) {
               statut: r.statut,
               matiere: r.matiere,
             })),
-          // Holds RDV entretien : ont un token (et idLot). idCandidat est null avant confirmation,
-          // renseigné après que le candidat ait choisi son créneau.
+          // Holds RDV entretien : ont un token (et idLot). Bucket collectif :
+          // plusieurs candidats peuvent valider le même lot.
+          // On récupère la liste complète via candidatsParLot (par dateRdvPresentiel).
           holds: reservationsCeMois
             .filter(r => r.token !== null)
-            .map(r => ({
-              idReservation: r.idReservation,
-              token: r.token,
-              idCandidat: r.idCandidat,
-              statut: r.statut,
-              expiresAt: r.expiresAt,
-              dateDebut: r.dateDebut,
-              dateFin: r.dateFin,
-              nomCandidat: r.candidat
-                ? `${r.candidat.prospect?.prenom ?? ''} ${r.candidat.prospect?.nom ?? ''}`.trim() || null
-                : null,
-              numeroDossier: r.candidat?.numeroDossier ?? null,
-            })),
+            .map(r => {
+              const candidatsDuLot = r.idLot ? (candidatsParLot.get(r.idLot) ?? []) : []
+              // Fallback si aucun inscrit trouvé via lot : afficher le candidat lié directement
+              const candidatsFallback = r.candidat
+                ? [{ nom: r.candidat.prospect?.nom ?? '', prenom: r.candidat.prospect?.prenom ?? '', numeroDossier: r.candidat.numeroDossier ?? null }]
+                : []
+              const candidats = candidatsDuLot.length > 0 ? candidatsDuLot : candidatsFallback
+              const nbInscrits = candidats.length
+              const nomAffiche = nbInscrits > 1
+                ? `${nbInscrits} inscrits`
+                : candidats[0]
+                  ? `${candidats[0].prenom} ${candidats[0].nom}`.trim() || candidats[0].numeroDossier || null
+                  : null
+              return {
+                idReservation: r.idReservation,
+                token: r.token,
+                idCandidat: r.idCandidat,
+                idLot: r.idLot,
+                statut: r.statut,
+                expiresAt: r.expiresAt,
+                dateDebut: r.dateDebut,
+                dateFin: r.dateFin,
+                nomCandidat: nomAffiche,
+                numeroDossier: candidats[0]?.numeroDossier ?? null,
+                candidats,
+                nbInscrits,
+              }
+            }),
         }
       })
 

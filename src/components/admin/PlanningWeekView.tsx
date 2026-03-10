@@ -338,8 +338,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
                         title={tooltipTitle}
                       >
                         <div className="px-1.5 py-1 flex flex-col h-full overflow-hidden">
-                          <span className="text-[10px] font-bold leading-tight truncate" style={{ color: border }}>{statutLabel}</span>
-                          <span className="text-[10px] leading-tight truncate font-medium" style={{ color: border, opacity: 0.9 }}>{nomAffiche}</span>
+                          <span className="text-[10px] leading-tight truncate font-medium" style={{ color: border }}>{nomAffiche}</span>
                           {height >= SLOT_HEIGHT * 2 && (
                             <span className="text-[9px] mt-0.5" style={{ color: border, opacity: 0.7 }}>{horaire}</span>
                           )}
