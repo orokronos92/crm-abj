@@ -76,7 +76,11 @@ export function EvenementDetailModal({ idEvenement, onClose, onDateChanged }: Ev
       })
       const data = await res.json()
       if (data.success) {
-        setEvenement(prev => prev ? { ...prev, date: nouvelleDate } : prev)
+        setEvenement(prev => prev ? {
+          ...prev,
+          date: nouvelleDate,
+          titre: data.evenement?.titre ?? prev.titre,
+        } : prev)
         setSucces(`Date mise à jour. ${data.holdsModifies ?? 0} créneau(x) mis à jour.`)
         setModeModifDate(false)
         onDateChanged?.()

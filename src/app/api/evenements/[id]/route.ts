@@ -40,9 +40,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ success: true, evenement: { ...evenement, date: evenement.date.toISOString().split('T')[0] }, candidats: [] })
     }
 
+    // Élargir la plage à ±1 jour pour absorber les décalages UTC/timezone
+    // (n8n écrit dateRdvPresentiel en heure locale, la date événement est stockée en UTC)
     const dateDebut = new Date(evenement.date)
+    dateDebut.setDate(dateDebut.getDate() - 1)
     dateDebut.setHours(0, 0, 0, 0)
     const dateFin = new Date(evenement.date)
+    dateFin.setDate(dateFin.getDate() + 1)
     dateFin.setHours(23, 59, 59, 999)
 
     const candidats = await prisma.candidat.findMany({
@@ -100,6 +104,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       select: {
         idEvenement: true,
         type: true,
+        titre: true,
         date: true,
         salle: true,
         statut: true
@@ -194,7 +199,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const dataUpdate: Record<string, unknown> = {}
 
     if (body.type) dataUpdate.type = body.type
-    if (body.titre) dataUpdate.titre = body.titre
+
+    // Si le titre suit le pattern "Type — DD/MM/YYYY" et qu'on change la date,
+    // mettre à jour le titre automatiquement (sauf si un titre explicite est fourni)
+    if (body.titre) {
+      dataUpdate.titre = body.titre
+    } else if (changementDate && evenementActuel.titre) {
+      const datePattern = /\d{2}\/\d{2}\/\d{4}$/
+      if (datePattern.test(evenementActuel.titre)) {
+        const [anneeT, moisT, jourT] = body.date.split('-')
+        const nouvelleDateFormatee = `${jourT}/${moisT}/${anneeT}`
+        dataUpdate.titre = evenementActuel.titre.replace(datePattern, nouvelleDateFormatee)
+      }
+    }
     if (body.description !== undefined) dataUpdate.description = body.description
     if (body.date) dataUpdate.date = new Date(body.date)
     if (body.heureDebut) dataUpdate.heureDebut = body.heureDebut
@@ -212,9 +229,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (changementDate && isRdvType) {
       const ancienneDate = new Date(evenementActuel.date)
+      // Plage ±1 jour pour absorber les décalages UTC/timezone
       const ancienneDateDebut = new Date(ancienneDate)
+      ancienneDateDebut.setDate(ancienneDateDebut.getDate() - 1)
       ancienneDateDebut.setHours(0, 0, 0, 0)
       const ancienneDateFin = new Date(ancienneDate)
+      ancienneDateFin.setDate(ancienneDateFin.getDate() + 1)
       ancienneDateFin.setHours(23, 59, 59, 999)
 
       const nouvelleDate = new Date(body.date)
@@ -285,6 +305,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
+      holdsModifies,
       evenement: {
         idEvenement: evenementUpdated.idEvenement,
         type: evenementUpdated.type,
