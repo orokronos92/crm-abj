@@ -71,6 +71,8 @@ interface PlanningWeekViewProps {
     heureDebut: string
     heureFin: string
     type: string
+    nombreParticipants?: number
+    participantsInscrits?: number
   }>
   reservations: Reservation[]
   holds?: HoldRdv[]
@@ -309,36 +311,55 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
                   )
                 })}
 
-                {/* Holds RDV (PREVUE / CONFIRMEE / expirés) */}
-                {holds
-                  .filter(h => {
+                {/* Holds RDV — groupés par créneau horaire, affichage compteur */}
+                {(() => {
+                  const holdsJour = holds.filter(h => {
                     const d = new Date(h.dateDebut)
                     return d.getDate() === jourNum && d.getMonth() === mois && d.getFullYear() === annee
                   })
-                  .map(hold => {
-                    const rd = new Date(hold.dateDebut)
-                    const rf = new Date(hold.dateFin)
+                  // Grouper par startSlot pour ne faire qu'un bloc par créneau
+                  const groupes = new Map<number, typeof holdsJour>()
+                  for (const h of holdsJour) {
+                    const rd = new Date(h.dateDebut)
                     const s0 = timeToSlot(rd.getHours(), rd.getMinutes())
+                    if (!groupes.has(s0)) groupes.set(s0, [])
+                    groupes.get(s0)!.push(h)
+                  }
+                  return Array.from(groupes.entries()).map(([s0, groupe]) => {
+                    const firstHold = groupe[0]
+                    const rd = new Date(firstHold.dateDebut)
+                    const rf = new Date(firstHold.dateFin)
                     const s1 = timeToSlot(rf.getHours(), rf.getMinutes())
                     const top = s0 * SLOT_HEIGHT + 1
                     const height = Math.max((Math.max(s0 + 1, s1) - s0) * SLOT_HEIGHT - 2, SLOT_HEIGHT - 2)
-                    const isExpired = hold.expiresAt && new Date(hold.expiresAt) < new Date()
-                    const isConfirmee = hold.statut === 'CONFIRMEE'
-                    const bg = isExpired ? 'rgba(156,163,175,0.2)' : isConfirmee ? 'rgba(34,197,94,0.2)' : 'rgba(249,115,22,0.2)'
-                    const border = isExpired ? '#9ca3af' : isConfirmee ? '#22c55e' : '#f97316'
-                    const statutLabel = isExpired ? '⏰ Expiré' : isConfirmee ? '✅ Confirmé' : '⏳ En attente'
-                    const nomAffiche = hold.nomCandidat || (hold.numeroDossier ? `#${hold.numeroDossier}` : `Candidat #${hold.idCandidat}`)
                     const horaire = `${slotToTime(s0)} – ${slotToTime(Math.max(s0 + 1, s1))}`
-                    const tooltipTitle = [statutLabel, nomAffiche, hold.numeroDossier ? `Dossier : ${hold.numeroDossier}` : null, horaire].filter(Boolean).join('\n')
+
+                    // Chercher l'événement ENTRETIEN ou TEST de ce jour pour avoir la capacité réelle
+                    const evtLie = evenements.find(e => {
+                      const ed = new Date(e.date)
+                      return ed.getDate() === jourNum && ed.getMonth() === mois && ed.getFullYear() === annee &&
+                        (e.type === 'ENTRETIEN_PRESENTIEL' || e.type === 'TEST_TECHNIQUE')
+                    })
+                    const nbInscrits = evtLie?.participantsInscrits ?? groupe.length
+                    const capacite = evtLie?.nombreParticipants ?? null
+                    const compteurLabel = capacite !== null ? `${nbInscrits} / ${capacite}` : `${nbInscrits} inscrit${nbInscrits > 1 ? 's' : ''}`
+                    const typeLabel = evtLie?.type === 'TEST_TECHNIQUE' ? 'Test technique' : 'Entretien'
+
+                    const bg = 'rgba(249,115,22,0.2)'
+                    const border = '#f97316'
+                    const tooltipTitle = `${typeLabel} — ${compteurLabel} inscrits\n${horaire}`
                     return (
                       <div
-                        key={`hold-${hold.idReservation}`}
+                        key={`holdgrp-${s0}`}
                         className="absolute left-[2px] right-[2px] rounded-sm overflow-hidden"
                         style={{ top, height, backgroundColor: bg, borderLeft: `3px solid ${border}` }}
                         title={tooltipTitle}
                       >
                         <div className="px-1.5 py-1 flex flex-col h-full overflow-hidden">
-                          <span className="text-[10px] leading-tight truncate font-medium" style={{ color: border }}>{nomAffiche}</span>
+                          <span className="text-[11px] font-bold leading-tight" style={{ color: border }}>{compteurLabel}</span>
+                          {height >= SLOT_HEIGHT * 1.5 && (
+                            <span className="text-[9px] leading-tight mt-0.5" style={{ color: border, opacity: 0.8 }}>{typeLabel}</span>
+                          )}
                           {height >= SLOT_HEIGHT * 2 && (
                             <span className="text-[9px] mt-0.5" style={{ color: border, opacity: 0.7 }}>{horaire}</span>
                           )}
@@ -346,7 +367,7 @@ export function PlanningWeekView({ mois, annee, sessions, evenements, reservatio
                       </div>
                     )
                   })
-                }
+                })()}
 
                 {/* "Libre" en bas de la colonne si aucun bloc */}
                 {blocks.length === 0 && holds.filter(h => new Date(h.dateDebut).getDate() === jourNum && new Date(h.dateDebut).getMonth() === mois && new Date(h.dateDebut).getFullYear() === annee).length === 0 && (

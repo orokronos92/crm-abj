@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
         heureFin: true,
         salle: true,
         nombreParticipants: true,
+        participantsInscrits: true,
         statut: true,
       }
     })
@@ -274,12 +275,15 @@ export async function GET(request: NextRequest) {
           })),
           evenements: evenementsCeMois.map(e => ({
             id: e.idEvenement,
+            idEvenement: e.idEvenement,
             type: e.type,
             titre: e.titre,
             date: e.date,
             heureDebut: e.heureDebut,
             heureFin: e.heureFin,
             participants: e.nombreParticipants,
+            nombreParticipants: e.nombreParticipants,
+            participantsInscrits: e.participantsInscrits,
           })),
           // Réservations de session/cours : pas de token (créées par n8n pour planifier des cours)
           reservations: reservationsCeMois
