@@ -179,26 +179,42 @@ export async function GET(request: NextRequest) {
         : dureeJours
 
       return {
-        id: session.idSession,
+        // Champs camelCase — attendus par ConvertirCandidatModal et autres composants frontend
+        idSession: session.idSession,
+        nomSession: session.nomSession,
+        dateDebut: session.dateDebut.toISOString().split('T')[0],
+        dateFin: session.dateFin.toISOString().split('T')[0],
+        capaciteMax: nbParticipants ?? session.capaciteMax ?? 0,
+        nbInscrits: session.nbInscrits || session.inscriptionsSessions.length,
         formation: session.formation?.nom || 'Formation non définie',
-        code_formation: session.formation?.codeFormation || '',
-        nom_session: session.nomSession,
-        formateur_principal: formateurPrincipal,
+        codeFormation: session.formation?.codeFormation || '',
+        formateurPrincipal: formateurPrincipal,
         salle: salle,
-        capacite_max: nbParticipants ?? session.capaciteMax ?? 0,
-        places_prises: session.nbInscrits || session.inscriptionsSessions.length,
-        liste_attente: 0, // TODO: implémenter liste d'attente
+        listeAttente: 0,
+        statut: session.statutValidation,
+        statutSession: session.statutSession,
+        planningIA: session.planningIA,
+        rapportIA: session.rapportIA,
+        notes: session.notes,
+        dureeJours: dureeJoursFinale,
+        dureeHeures: dureeHeuresFinale,
+        formateursSecondaires: [],
+        // Alias snake_case — compatibilité page sessions/page.tsx
+        id: session.idSession,
+        nom_session: session.nomSession,
         date_debut: session.dateDebut.toISOString().split('T')[0],
         date_fin: session.dateFin.toISOString().split('T')[0],
-        statut: session.statutValidation,
+        capacite_max: nbParticipants ?? session.capaciteMax ?? 0,
+        places_prises: session.nbInscrits || session.inscriptionsSessions.length,
+        code_formation: session.formation?.codeFormation || '',
+        formateur_principal: formateurPrincipal,
+        liste_attente: 0,
         statut_session: session.statutSession,
         planning_ia: session.planningIA,
         rapport_ia: session.rapportIA,
-        notes: session.notes,
-        // Champs supplémentaires pour le modal de détail
         duree_jours: dureeJoursFinale,
-        duree_heures: dureeHeuresFinale, // null si pas encore planifié
-        formateurs_secondaires: [], // À implémenter plus tard si nécessaire
+        duree_heures: dureeHeuresFinale,
+        formateurs_secondaires: [],
       }
     })
 
