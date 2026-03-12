@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
         inscriptionsSessions: {
           select: {
             idInscription: true,
+            statutInscription: true,
           }
         },
         reservationsSalles: {
@@ -178,6 +179,10 @@ export async function GET(request: NextRequest) {
         ? joursDistinctsReservations
         : dureeJours
 
+      const nbAttente = session.inscriptionsSessions.filter(
+        (i) => i.statutInscription === 'EN_ATTENTE'
+      ).length
+
       return {
         // Champs camelCase — attendus par ConvertirCandidatModal et autres composants frontend
         idSession: session.idSession,
@@ -190,7 +195,7 @@ export async function GET(request: NextRequest) {
         codeFormation: session.formation?.codeFormation || '',
         formateurPrincipal: formateurPrincipal,
         salle: salle,
-        listeAttente: 0,
+        listeAttente: nbAttente,
         statut: session.statutValidation,
         statutSession: session.statutSession,
         planningIA: session.planningIA,
@@ -208,7 +213,7 @@ export async function GET(request: NextRequest) {
         places_prises: session.nbInscrits || session.inscriptionsSessions.length,
         code_formation: session.formation?.codeFormation || '',
         formateur_principal: formateurPrincipal,
-        liste_attente: 0,
+        liste_attente: nbAttente,
         statut_session: session.statutSession,
         planning_ia: session.planningIA,
         rapport_ia: session.rapportIA,
