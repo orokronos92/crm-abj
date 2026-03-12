@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { sseManager } from '@/lib/sse-manager'
+import prisma from '@/lib/prisma'
 
 interface TriggerPayload {
   // === CORRÉLATION (UUID généré côté client) ===
@@ -50,6 +51,22 @@ export async function POST(request: NextRequest) {
         { error: 'Champs requis: correlationId, actionType, entiteType, entiteId' },
         { status: 400 }
       )
+    }
+
+    // Persister ConversionEnCours pour que le callback puisse retrouver sessionVisee
+    if (body.actionType === 'CONVERTIR_CANDIDAT') {
+      await prisma.conversionEnCours.create({
+        data: {
+          idProspect: body.entiteId,
+          typeAction: 'CONVERTIR_CANDIDAT',
+          statutAction: 'EN_COURS',
+          formationRetenue: (body.metadonnees?.formationRetenue as string) || null,
+          sessionVisee: (body.metadonnees?.sessionVisee as string) || null,
+          dateDebutSouhaitee: body.metadonnees?.dateDebutSouhaitee
+            ? new Date(body.metadonnees.dateDebutSouhaitee as string)
+            : null,
+        }
+      })
     }
 
     const callbackUrl = body.responseConfig?.callbackUrl
