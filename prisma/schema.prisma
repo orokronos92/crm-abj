@@ -1,6 +1,3 @@
-// Schéma Prisma - CRM ABJ
-// Base de données PostgreSQL 16
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,68 +7,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================
-// 1. TABLES EXISTANTES (7 tables - développement Marjorie)
-// ============================================================
-
 /// Mémoire longue de tous les contacts ABJ
 model Prospect {
-  idProspect    String    @id @map("id_prospect")
-  emails        String[]  @default([])
-  telephones    String[]  @default([])
-  nom           String?
-  prenom        String?
-  dateNaissance DateTime? @map("date_naissance") @db.Date
-  adresse       String?
-  codePostal    String?   @map("code_postal")
-  ville         String?
-
-  // Formations et financement
-  formationsSouhaitees String[] @default([]) @map("formations_souhaitees")
-  formationPrincipale  String?  @map("formation_principale")
-  modeFinancement      String?  @map("mode_financement")
-  organismeFinanceur   String?  @map("organisme_financeur")
-
-  // Contexte et projet
-  situationActuelle   String?  @map("situation_actuelle")
-  niveauEtudes        String?  @map("niveau_etudes")
-  projetProfessionnel String?  @map("projet_professionnel")
-  freinsIdentifies    String[] @default([]) @map("freins_identifies")
-  motivations         String[] @default([])
-  resumeIa            String?  @map("resume_ia")
-
-  // Statuts
-  statutProspect String? @map("statut_prospect")
-  statutDossier  String? @map("statut_dossier")
-  statutDevis    String? @map("statut_devis")
-
-  // Origine et tracking
-  sourceOrigine     String? @map("source_origine")
-  modeDecouverte    String? @map("mode_decouverte")
-  messageInitial    String? @map("message_initial")
-  derniereIntention String? @map("derniere_intention")
-  prochaineAction   String? @map("prochaine_action")
-  derniereAction    String? @map("derniere_action")
-  notes             String?
-
-  // Dates et traçabilité
-  datePremierContact DateTime? @map("date_premier_contact") @db.Timestamptz(6)
-  dateDernierContact DateTime? @map("date_dernier_contact") @db.Timestamptz(6)
-  dossierEnvoyeLe    DateTime? @map("dossier_envoye_le") @db.Timestamptz(6)
-  dossierRecuLe      DateTime? @map("dossier_recu_le") @db.Timestamptz(6)
-  creeLe             DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe          DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-  nbEchanges         Int       @default(0) @map("nb_echanges")
-
-  // Liens
-  numeroDossier     String? @map("numero_dossier")
-  lienDossierDrive  String? @map("lien_dossier_drive")
-  lienFicheCandidat String? @map("lien_fiche_candidat")
-
-  // Relations
-  candidats          Candidat[]
-  documentsCandidat  DocumentCandidat[]
-  historiqueEmails   HistoriqueEmail[]
+  idProspect           String             @id @map("id_prospect")
+  emails               String[]           @default([])
+  telephones           String[]           @default([])
+  nom                  String?
+  prenom               String?
+  dateNaissance        DateTime?          @map("date_naissance") @db.Date
+  adresse              String?
+  codePostal           String?            @map("code_postal")
+  ville                String?
+  formationsSouhaitees String[]           @default([]) @map("formations_souhaitees")
+  formationPrincipale  String?            @map("formation_principale")
+  modeFinancement      String?            @map("mode_financement")
+  organismeFinanceur   String?            @map("organisme_financeur")
+  situationActuelle    String?            @map("situation_actuelle")
+  niveauEtudes         String?            @map("niveau_etudes")
+  projetProfessionnel  String?            @map("projet_professionnel")
+  freinsIdentifies     String[]           @default([]) @map("freins_identifies")
+  motivations          String[]           @default([])
+  resumeIa             String?            @map("resume_ia")
+  statutProspect       String?            @map("statut_prospect")
+  statutDossier        String?            @map("statut_dossier")
+  statutDevis          String?            @map("statut_devis")
+  sourceOrigine        String?            @map("source_origine")
+  modeDecouverte       String?            @map("mode_decouverte")
+  messageInitial       String?            @map("message_initial")
+  derniereIntention    String?            @map("derniere_intention")
+  prochaineAction      String?            @map("prochaine_action")
+  derniereAction       String?            @map("derniere_action")
+  notes                String?
+  datePremierContact   DateTime?          @map("date_premier_contact") @db.Timestamptz(6)
+  dateDernierContact   DateTime?          @map("date_dernier_contact") @db.Timestamptz(6)
+  dossierEnvoyeLe      DateTime?          @map("dossier_envoye_le") @db.Timestamptz(6)
+  dossierRecuLe        DateTime?          @map("dossier_recu_le") @db.Timestamptz(6)
+  creeLe               DateTime           @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe            DateTime           @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  nbEchanges           Int                @default(0) @map("nb_echanges")
+  numeroDossier        String?            @map("numero_dossier")
+  lienDossierDrive     String?            @map("lien_dossier_drive")
+  lienFicheCandidat    String?            @map("lien_fiche_candidat")
+  candidats            Candidat[]
+  documentsCandidat    DocumentCandidat[]
+  historiqueEmails     HistoriqueEmail[]
 
   @@index([emails], type: Gin)
   @@index([telephones], type: Gin)
@@ -83,91 +62,69 @@ model Prospect {
 
 /// Dossiers formels de candidature à une formation
 model Candidat {
-  idCandidat    Int    @id @default(autoincrement()) @map("id_candidat")
-  idProspect    String @map("id_prospect")
-  numeroDossier String @unique @map("numero_dossier")
-
-  // Formations
-  formationsDemandees String[]  @default([]) @map("formations_demandees")
-  formationRetenue    String?   @map("formation_retenue")
-  sessionVisee        String?   @map("session_visee")
-  dateDebutSouhaitee  DateTime? @map("date_debut_souhaitee") @db.Date
-
-  // Financement détaillé
-  modeFinancement       String?  @map("mode_financement")
-  organismeFinanceur    String?  @map("organisme_financeur")
-  montantTotalFormation Decimal? @map("montant_total_formation") @db.Decimal(10, 2)
-  montantPriseEnCharge  Decimal? @map("montant_prise_en_charge") @db.Decimal(10, 2)
-  resteACharge          Decimal? @map("reste_a_charge") @db.Decimal(10, 2)
-
-  // Statuts principaux
-  statutDossier     String @default("RECU") @map("statut_dossier")
-  statutFinancement String @default("EN_ATTENTE") @map("statut_financement")
-  statutInscription String @default("EN_COURS") @map("statut_inscription")
-
-  // Tracking booléens (étapes process)
-  devisEnvoye         Boolean   @default(false) @map("devis_envoye")
-  dateDevis           DateTime? @map("date_devis") @db.Date
-  accordPriseEnCharge Boolean   @default(false) @map("accord_prise_en_charge")
-  dossierOpcoDepose   Boolean   @default(false) @map("dossier_opco_depose")
-  financementValide   Boolean   @default(false) @map("financement_valide")
-  acompteRecu         Boolean   @default(false) @map("acompte_recu")
-  dateAcompte         DateTime? @map("date_acompte") @db.Date
-  soldeRegle          Boolean   @default(false) @map("solde_regle")
-  dateSolde           DateTime? @map("date_solde") @db.Date
-
-  // Process validation pédagogique
-  entretienTelephonique     Boolean   @default(false) @map("entretien_telephonique")
-  dateEntretienTel          DateTime? @map("date_entretien_tel") @db.Date
-  rdvPresentiel             Boolean   @default(false) @map("rdv_presentiel")
-  dateRdvPresentiel         DateTime? @map("date_rdv_presentiel") @db.Date
-  testTechnique             Boolean   @default(false) @map("test_technique")
-  dateTestTechnique         DateTime? @map("date_test_technique") @db.Date
-  validationPedagogique     Boolean   @default(false) @map("validation_pedagogique")
-  dateValidationPedagogique DateTime? @map("date_validation_pedagogique") @db.Date
-
-  // Validation étapes — validateur + observation + exemption
-  valideParEntretienTel              String?   @map("valide_par_entretien_tel")
-  observationEntretienTel            String?   @map("observation_entretien_tel") @db.Text
-  exemptEntretienTelephonique        Boolean   @default(false) @map("exempt_entretien_telephonique")
-  valideParRdvPresentiel             String?   @map("valide_par_rdv_presentiel")
-  observationRdvPresentiel           String?   @map("observation_rdv_presentiel") @db.Text
-  exemptRdvPresentiel                Boolean   @default(false) @map("exempt_rdv_presentiel")
-  valideParTestTechnique             String?   @map("valide_par_test_technique")
-  observationTestTechnique           String?   @map("observation_test_technique") @db.Text
-  exemptTestTechnique                Boolean   @default(false) @map("exempt_test_technique")
-  valideParValidationPedagogique     String?   @map("valide_par_validation_pedagogique")
-  observationValidationPedagogique   String?   @map("observation_validation_pedagogique") @db.Text
-  exemptValidationPedagogique        Boolean   @default(false) @map("exempt_validation_pedagogique")
-
-  // Décision finale
-  dateDecision  DateTime? @map("date_decision") @db.Timestamptz(6)
-  decision      String?
-  decidePar     String?   @map("decide_par")
-  motifDecision String?   @map("motif_decision")
-
-  // Liens Drive
-  urlDossierDrive  String? @map("url_dossier_drive")
-  urlFicheCandidat String? @map("url_fiche_candidat")
-  urlDossierMinio  String? @map("url_dossier_minio")
-  urlFicheMinio    String? @map("url_fiche_minio")
-
-  // Notes et traçabilité
-  notes           String?
-  dateCandidature DateTime @default(now()) @map("date_candidature") @db.Timestamptz(6)
-  creeLe          DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe       DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Champs pour interface élève (ajoutés selon ui-analysis.md)
-  score   Int? // Score gamification élève (0-100)
-  notesIa String? @map("notes_ia") // Notes générées par Marjorie
-
-  // Relations
-  prospect              Prospect              @relation(fields: [idProspect], references: [idProspect])
-  documentsCandidat     DocumentCandidat[]
-  eleve                 Eleve?
-  inscriptionsSessions  InscriptionSession[]
-  holdsSalles           ReservationSalle[]    @relation("HoldsCandidat")
+  idCandidat                       Int                  @id @default(autoincrement()) @map("id_candidat")
+  idProspect                       String               @map("id_prospect")
+  numeroDossier                    String               @unique @map("numero_dossier")
+  formationsDemandees              String[]             @default([]) @map("formations_demandees")
+  formationRetenue                 String?              @map("formation_retenue")
+  sessionVisee                     String?              @map("session_visee")
+  dateDebutSouhaitee               DateTime?            @map("date_debut_souhaitee") @db.Date
+  modeFinancement                  String?              @map("mode_financement")
+  organismeFinanceur               String?              @map("organisme_financeur")
+  montantTotalFormation            Decimal?             @map("montant_total_formation") @db.Decimal(10, 2)
+  montantPriseEnCharge             Decimal?             @map("montant_prise_en_charge") @db.Decimal(10, 2)
+  resteACharge                     Decimal?             @map("reste_a_charge") @db.Decimal(10, 2)
+  statutDossier                    String               @default("RECU") @map("statut_dossier")
+  statutFinancement                String               @default("EN_ATTENTE") @map("statut_financement")
+  statutInscription                String               @default("EN_COURS") @map("statut_inscription")
+  devisEnvoye                      Boolean              @default(false) @map("devis_envoye")
+  dateDevis                        DateTime?            @map("date_devis") @db.Date
+  accordPriseEnCharge              Boolean              @default(false) @map("accord_prise_en_charge")
+  dossierOpcoDepose                Boolean              @default(false) @map("dossier_opco_depose")
+  financementValide                Boolean              @default(false) @map("financement_valide")
+  acompteRecu                      Boolean              @default(false) @map("acompte_recu")
+  dateAcompte                      DateTime?            @map("date_acompte") @db.Date
+  soldeRegle                       Boolean              @default(false) @map("solde_regle")
+  dateSolde                        DateTime?            @map("date_solde") @db.Date
+  entretienTelephonique            Boolean              @default(false) @map("entretien_telephonique")
+  dateEntretienTel                 DateTime?            @map("date_entretien_tel") @db.Date
+  rdvPresentiel                    Boolean              @default(false) @map("rdv_presentiel")
+  dateRdvPresentiel                DateTime?            @map("date_rdv_presentiel") @db.Date
+  testTechnique                    Boolean              @default(false) @map("test_technique")
+  dateTestTechnique                DateTime?            @map("date_test_technique") @db.Date
+  validationPedagogique            Boolean              @default(false) @map("validation_pedagogique")
+  dateValidationPedagogique        DateTime?            @map("date_validation_pedagogique") @db.Date
+  dateDecision                     DateTime?            @map("date_decision") @db.Timestamptz(6)
+  decision                         String?
+  decidePar                        String?              @map("decide_par")
+  motifDecision                    String?              @map("motif_decision")
+  urlDossierDrive                  String?              @map("url_dossier_drive")
+  urlFicheCandidat                 String?              @map("url_fiche_candidat")
+  notes                            String?
+  dateCandidature                  DateTime             @default(now()) @map("date_candidature") @db.Timestamptz(6)
+  creeLe                           DateTime             @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe                        DateTime             @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  score                            Int?
+  notesIa                          String?              @map("notes_ia")
+  observationEntretienTel          String?              @map("observation_entretien_tel")
+  observationRdvPresentiel         String?              @map("observation_rdv_presentiel")
+  observationTestTechnique         String?              @map("observation_test_technique")
+  observationValidationPedagogique String?              @map("observation_validation_pedagogique")
+  valideParEntretienTel            String?              @map("valide_par_entretien_tel")
+  valideParRdvPresentiel           String?              @map("valide_par_rdv_presentiel")
+  valideParTestTechnique           String?              @map("valide_par_test_technique")
+  valideParValidationPedagogique   String?              @map("valide_par_validation_pedagogique")
+  exemptEntretienTelephonique      Boolean              @default(false) @map("exempt_entretien_telephonique")
+  exemptRdvPresentiel              Boolean              @default(false) @map("exempt_rdv_presentiel")
+  exemptTestTechnique              Boolean              @default(false) @map("exempt_test_technique")
+  exemptValidationPedagogique      Boolean              @default(false) @map("exempt_validation_pedagogique")
+  urlDossierMinio                  String?              @map("url_dossier_minio")
+  urlFicheMinio                    String?              @map("url_fiche_minio")
+  prospect                         Prospect             @relation(fields: [idProspect], references: [idProspect])
+  documentsCandidat                DocumentCandidat[]
+  eleve                            Eleve?
+  inscriptionsSessions             InscriptionSession[]
+  holdsSalles                      ReservationSalle[]   @relation("HoldsCandidat")
 
   @@index([numeroDossier])
   @@index([idProspect])
@@ -178,27 +135,16 @@ model Candidat {
 
 /// Gestion complète des documents (collectés et générés)
 model DocumentCandidat {
-  idDocument    Int     @id @default(autoincrement()) @map("id_document")
-  idProspect    String  @map("id_prospect")
-  numeroDossier String? @map("numero_dossier")
-
-  // Identification document
-  typeDocument String @map("type_document")
-  categorie    String @default("candidature")
-
-  // Métadonnées fichier
-  nomFichier   String? @map("nom_fichier")
-  urlDrive     String? @map("url_drive")
-  idDrive      String? @map("id_drive")
-  mimeType     String? @map("mime_type")
-  tailleOctets Int?    @map("taille_octets")
-
-  // Stockage Minio
-  urlMinio    String? @map("url_minio")
-  minioKey    String? @map("minio_key")
-  minioBucket String? @default("documents-crm") @map("minio_bucket")
-
-  // Statut et validation
+  idDocument     Int       @id @default(autoincrement()) @map("id_document")
+  idProspect     String    @map("id_prospect")
+  numeroDossier  String?   @map("numero_dossier")
+  typeDocument   String    @map("type_document")
+  categorie      String    @default("candidature")
+  nomFichier     String?   @map("nom_fichier")
+  urlDrive       String?   @map("url_drive")
+  idDrive        String?   @map("id_drive")
+  mimeType       String?   @map("mime_type")
+  tailleOctets   Int?      @map("taille_octets")
   statut         String    @default("ATTENDU")
   obligatoire    Boolean   @default(false)
   dateReception  DateTime? @map("date_reception") @db.Timestamptz(6)
@@ -207,14 +153,13 @@ model DocumentCandidat {
   validePar      String?   @map("valide_par")
   motifRefus     String?   @map("motif_refus")
   commentaire    String?
-
-  // Traçabilité
-  creeLe    DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  prospect Prospect? @relation(fields: [idProspect], references: [idProspect])
-  candidat Candidat? @relation(fields: [numeroDossier], references: [numeroDossier])
+  creeLe         DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe      DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  minioBucket    String?   @default("documents-crm") @map("minio_bucket")
+  minioKey       String?   @map("minio_key")
+  urlMinio       String?   @map("url_minio")
+  prospect       Prospect  @relation(fields: [idProspect], references: [idProspect])
+  candidat       Candidat? @relation(fields: [numeroDossier], references: [numeroDossier])
 
   @@index([idProspect])
   @@index([numeroDossier])
@@ -226,59 +171,43 @@ model DocumentCandidat {
 
 /// Mémoire complète de tous les échanges emails (IN/OUT)
 model HistoriqueEmail {
-  idEmail    String  @id @map("id_email")
-  idProspect String? @map("id_prospect")
-
-  // Métadonnées email
-  dateReception     DateTime @default(now()) @map("date_reception") @db.Timestamptz(6)
-  modifieLe         DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-  sens              String // entrant | sortant
-  emailExpediteur   String?  @map("email_expediteur")
-  nomExpediteur     String?  @map("nom_expediteur")
-  emailDestinataire String?  @map("email_destinataire")
-  objet             String?
-  objetNormalise    String?  @map("objet_normalise")
-  contenu           String?
-  extrait           String?
-
-  // Fils de conversation
-  cleConversation   String? @map("cle_conversation")
-  cleConversationV2 String? @map("cle_conversation_v2")
-  cleParticipants   String? @map("cle_participants")
-  idFil             String? @map("id_fil")
-  idMessage         String? @map("id_message")
-
-  // Analyse IA (Marjorie)
-  intentionDetectee  String? @map("intention_detectee")
-  formationDetectee  String? @map("formation_detectee")
-  sessionDetectee    String? @map("session_detectee")
-  financementDetecte String? @map("financement_detecte")
-  telephoneDetecte   String? @map("telephone_detecte")
+  idEmail            String    @id @map("id_email")
+  idProspect         String?   @map("id_prospect")
+  dateReception      DateTime  @default(now()) @map("date_reception") @db.Timestamptz(6)
+  modifieLe          DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  sens               String
+  emailExpediteur    String?   @map("email_expediteur")
+  nomExpediteur      String?   @map("nom_expediteur")
+  emailDestinataire  String?   @map("email_destinataire")
+  objet              String?
+  objetNormalise     String?   @map("objet_normalise")
+  contenu            String?
+  extrait            String?
+  cleConversation    String?   @map("cle_conversation")
+  cleConversationV2  String?   @map("cle_conversation_v2")
+  cleParticipants    String?   @map("cle_participants")
+  idFil              String?   @map("id_fil")
+  idMessage          String?   @map("id_message")
+  intentionDetectee  String?   @map("intention_detectee")
+  formationDetectee  String?   @map("formation_detectee")
+  sessionDetectee    String?   @map("session_detectee")
+  financementDetecte String?   @map("financement_detecte")
+  telephoneDetecte   String?   @map("telephone_detecte")
   resume             String?
-  classificationIa   Json?   @map("classification_ia")
-
-  // Statut et actions
-  statut          String    @default("NOUVEAU")
-  reponseEnvoyee  Boolean   @default(false) @map("reponse_envoyee")
-  dateReponse     DateTime? @map("date_reponse") @db.Timestamptz(6)
-  responsable     String?
-  prochaineAction String?   @map("prochaine_action")
-
-  // Brouillons Marjorie
-  brouillonObjet   String? @map("brouillon_objet")
-  brouillonContenu String? @map("brouillon_contenu")
-
-  // Suivi
-  relanceNecessaire Boolean @default(false) @map("relance_necessaire")
-  needsFollowup     Boolean @default(false) @map("needs_followup")
-  infosManquantes   String? @map("infos_manquantes")
-  notes             String?
-
-  // Données brutes
-  metadonneesBrutes Json? @map("metadonnees_brutes")
-
-  // Relations
-  prospect Prospect? @relation(fields: [idProspect], references: [idProspect])
+  classificationIa   Json?     @map("classification_ia")
+  statut             String    @default("NOUVEAU")
+  reponseEnvoyee     Boolean   @default(false) @map("reponse_envoyee")
+  dateReponse        DateTime? @map("date_reponse") @db.Timestamptz(6)
+  responsable        String?
+  prochaineAction    String?   @map("prochaine_action")
+  brouillonObjet     String?   @map("brouillon_objet")
+  brouillonContenu   String?   @map("brouillon_contenu")
+  relanceNecessaire  Boolean   @default(false) @map("relance_necessaire")
+  needsFollowup      Boolean   @default(false) @map("needs_followup")
+  infosManquantes    String?   @map("infos_manquantes")
+  notes              String?
+  metadonneesBrutes  Json?     @map("metadonnees_brutes")
+  prospect           Prospect? @relation(fields: [idProspect], references: [idProspect])
 
   @@index([idProspect])
   @@index([dateReception(sort: Desc)])
@@ -307,7 +236,7 @@ model StatutDocument {
   code          String  @id
   libelle       String
   description   String?
-  couleur       String? // Code couleur UI
+  couleur       String?
   ordre         Int?
   actionRequise String? @map("action_requise")
 
@@ -315,80 +244,71 @@ model StatutDocument {
 }
 
 model TypeDocument {
-  code                String  @id
+  code                String           @id
   libelle             String
-  categorie           String  @default("candidature") // candidature | administratif | contractuel | financier | pedagogique
-  obligatoire         Boolean @default(false)
-  obligatoireQualiopi Boolean @default(false) @map("obligatoire_qualiopi")
-  indicateurQualiopi  String? @map("indicateur_qualiopi") // 9 | 11 | 13 | null
-  ordreAffichage      Int?    @map("ordre_affichage")
+  categorie           String           @default("candidature")
+  obligatoire         Boolean          @default(false)
+  obligatoireQualiopi Boolean          @default(false) @map("obligatoire_qualiopi")
+  indicateurQualiopi  String?          @map("indicateur_qualiopi")
+  ordreAffichage      Int?             @map("ordre_affichage")
   description         String?
-
-  // Relations
-  documentsRequis DocumentRequis[]
+  documentsRequis     DocumentRequis[]
 
   @@map("types_documents")
 }
 
-// ============================================================
-// 2. NOUVELLES TABLES PHASE 1 (10 tables prioritaires)
-// ============================================================
-
 /// Comptes d'accès au CRM (auth NextAuth.js)
 model Utilisateur {
-  idUtilisateur         Int       @id @default(autoincrement()) @map("id_utilisateur")
-  email                 String    @unique
-  motDePasseHash        String?   @map("mot_de_passe_hash")
-  nom                   String?
-  prenom                String?
-  role                  String // admin | professeur | eleve
-  statutCompte          String    @default("ACTIF") @map("statut_compte")
-  dateDerniereConnexion DateTime? @map("date_derniere_connexion") @db.Timestamptz(6)
-  preferences           Json?
-  avatarUrl             String?   @map("avatar_url")
-  creeLe                DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe             DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  eleve                      Eleve?
-  formateur                  Formateur?
-  historiqueMarjorie         HistoriqueMarjorieCrm[]
-  sessionsAuth               SessionAuth[]
-  notificationsRecues        Notification[]           @relation("NotificationsRecues")
-  notificationsTraitees      Notification[]           @relation("NotificationsTraitees")
-  lecturesNotifications      NotificationLecture[]
-  preferencesNotifications   PreferenceNotification[]
+  idUtilisateur              Int                      @id @default(autoincrement()) @map("id_utilisateur")
+  email                      String                   @unique
+  motDePasseHash             String?                  @map("mot_de_passe_hash")
+  nom                        String?
+  prenom                     String?
+  role                       String
+  statutCompte               String                   @default("ACTIF") @map("statut_compte")
+  dateDerniereConnexion      DateTime?                @map("date_derniere_connexion") @db.Timestamptz(6)
+  preferences                Json?
+  avatarUrl                  String?                  @map("avatar_url")
+  creeLe                     DateTime                 @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe                  DateTime                 @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
   documentsFormateursValides DocumentFormateur[]      @relation("DocumentsFormateurValides")
+  eleve                      Eleve?
+  evenementsCancelled        Evenement[]              @relation("EvenementsCancelled")
   evenementsCreated          Evenement[]              @relation("EvenementsCreated")
   evenementsModified         Evenement[]              @relation("EvenementsModified")
-  evenementsCancelled        Evenement[]              @relation("EvenementsCancelled")
+  formateur                  Formateur?
+  historiqueMarjorie         HistoriqueMarjorieCrm[]
+  notificationsTraitees      Notification[]           @relation("NotificationsTraitees")
+  notificationsRecues        Notification[]           @relation("NotificationsRecues")
+  lecturesNotifications      NotificationLecture[]
+  preferencesNotifications   PreferenceNotification[]
+  sessionsAuth               SessionAuth[]
+  sessionsAnnulees           Session[]                @relation("SessionsAnnulees")
 
   @@map("utilisateurs")
 }
 
 /// Candidats inscrits qui suivent une formation
 model Eleve {
-  idEleve         Int       @id @default(autoincrement()) @map("id_eleve")
-  idCandidat      Int       @unique @map("id_candidat")
-  idUtilisateur   Int       @unique @map("id_utilisateur")
-  numeroDossier   String    @unique @map("numero_dossier")
-  formationSuivie String?   @map("formation_suivie")
-  dateDebut       DateTime? @map("date_debut") @db.Date
-  dateFinPrevue   DateTime? @map("date_fin_prevue") @db.Date
-  dateFinReelle   DateTime? @map("date_fin_reelle") @db.Date
-  statutFormation String?   @map("statut_formation") // EN_COURS | TERMINE | ABANDONNE | SUSPENDU
-  motifAbandon    String?   @map("motif_abandon")
-  notesGenerales  String?   @map("notes_generales")
-  analyseIa       String?   @map("analyse_ia") @db.Text // Analyse Marjorie de l'élève (notes, progression, etc.)
-  dateAnalyseIa   DateTime? @map("date_analyse_ia") @db.Timestamptz(6) // Date de la dernière analyse
-  creeLe          DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe       DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
+  idEleve              Int                  @id @default(autoincrement()) @map("id_eleve")
+  idCandidat           Int                  @unique @map("id_candidat")
+  idUtilisateur        Int                  @unique @map("id_utilisateur")
+  numeroDossier        String               @unique @map("numero_dossier")
+  formationSuivie      String?              @map("formation_suivie")
+  dateDebut            DateTime?            @map("date_debut") @db.Date
+  dateFinPrevue        DateTime?            @map("date_fin_prevue") @db.Date
+  dateFinReelle        DateTime?            @map("date_fin_reelle") @db.Date
+  statutFormation      String?              @map("statut_formation")
+  motifAbandon         String?              @map("motif_abandon")
+  notesGenerales       String?              @map("notes_generales")
+  creeLe               DateTime             @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe            DateTime             @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  analyseIa            String?              @map("analyse_ia")
+  dateAnalyseIa        DateTime?            @map("date_analyse_ia") @db.Timestamptz(6)
   candidat             Candidat             @relation(fields: [idCandidat], references: [idCandidat])
   utilisateur          Utilisateur          @relation(fields: [idUtilisateur], references: [idUtilisateur])
-  inscriptionsSessions InscriptionSession[]
   evaluations          Evaluation[]
+  inscriptionsSessions InscriptionSession[]
   presences            Presence[]
 
   @@map("eleves")
@@ -396,29 +316,27 @@ model Eleve {
 
 /// Catalogue des formations proposées
 model Formation {
-  idFormation    Int      @id @default(autoincrement()) @map("id_formation")
-  codeFormation  String   @unique @map("code_formation")
-  nom            String
-  categorie      String? // CAP | FORMATION_COURTE | PERFECTIONNEMENT
-  dureeJours     Int?     @map("duree_jours")
-  dureeHeures    Int?     @map("duree_heures")
-  niveauRequis   String?  @map("niveau_requis")
-  diplomeDelivre String?  @map("diplome_delivre")
-  tarifStandard  Decimal? @map("tarif_standard") @db.Decimal(10, 2)
-  description    String?
-  prerequis      String[] @default([])
-  objectifs      String[] @default([])
+  idFormation       Int              @id @default(autoincrement()) @map("id_formation")
+  codeFormation     String           @unique @map("code_formation")
+  nom               String
+  categorie         String?
+  dureeJours        Int?             @map("duree_jours")
+  dureeHeures       Int?             @map("duree_heures")
+  niveauRequis      String?          @map("niveau_requis")
+  diplomeDelivre    String?          @map("diplome_delivre")
+  tarifStandard     Decimal?         @map("tarif_standard") @db.Decimal(10, 2)
+  description       String?
+  prerequis         String[]         @default([])
+  objectifs         String[]         @default([])
   programme         String?
-  equipementRequis  String[] @default([]) @map("equipement_requis")
-  actif             Boolean  @default(true)
-  idFormateurAttire Int?     @map("id_formateur_attire") // Formateur attitré optionnel (formations courtes)
-  creeLe            DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe         DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  sessions          Session[]
+  actif             Boolean          @default(true)
+  creeLe            DateTime         @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe         DateTime         @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  idFormateurAttire Int?             @map("id_formateur_attire")
+  equipementRequis  String[]         @default([]) @map("equipement_requis")
   documentsRequis   DocumentRequis[]
-  formateurAttire   Formateur? @relation("FormationsAttirees", fields: [idFormateurAttire], references: [idFormateur])
+  formateurAttire   Formateur?       @relation("FormationsAttirees", fields: [idFormateurAttire], references: [idFormateur])
+  sessions          Session[]
 
   @@map("formations")
 }
@@ -426,13 +344,13 @@ model Formation {
 /// Catalogue des matières enseignées à l'ABJ
 /// Référentiel utilisé dans les formulaires CAP (remplace les textes libres)
 model Matiere {
-  idMatiere  Int      @id @default(autoincrement()) @map("id_matiere")
-  nom        String   @unique
-  code       String?  @unique
-  categorie  String?  // "PRATIQUE" | "THEORIQUE"
-  actif      Boolean  @default(true)
-  creeLe     DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe  DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  idMatiere Int      @id @default(autoincrement()) @map("id_matiere")
+  nom       String   @unique
+  code      String?  @unique
+  categorie String?
+  actif     Boolean  @default(true)
+  creeLe    DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
 
   @@index([actif])
   @@map("matieres")
@@ -440,50 +358,44 @@ model Matiere {
 
 /// Sessions planifiées d'une formation
 model Session {
-  idSession     Int      @id @default(autoincrement()) @map("id_session")
-  idFormation   Int      @map("id_formation")
-  nomSession    String?  @map("nom_session")
-  dateDebut     DateTime @map("date_debut") @db.Date
-  dateFin       DateTime @map("date_fin") @db.Date
-  capaciteMax   Int?     @map("capacite_max")
-  nbInscrits    Int      @default(0) @map("nb_inscrits")
-  statutSession String?  @map("statut_session") // PREVUE | CONFIRMEE | EN_COURS | TERMINEE | ANNULEE | EN_ATTENTE_VALIDATION | VALIDE_MARJORIE | DIFFUSEE
-
-  // === WORKFLOW VALIDATION MARJORIE ===
-  statutValidation String?  @default("EN_ATTENTE") @map("statut_validation") // EN_ATTENTE | EN_ANALYSE | VALIDE | REFUSE | DIFFUSEE
-  planningIA       Json?    @map("planning_ia") // Planning généré par Marjorie (format JSON)
-  rapportIA        String?  @map("rapport_ia") @db.Text // Rapport d'analyse Marjorie
-  dateValidationIA DateTime? @map("date_validation_ia") @db.Timestamptz(6)
-  dateRefusIA      DateTime? @map("date_refus_ia") @db.Timestamptz(6)
-  motifRefus       String?  @map("motif_refus") @db.Text
-  dateDiffusion    DateTime? @map("date_diffusion") @db.Timestamptz(6)
-  diffuseePar      Int?     @map("diffusee_par") // ID utilisateur admin qui diffuse
-
-  // === SALLE (dual approach pour migration progressive) ===
-  sallePrincipale String? @map("salle_principale") // Conservé pour compatibilité (nom texte)
-  idSalle         Int?    @map("id_salle") // Nouvelle FK vers table Salle (optionnel pour migration)
-
-  formateurPrincipalId Int?     @map("formateur_principal_id")
+  idSession            Int                     @id @default(autoincrement()) @map("id_session")
+  idFormation          Int                     @map("id_formation")
+  nomSession           String?                 @map("nom_session")
+  dateDebut            DateTime                @map("date_debut") @db.Date
+  dateFin              DateTime                @map("date_fin") @db.Date
+  capaciteMax          Int?                    @map("capacite_max")
+  nbInscrits           Int                     @default(0) @map("nb_inscrits")
+  statutSession        String?                 @map("statut_session")
+  sallePrincipale      String?                 @map("salle_principale")
+  formateurPrincipalId Int?                    @map("formateur_principal_id")
   notes                String?
-
-  // === TYPE ET PROGRAMME (CAP vs COURTE) ===
-  typeFormation        String?  @default("COURTE") @map("type_formation") // "COURTE" | "CAP"
-  totalHeuresProgramme Int?     @map("total_heures_programme") // Total heures toutes matières (ex: 800 pour CAP)
-  nbMatieres           Int?     @map("nb_matieres") // Nombre de matières distinctes (CAP)
-  programmeResume      String?  @map("programme_resume") @db.Text // Résumé lisible du programme généré par Marjorie
-
-  creeLe               DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe            DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
+  creeLe               DateTime                @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe            DateTime                @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  idSalle              Int?                    @map("id_salle")
+  dateDiffusion        DateTime?               @map("date_diffusion") @db.Timestamptz(6)
+  dateRefusIA          DateTime?               @map("date_refus_ia") @db.Timestamptz(6)
+  dateValidationIA     DateTime?               @map("date_validation_ia") @db.Timestamptz(6)
+  diffuseePar          Int?                    @map("diffusee_par")
+  motifRefus           String?                 @map("motif_refus")
+  planningIA           Json?                   @map("planning_ia")
+  rapportIA            String?                 @map("rapport_ia")
+  statutValidation     String?                 @default("EN_ATTENTE") @map("statut_validation")
+  nbMatieres           Int?                    @map("nb_matieres")
+  programmeResume      String?                 @map("programme_resume")
+  totalHeuresProgramme Int?                    @map("total_heures_programme")
+  typeFormation        String?                 @default("COURTE") @map("type_formation")
+  annulePar            Int?                    @map("annule_par")
+  dateAnnulation       DateTime?               @map("date_annulation") @db.Timestamptz(6)
+  motifAnnulation      String?                 @map("motif_annulation")
+  evaluations          Evaluation[]
+  inscriptionsSessions InscriptionSession[]
+  interventions        InterventionFormateur[]
+  presences            Presence[]
+  reservationsSalles   ReservationSalle[]
+  formateurPrincipal   Formateur?              @relation(fields: [formateurPrincipalId], references: [idFormateur])
   formation            Formation               @relation(fields: [idFormation], references: [idFormation])
   salle                Salle?                  @relation("SessionsSalle", fields: [idSalle], references: [idSalle])
-  formateurPrincipal   Formateur?              @relation(fields: [formateurPrincipalId], references: [idFormateur])
-  inscriptionsSessions InscriptionSession[]
-  evaluations          Evaluation[]
-  presences            Presence[]
-  interventions        InterventionFormateur[]
-  reservationsSalles   ReservationSalle[]
+  annulateur           Utilisateur?            @relation("SessionsAnnulees", fields: [annulePar], references: [idUtilisateur])
 
   @@index([idFormation])
   @@index([idSalle])
@@ -494,22 +406,20 @@ model Session {
 /// Lien candidats/élèves ↔ sessions (avec liste d'attente)
 model InscriptionSession {
   idInscription     Int       @id @default(autoincrement()) @map("id_inscription")
-  idEleve           Int?      @map("id_eleve")     // Nullable — peut être candidat pas encore élève
-  idCandidat        Int?      @map("id_candidat")  // Candidat en liste d'attente avant conversion
+  idEleve           Int?      @map("id_eleve")
   idSession         Int       @map("id_session")
   dateInscription   DateTime? @map("date_inscription") @db.Date
-  statutInscription String?   @map("statut_inscription") // INSCRIT | EN_ATTENTE | CONFIRME | ANNULE
+  statutInscription String?   @map("statut_inscription")
   dateConfirmation  DateTime? @map("date_confirmation") @db.Date
   motifAnnulation   String?   @map("motif_annulation")
-  priorite          Int       @default(2) // 1=ELEVE (prioritaire), 2=CANDIDAT
-  positionAttente   Int?      @map("position_attente") // Rang dans la file d'attente
-  notifiePar        String?   @map("notifie_par") // "admin" | "auto" (Marjorie)
   creeLe            DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
-
-  // Relations
-  eleve     Eleve?    @relation(fields: [idEleve], references: [idEleve])
-  candidat  Candidat? @relation(fields: [idCandidat], references: [idCandidat])
-  session   Session   @relation(fields: [idSession], references: [idSession])
+  idCandidat        Int?      @map("id_candidat")
+  notifiePar        String?   @map("notifie_par")
+  positionAttente   Int?      @map("position_attente")
+  priorite          Int       @default(2)
+  candidat          Candidat? @relation(fields: [idCandidat], references: [idCandidat])
+  eleve             Eleve?    @relation(fields: [idEleve], references: [idEleve])
+  session           Session   @relation(fields: [idSession], references: [idSession])
 
   @@index([idSession, statutInscription])
   @@index([idSession, priorite, positionAttente])
@@ -518,88 +428,73 @@ model InscriptionSession {
 
 /// Professeurs externes
 model Formateur {
-  idFormateur          Int       @id @default(autoincrement()) @map("id_formateur")
-  idUtilisateur        Int       @unique @map("id_utilisateur")
-  nom                  String
-  prenom               String
-  email                String    @unique
-  telephone            String?
-  specialites          String[]  @default([])
-  formationsEnseignees Int[]     @default([]) @map("formations_enseignees")
-  tarifJournalier      Decimal?  @map("tarif_journalier") @db.Decimal(10, 2)
-  adresse              String?
-  codePostal           String?   @map("code_postal")
-  ville                String?
-  siret                String?
-  statut               String    @default("EN_COURS_INTEGRATION") // EN_COURS_INTEGRATION | ACTIF | INACTIF | ARCHIVE
-  datePremierCours     DateTime? @map("date_premier_cours") @db.Date
-  notes                String?
-
-  // Champs additionnels Qualiopi
-  cvUrl                  String?   @map("cv_url")
-  qualificationsResume   String?   @map("qualifications_resume")
-  dateValidationQualiopi DateTime? @map("date_validation_qualiopi") @db.Date
-  dossierComplet         Boolean   @default(false) @map("dossier_complet")
-
-  // Champs expérience et bio
-  anneesExperience   Int?    @map("annees_experience")
-  anneesEnseignement Int?    @map("annees_enseignement")
-  bio                String? @db.Text
-
-  // Champs pédagogiques
-  methodesPedagogiques  String?  @map("methodes_pedagogiques") @db.Text
-  approchePedagogique   String?  @map("approche_pedagogique") @db.Text
-  outilsSupports        String[] @default([]) @map("outils_supports")
-  competencesTechniques String[] @default([]) @map("competences_techniques")
-
-  // Champs publications et langues
-  publicationsArticles String[] @default([]) @map("publications_articles")
-  languesParlees       String[] @default([]) @map("langues_parlees")
-
-  // Champs statistiques et feedback
-  satisfactionMoyenne Decimal? @map("satisfaction_moyenne") @db.Decimal(3, 2) // Note sur 5
-  tauxReussite        Decimal? @map("taux_reussite") @db.Decimal(5, 2) // Pourcentage
-  nombreElevesFormes  Int?     @default(0) @map("nombre_eleves_formes")
-  temoignagesEleves   Json?    @map("temoignages_eleves") // [{nom, texte, date, note}]
-
-  creeLe    DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  utilisateur              Utilisateur                        @relation(fields: [idUtilisateur], references: [idUtilisateur])
-  disponibilites           DisponibiliteFormateur[]
-  interventions            InterventionFormateur[]
-  evaluations              Evaluation[]
-  sessionsPrincipales      Session[]
-  documents                DocumentFormateur[]
-  diplomes                 FormateurDiplome[]
-  certificationsPro        FormateurCertification[]
-  formationsPedagogiques   FormateurFormationPedagogique[]
-  portfolioRealisations    FormateurPortfolio[]
-  competencesTech          FormateurCompetenceTechnique[]
-  formationsCont           FormateurFormationContinue[]
-  veillePro                FormateurVeilleProfessionnelle[]
-  formationsAttirees       Formation[] @relation("FormationsAttirees")
-  reservations             ReservationSalle[] @relation("ReservationsFormateur")
+  idFormateur            Int                              @id @default(autoincrement()) @map("id_formateur")
+  idUtilisateur          Int                              @unique @map("id_utilisateur")
+  nom                    String
+  prenom                 String
+  email                  String                           @unique
+  telephone              String?
+  specialites            String[]                         @default([])
+  formationsEnseignees   Int[]                            @default([]) @map("formations_enseignees")
+  tarifJournalier        Decimal?                         @map("tarif_journalier") @db.Decimal(10, 2)
+  adresse                String?
+  codePostal             String?                          @map("code_postal")
+  ville                  String?
+  siret                  String?
+  statut                 String                           @default("EN_COURS_INTEGRATION")
+  datePremierCours       DateTime?                        @map("date_premier_cours") @db.Date
+  notes                  String?
+  cvUrl                  String?                          @map("cv_url")
+  qualificationsResume   String?                          @map("qualifications_resume")
+  dateValidationQualiopi DateTime?                        @map("date_validation_qualiopi") @db.Date
+  dossierComplet         Boolean                          @default(false) @map("dossier_complet")
+  creeLe                 DateTime                         @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe              DateTime                         @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  anneesEnseignement     Int?                             @map("annees_enseignement")
+  anneesExperience       Int?                             @map("annees_experience")
+  approchePedagogique    String?                          @map("approche_pedagogique")
+  bio                    String?
+  competencesTechniques  String[]                         @default([]) @map("competences_techniques")
+  languesParlees         String[]                         @default([]) @map("langues_parlees")
+  methodesPedagogiques   String?                          @map("methodes_pedagogiques")
+  nombreElevesFormes     Int?                             @default(0) @map("nombre_eleves_formes")
+  outilsSupports         String[]                         @default([]) @map("outils_supports")
+  publicationsArticles   String[]                         @default([]) @map("publications_articles")
+  satisfactionMoyenne    Decimal?                         @map("satisfaction_moyenne") @db.Decimal(3, 2)
+  tauxReussite           Decimal?                         @map("taux_reussite") @db.Decimal(5, 2)
+  temoignagesEleves      Json?                            @map("temoignages_eleves")
+  disponibilites         DisponibiliteFormateur[]
+  documents              DocumentFormateur[]
+  evaluations            Evaluation[]
+  certificationsPro      FormateurCertification[]
+  competencesTech        FormateurCompetenceTechnique[]
+  diplomes               FormateurDiplome[]
+  formationsCont         FormateurFormationContinue[]
+  formationsPedagogiques FormateurFormationPedagogique[]
+  portfolioRealisations  FormateurPortfolio[]
+  veillePro              FormateurVeilleProfessionnelle[]
+  utilisateur            Utilisateur                      @relation(fields: [idUtilisateur], references: [idUtilisateur])
+  formationsAttirees     Formation[]                      @relation("FormationsAttirees")
+  interventions          InterventionFormateur[]
+  reservations           ReservationSalle[]               @relation("ReservationsFormateur")
+  sessionsPrincipales    Session[]
 
   @@map("formateurs")
 }
 
 /// Calendrier dynamique des formateurs
 model DisponibiliteFormateur {
-  idDisponibilite    Int      @id @default(autoincrement()) @map("id_disponibilite")
-  idFormateur        Int      @map("id_formateur")
-  date               DateTime @db.Date
-  creneauJournee     String   @map("creneau_journee") // MATIN | APRES_MIDI | JOURNEE
-  typeDisponibilite  String   @map("type_disponibilite") // DISPONIBLE | RESERVE | CONFIRME | INDISPONIBLE
-  idSession          Int?     @map("id_session")
-  formationConcernee String?  @map("formation_concernee")
+  idDisponibilite    Int       @id @default(autoincrement()) @map("id_disponibilite")
+  idFormateur        Int       @map("id_formateur")
+  date               DateTime  @db.Date
+  creneauJournee     String    @map("creneau_journee")
+  typeDisponibilite  String    @map("type_disponibilite")
+  idSession          Int?      @map("id_session")
+  formationConcernee String?   @map("formation_concernee")
   commentaire        String?
-  creeLe             DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe          DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur])
+  creeLe             DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe          DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  formateur          Formateur @relation(fields: [idFormateur], references: [idFormateur])
 
   @@map("disponibilites_formateurs")
 }
@@ -618,43 +513,36 @@ model InterventionFormateur {
   facturePayee     Boolean   @default(false) @map("facture_payee")
   datePaiement     DateTime? @map("date_paiement") @db.Date
   creeLe           DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur])
-  session   Session   @relation(fields: [idSession], references: [idSession])
+  formateur        Formateur @relation(fields: [idFormateur], references: [idFormateur])
+  session          Session   @relation(fields: [idSession], references: [idSession])
 
   @@map("interventions_formateurs")
 }
 
 /// Documents et justificatifs des formateurs (Qualiopi Indicateurs 21 & 22)
 model DocumentFormateur {
-  idDocument       Int       @id @default(autoincrement()) @map("id_document")
-  idFormateur      Int       @map("id_formateur")
-  codeTypeDocument String    @map("code_type_document") // FK vers TypeDocumentFormateur
+  idDocument       Int                   @id @default(autoincrement()) @map("id_document")
+  idFormateur      Int                   @map("id_formateur")
+  codeTypeDocument String                @map("code_type_document")
   libelle          String
-  urlFichier       String    @map("url_fichier")
-  nomFichier       String?   @map("nom_fichier")
-  tailleFichier    Int?      @map("taille_fichier")
-
-  // Stockage Minio
-  urlMinio    String? @map("url_minio")
-  minioKey    String? @map("minio_key")
-  minioBucket String? @default("documents-crm") @map("minio_bucket")
-
-  dateDocument     DateTime? @map("date_document") @db.Date
-  dateExpiration   DateTime? @map("date_expiration") @db.Date
-  statut           String    @default("RECU") // ATTENDU | RECU | VALIDE | EXPIRE | REJETE
-  validePar        Int?      @map("valide_par") // FK vers Utilisateur
-  dateValidation   DateTime? @map("date_validation") @db.Timestamptz(6)
+  urlFichier       String                @map("url_fichier")
+  nomFichier       String?               @map("nom_fichier")
+  tailleFichier    Int?                  @map("taille_fichier")
+  dateDocument     DateTime?             @map("date_document") @db.Date
+  dateExpiration   DateTime?             @map("date_expiration") @db.Date
+  statut           String                @default("RECU")
+  validePar        Int?                  @map("valide_par")
+  dateValidation   DateTime?             @map("date_validation") @db.Timestamptz(6)
   commentaire      String?
-  motifRejet       String?   @map("motif_rejet")
-  creeLe           DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe        DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur       Formateur             @relation(fields: [idFormateur], references: [idFormateur])
-  typeDocument    TypeDocumentFormateur @relation(fields: [codeTypeDocument], references: [code])
-  validateurAdmin Utilisateur?          @relation("DocumentsFormateurValides", fields: [validePar], references: [idUtilisateur])
+  motifRejet       String?               @map("motif_rejet")
+  creeLe           DateTime              @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe        DateTime              @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  minioBucket      String?               @default("documents-crm") @map("minio_bucket")
+  minioKey         String?               @map("minio_key")
+  urlMinio         String?               @map("url_minio")
+  typeDocument     TypeDocumentFormateur @relation(fields: [codeTypeDocument], references: [code])
+  formateur        Formateur             @relation(fields: [idFormateur], references: [idFormateur])
+  validateurAdmin  Utilisateur?          @relation("DocumentsFormateurValides", fields: [validePar], references: [idUtilisateur])
 
   @@index([idFormateur])
   @@index([codeTypeDocument])
@@ -664,31 +552,27 @@ model DocumentFormateur {
 
 /// Référentiel des types de documents formateur
 model TypeDocumentFormateur {
-  code           String  @id
+  code           String              @id
   libelle        String
-  obligatoire    Boolean @default(true)
+  obligatoire    Boolean             @default(true)
   description    String?
-  ordreAffichage Int?    @map("ordre_affichage")
-
-  // Relations
-  documents DocumentFormateur[]
+  ordreAffichage Int?                @map("ordre_affichage")
+  documents      DocumentFormateur[]
 
   @@map("types_documents_formateur")
 }
 
 /// Documents requis par formation
 model DocumentRequis {
-  idDocumentRequis Int      @id @default(autoincrement()) @map("id_document_requis")
-  idFormation      Int      @map("id_formation")
-  codeTypeDocument String   @map("code_type_document") // FK vers TypeDocument
-  obligatoire      Boolean  @default(true)
-  ordreAffichage   Int?     @map("ordre_affichage")
+  idDocumentRequis Int          @id @default(autoincrement()) @map("id_document_requis")
+  idFormation      Int          @map("id_formation")
+  codeTypeDocument String       @map("code_type_document")
+  obligatoire      Boolean      @default(true)
+  ordreAffichage   Int?         @map("ordre_affichage")
   commentaire      String?
-  creeLe           DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-
-  // Relations
-  formation    Formation    @relation(fields: [idFormation], references: [idFormation])
-  typeDocument TypeDocument @relation(fields: [codeTypeDocument], references: [code])
+  creeLe           DateTime     @default(now()) @map("cree_le") @db.Timestamptz(6)
+  typeDocument     TypeDocument @relation(fields: [codeTypeDocument], references: [code])
+  formation        Formation    @relation(fields: [idFormation], references: [idFormation])
 
   @@unique([idFormation, codeTypeDocument])
   @@map("documents_requis")
@@ -700,7 +584,7 @@ model Evaluation {
   idEleve                Int       @map("id_eleve")
   idSession              Int       @map("id_session")
   idFormateur            Int       @map("id_formateur")
-  typeEvaluation         String    @map("type_evaluation") // CONTROLE_CONTINU | EXAMEN_BLANC | EXAMEN_FINAL | APPRECIATION
+  typeEvaluation         String    @map("type_evaluation")
   dateEvaluation         DateTime? @map("date_evaluation") @db.Date
   note                   Decimal?  @db.Decimal(5, 2)
   noteSur                Decimal   @default(20) @map("note_sur") @db.Decimal(5, 2)
@@ -712,11 +596,9 @@ model Evaluation {
   dateValidation         DateTime? @map("date_validation") @db.Timestamptz(6)
   creeLe                 DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe              DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  eleve     Eleve     @relation(fields: [idEleve], references: [idEleve])
-  session   Session   @relation(fields: [idSession], references: [idSession])
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur])
+  eleve                  Eleve     @relation(fields: [idEleve], references: [idEleve])
+  formateur              Formateur @relation(fields: [idFormateur], references: [idFormateur])
+  session                Session   @relation(fields: [idSession], references: [idSession])
 
   @@map("evaluations")
 }
@@ -727,8 +609,8 @@ model Presence {
   idEleve            Int      @map("id_eleve")
   idSession          Int      @map("id_session")
   dateCours          DateTime @map("date_cours") @db.Date
-  demiJournee        String?  @map("demi_journee") // MATIN | APRES_MIDI | JOURNEE_COMPLETE
-  statutPresence     String   @map("statut_presence") // PRESENT | ABSENT | ABSENT_JUSTIFIE | RETARD
+  demiJournee        String?  @map("demi_journee")
+  statutPresence     String   @map("statut_presence")
   justificatifFourni Boolean  @default(false) @map("justificatif_fourni")
   urlJustificatif    String?  @map("url_justificatif")
   motifAbsence       String?  @map("motif_absence")
@@ -736,27 +618,23 @@ model Presence {
   commentaire        String?
   creeLe             DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe          DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  eleve   Eleve   @relation(fields: [idEleve], references: [idEleve])
-  session Session @relation(fields: [idSession], references: [idSession])
+  eleve              Eleve    @relation(fields: [idEleve], references: [idEleve])
+  session            Session  @relation(fields: [idSession], references: [idSession])
 
   @@map("presences")
 }
 
 /// Traçabilité chat Marjorie dans le CRM
 model HistoriqueMarjorieCrm {
-  idMessage          Int      @id @default(autoincrement()) @map("id_message")
-  idUtilisateur      Int      @map("id_utilisateur")
-  roleUtilisateur    String   @map("role_utilisateur") // admin | professeur | eleve
-  messageUtilisateur String   @map("message_utilisateur")
-  reponseMarjorie    String   @map("reponse_marjorie")
-  contexte           Json? // Données contextuelles envoyées à Marjorie
-  timestamp          DateTime @default(now()) @db.Timestamptz(6)
-  dureeReponseMs     Int?     @map("duree_reponse_ms")
-
-  // Relations
-  utilisateur Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
+  idMessage          Int         @id @default(autoincrement()) @map("id_message")
+  idUtilisateur      Int         @map("id_utilisateur")
+  roleUtilisateur    String      @map("role_utilisateur")
+  messageUtilisateur String      @map("message_utilisateur")
+  reponseMarjorie    String      @map("reponse_marjorie")
+  contexte           Json?
+  timestamp          DateTime    @default(now()) @db.Timestamptz(6)
+  dureeReponseMs     Int?        @map("duree_reponse_ms")
+  utilisateur        Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
 
   @@index([idUtilisateur])
   @@index([timestamp(sort: Desc)])
@@ -765,76 +643,52 @@ model HistoriqueMarjorieCrm {
 
 /// Sessions NextAuth.js (si auth local)
 model SessionAuth {
-  idSession     String   @id @map("id_session")
-  idUtilisateur Int      @map("id_utilisateur")
-  expiresAt     DateTime @map("expires_at") @db.Timestamptz(6)
-  sessionToken  String   @unique @map("session_token")
-  creeLe        DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-
-  // Relations
-  utilisateur Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
+  idSession     String      @id @map("id_session")
+  idUtilisateur Int         @map("id_utilisateur")
+  expiresAt     DateTime    @map("expires_at") @db.Timestamptz(6)
+  sessionToken  String      @unique @map("session_token")
+  creeLe        DateTime    @default(now()) @map("cree_le") @db.Timestamptz(6)
+  utilisateur   Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
 
   @@map("sessions_auth")
 }
 
-// ============================================================
-// 3. SYSTÈME DE NOTIFICATIONS (nouvelles tables)
-// ============================================================
-
 /// Système centralisé de notifications CRM ↔ Agents IA
 model Notification {
-  idNotification Int @id @default(autoincrement()) @map("id_notification")
-
-  // === SOURCE ===
-  sourceAgent       String  @map("source_agent") // "marjorie" | "morrigan" | "system" | "admin"
-  sourceWorkflow    String? @map("source_workflow") // ID ou nom du workflow n8n
-  sourceExecutionId String? @map("source_execution_id") // ID d'exécution n8n pour traçabilité
-
-  // === CONTENU ===
-  categorie String // PROSPECT | CANDIDAT | DEVIS | DOCUMENT | EMAIL | PLANNING | EVALUATION | FINANCE | SYSTEM | ALERTE
-  type      String // Ex: "NOUVEAU_PROSPECT" | "DEVIS_ENVOYE" | "DOCUMENT_RECU" | "ERREUR_WORKFLOW" etc.
-  priorite  String  @default("NORMALE") // BASSE | NORMALE | HAUTE | URGENTE
-  titre     String // Titre court affiché dans la cloche
-  message   String  @db.Text // Description détaillée
-  icone     String? // Emoji ou code icône pour l'UI
-  couleur   String? // Code couleur selon catégorie
-
-  // === CIBLAGE (qui voit cette notification) ===
-  audience           String @default("ADMIN") // TOUS | ADMIN | FORMATEUR | ELEVE | SPECIFIQUE
-  idUtilisateurCible Int?   @map("id_utilisateur_cible") // Si audience = SPECIFIQUE
-  idFormateurCible   Int?   @map("id_formateur_cible") // Notification pour un formateur précis
-  idEleveCible       Int?   @map("id_eleve_cible") // Notification pour un élève précis
-
-  // === ENTITÉ LIÉE (navigation deep-link) ===
-  entiteType String? @map("entite_type") // "prospect" | "candidat" | "document" | "session" | "evaluation"
-  entiteId   String? @map("entite_id") // ID de l'entité pour construire le lien
-  lienAction String? @map("lien_action") // URL relative directe ex: "/admin/candidats/JURI102025"
-
-  // === ACTION REQUISE ===
-  actionRequise   Boolean   @default(false) @map("action_requise")
-  typeAction      String?   @map("type_action") // "VALIDER" | "RELANCER" | "CORRIGER" | "DECIDER" | "VERIFIER"
-  actionEffectuee Boolean   @default(false) @map("action_effectuee")
-  dateAction      DateTime? @map("date_action") @db.Timestamptz(6)
-  actionPar       Int?      @map("action_par") // idUtilisateur qui a agi
-  resultatAction  String?   @map("resultat_action") // Résultat de l'action (JSON ou texte)
-
-  // === STATUT LECTURE ===
-  lue           Boolean   @default(false)
-  dateLecture   DateTime? @map("date_lecture") @db.Timestamptz(6)
-  archivee      Boolean   @default(false)
-  dateArchivage DateTime? @map("date_archivage") @db.Timestamptz(6)
-
-  // === MÉTADONNÉES ===
-  metadonnees    Json? // Données additionnelles libres (contexte IA, scores, etc.)
-  expirationDate DateTime? @map("expiration_date") @db.Timestamptz(6) // Auto-archive après cette date
-
-  // === TRAÇABILITÉ ===
-  creeLe    DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // === RELATIONS ===
-  utilisateurCible     Utilisateur?          @relation("NotificationsRecues", fields: [idUtilisateurCible], references: [idUtilisateur])
+  idNotification       Int                   @id @default(autoincrement()) @map("id_notification")
+  sourceAgent          String                @map("source_agent")
+  sourceWorkflow       String?               @map("source_workflow")
+  sourceExecutionId    String?               @map("source_execution_id")
+  categorie            String
+  type                 String
+  priorite             String                @default("NORMALE")
+  titre                String
+  message              String
+  icone                String?
+  couleur              String?
+  audience             String                @default("ADMIN")
+  idUtilisateurCible   Int?                  @map("id_utilisateur_cible")
+  idFormateurCible     Int?                  @map("id_formateur_cible")
+  idEleveCible         Int?                  @map("id_eleve_cible")
+  entiteType           String?               @map("entite_type")
+  entiteId             String?               @map("entite_id")
+  lienAction           String?               @map("lien_action")
+  actionRequise        Boolean               @default(false) @map("action_requise")
+  typeAction           String?               @map("type_action")
+  actionEffectuee      Boolean               @default(false) @map("action_effectuee")
+  dateAction           DateTime?             @map("date_action") @db.Timestamptz(6)
+  actionPar            Int?                  @map("action_par")
+  resultatAction       String?               @map("resultat_action")
+  lue                  Boolean               @default(false)
+  dateLecture          DateTime?             @map("date_lecture") @db.Timestamptz(6)
+  archivee             Boolean               @default(false)
+  dateArchivage        DateTime?             @map("date_archivage") @db.Timestamptz(6)
+  metadonnees          Json?
+  expirationDate       DateTime?             @map("expiration_date") @db.Timestamptz(6)
+  creeLe               DateTime              @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe            DateTime              @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
   actionParUtilisateur Utilisateur?          @relation("NotificationsTraitees", fields: [actionPar], references: [idUtilisateur])
+  utilisateurCible     Utilisateur?          @relation("NotificationsRecues", fields: [idUtilisateurCible], references: [idUtilisateur])
   lecturesUtilisateurs NotificationLecture[]
 
   @@index([audience])
@@ -853,16 +707,15 @@ model Notification {
 /// Suivi de lecture par utilisateur (pour notifications collectives)
 /// Quand audience = TOUS/ADMIN/FORMATEUR/ELEVE, chaque user a son propre état de lecture
 model NotificationLecture {
-  idLecture      Int       @id @default(autoincrement()) @map("id_lecture")
-  idNotification Int       @map("id_notification")
-  idUtilisateur  Int       @map("id_utilisateur")
-  lue            Boolean   @default(false)
-  dateLecture    DateTime? @map("date_lecture") @db.Timestamptz(6)
-  archivee       Boolean   @default(false)
-  dateArchivage  DateTime? @map("date_archivage") @db.Timestamptz(6)
-
-  notification Notification @relation(fields: [idNotification], references: [idNotification], onDelete: Cascade)
-  utilisateur  Utilisateur  @relation(fields: [idUtilisateur], references: [idUtilisateur])
+  idLecture      Int          @id @default(autoincrement()) @map("id_lecture")
+  idNotification Int          @map("id_notification")
+  idUtilisateur  Int          @map("id_utilisateur")
+  lue            Boolean      @default(false)
+  dateLecture    DateTime?    @map("date_lecture") @db.Timestamptz(6)
+  archivee       Boolean      @default(false)
+  dateArchivage  DateTime?    @map("date_archivage") @db.Timestamptz(6)
+  notification   Notification @relation(fields: [idNotification], references: [idNotification], onDelete: Cascade)
+  utilisateur    Utilisateur  @relation(fields: [idUtilisateur], references: [idUtilisateur])
 
   @@unique([idNotification, idUtilisateur])
   @@index([idUtilisateur, lue])
@@ -871,14 +724,13 @@ model NotificationLecture {
 
 /// Préférences de notification par utilisateur
 model PreferenceNotification {
-  idPreference     Int     @id @default(autoincrement()) @map("id_preference")
-  idUtilisateur    Int     @map("id_utilisateur")
-  categorie        String // Catégorie de notification
-  activee          Boolean @default(true)
-  emailActivee     Boolean @default(false) @map("email_activee") // Aussi par email ?
-  prioriteMinimale String  @default("BASSE") @map("priorite_minimale") // Filtre par priorité
-
-  utilisateur Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
+  idPreference     Int         @id @default(autoincrement()) @map("id_preference")
+  idUtilisateur    Int         @map("id_utilisateur")
+  categorie        String
+  activee          Boolean     @default(true)
+  emailActivee     Boolean     @default(false) @map("email_activee")
+  prioriteMinimale String      @default("BASSE") @map("priorite_minimale")
+  utilisateur      Utilisateur @relation(fields: [idUtilisateur], references: [idUtilisateur])
 
   @@unique([idUtilisateur, categorie])
   @@map("preferences_notifications")
@@ -887,116 +739,82 @@ model PreferenceNotification {
 /// Table de verrouillage pour prévenir les conversions multiples
 /// Enregistre les conversions en cours de traitement par n8n
 model ConversionEnCours {
-  idConversion  Int      @id @default(autoincrement()) @map("id_conversion")
-  idProspect    String   @map("id_prospect")
-  typeAction    String   @map("type_action") // CONVERTIR_CANDIDAT | ENVOYER_DEVIS | ENVOYER_DOSSIER | ENVOYER_EMAIL
-  statutAction  String   @default("EN_COURS") @map("statut_action") // EN_COURS | TERMINEE | ERREUR
+  idConversion       Int       @id @default(autoincrement()) @map("id_conversion")
+  idProspect         String    @map("id_prospect")
+  typeAction         String    @map("type_action")
+  statutAction       String    @default("EN_COURS") @map("statut_action")
+  formationRetenue   String?   @map("formation_retenue")
+  sessionVisee       String?   @map("session_visee")
+  dateDebutSouhaitee DateTime? @map("date_debut_souhaitee") @db.Date
+  workflowId         String?   @map("workflow_id")
+  executionId        String?   @map("execution_id")
+  messageErreur      String?   @map("message_erreur")
+  demandePar         Int?      @map("demande_par")
+  dateDebut          DateTime  @default(now()) @map("date_debut") @db.Timestamptz(6)
+  dateFin            DateTime? @map("date_fin") @db.Timestamptz(6)
+  dureeMs            Int?      @map("duree_ms")
 
-  // Données de la conversion
-  formationRetenue    String?  @map("formation_retenue")
-  sessionVisee        String?  @map("session_visee")
-  dateDebutSouhaitee  DateTime? @map("date_debut_souhaitee") @db.Date
-
-  // Traçabilité n8n
-  workflowId          String?  @map("workflow_id") // ID du workflow n8n
-  executionId         String?  @map("execution_id") // ID d'exécution n8n
-  messageErreur       String?  @map("message_erreur") @db.Text
-
-  // Métadonnées
-  demandePar          Int?     @map("demande_par") // idUtilisateur qui a demandé
-  dateDebut           DateTime @default(now()) @map("date_debut") @db.Timestamptz(6)
-  dateFin             DateTime? @map("date_fin") @db.Timestamptz(6)
-  dureeMs             Int?     @map("duree_ms") // Durée en millisecondes
-
-  // Index pour performances
-  @@index([idProspect, typeAction]) // Recherche rapide par prospect et action
-  @@index([statutAction]) // Filtrage actions en cours
-  @@index([dateDebut]) // Nettoyage des vieilles entrées
+  @@index([idProspect, typeAction])
+  @@index([statutAction])
+  @@index([dateDebut])
   @@map("conversions_en_cours")
 }
 
 /// Salles de formation et ateliers (table de référence fixe)
 /// Soft delete : statut ACTIVE/INACTIVE au lieu de suppression
 model Salle {
-  idSalle Int @id @default(autoincrement()) @map("id_salle")
+  idSalle               Int                @id @default(autoincrement()) @map("id_salle")
+  nom                   String             @unique
+  code                  String?            @unique
+  capaciteMax           Int                @map("capacite_max")
+  surfaceM2             Int?               @map("surface_m2")
+  etage                 Int?
+  equipements           String[]           @default([])
+  formationsCompatibles String[]           @default([]) @map("formations_compatibles")
+  disponibleWeekend     Boolean            @default(false) @map("disponible_weekend")
+  disponibleSoir        Boolean            @default(false) @map("disponible_soir")
+  statut                String             @default("ACTIVE")
+  motifIndisponibilite  String?            @map("motif_indisponibilite")
+  dateDebutIndispo      DateTime?          @map("date_debut_indispo") @db.Date
+  dateFinIndispo        DateTime?          @map("date_fin_indispo") @db.Date
+  notes                 String?
+  photoUrl              String?            @map("photo_url")
+  creeLe                DateTime           @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe             DateTime           @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  reservations          ReservationSalle[]
+  sessions              Session[]          @relation("SessionsSalle")
 
-  // === IDENTIFICATION ===
-  nom  String  @unique // "Atelier A", "Salle informatique", etc.
-  code String? @unique // "ATEL_A", "INFO", etc. (pour références programmatiques)
-
-  // === CAPACITÉ ET CARACTÉRISTIQUES ===
-  capaciteMax Int  @map("capacite_max") // Nombre max de personnes
-  surfaceM2   Int? @map("surface_m2") // Surface en m²
-  etage       Int? // Numéro d'étage
-
-  // === ÉQUIPEMENTS ===
-  equipements           String[] @default([]) // ["ETABLI_BIJOU", "POSTE_SERTI", "ORDINATEUR_CAO", etc.]
-  formationsCompatibles String[] @default([]) @map("formations_compatibles") // Formations pouvant utiliser cette salle
-
-  // === DISPONIBILITÉ ===
-  disponibleWeekend Boolean @default(false) @map("disponible_weekend")
-  disponibleSoir    Boolean @default(false) @map("disponible_soir") // Après 18h
-
-  // === STATUT (soft delete) ===
-  statut               String    @default("ACTIVE") // ACTIVE | MAINTENANCE | HORS_SERVICE | INACTIVE
-  motifIndisponibilite String?   @map("motif_indisponibilite") @db.Text // Si MAINTENANCE ou HORS_SERVICE
-  dateDebutIndispo     DateTime? @map("date_debut_indispo") @db.Date
-  dateFinIndispo       DateTime? @map("date_fin_indispo") @db.Date
-
-  // === MÉTADONNÉES ===
-  notes    String? @db.Text // Notes internes admin
-  photoUrl String? @map("photo_url") // Photo de la salle (optionnel)
-
-  // === TRAÇABILITÉ ===
-  creeLe    DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // === RELATIONS ===
-  sessions      Session[]           @relation("SessionsSalle")
-  reservations  ReservationSalle[]
-
-  // === INDEX POUR PERFORMANCES ===
-  @@index([nom]) // Recherche par nom
-  @@index([statut]) // Filtrage salles actives
+  @@index([nom])
+  @@index([statut])
   @@map("salles")
 }
 
 /// Créneaux horaires d'occupation d'une salle (granularité heure)
 /// Permet de savoir qu'Atelier B est occupé 08h-12h par CAP et 14h-18h par Sertissage N1
 model ReservationSalle {
-  idReservation    Int      @id @default(autoincrement()) @map("id_reservation")
-  idSalle          Int      @map("id_salle")
-  idSession        Int?     @map("id_session")     // Session qui occupe ce créneau (null si événement ponctuel)
-  idEvenement      Int?     @map("id_evenement")   // Événement qui occupe ce créneau (null si session)
-
-  // Créneau horaire précis
-  dateDebut        DateTime @map("date_debut") @db.Timestamptz(6)   // Ex: 2026-03-15 08:00:00
-  dateFin          DateTime @map("date_fin") @db.Timestamptz(6)     // Ex: 2026-03-15 12:00:00
-
-  // === CAP : contexte pédagogique du créneau ===
-  matiere          String?  // Matière enseignée sur ce créneau (ex: "Sertissage", "Histoire de l'art")
-  idFormateur      Int?     @map("id_formateur") // Formateur qui enseigne ce créneau (peut différer du formateur principal)
-  typeFormation    String?  @default("COURTE") @map("type_formation") // "COURTE" | "CAP"
-
-  statut           String   @default("CONFIRME") // PREVUE | CONFIRME | ANNULE
-  motifAnnulation  String?  @map("motif_annulation")
-  notes            String?
-
-  // === HOLDS RDV ENTRETIEN ===
-  token            String?   @unique                           // Token unique pour lien confirmation candidat
-  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6) // Expiration du hold (72h)
-  idCandidat       Int?      @map("id_candidat")              // Candidat concerné par le hold
-  idLot            String?   @map("id_lot")                   // UUID partagé entre tous les holds d'un même appel valider-etape
-
-  creeLe           DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe        DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  salle            Salle      @relation(fields: [idSalle], references: [idSalle])
-  session          Session?   @relation(fields: [idSession], references: [idSession])
-  evenement        Evenement? @relation(fields: [idEvenement], references: [idEvenement])
-  formateur        Formateur? @relation("ReservationsFormateur", fields: [idFormateur], references: [idFormateur])
-  candidat         Candidat?  @relation("HoldsCandidat", fields: [idCandidat], references: [idCandidat])
+  idReservation   Int        @id @default(autoincrement()) @map("id_reservation")
+  idSalle         Int        @map("id_salle")
+  idSession       Int?       @map("id_session")
+  idEvenement     Int?       @map("id_evenement")
+  dateDebut       DateTime   @map("date_debut") @db.Timestamptz(6)
+  dateFin         DateTime   @map("date_fin") @db.Timestamptz(6)
+  statut          String     @default("CONFIRME")
+  motifAnnulation String?    @map("motif_annulation")
+  notes           String?
+  creeLe          DateTime   @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe       DateTime   @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  idFormateur     Int?       @map("id_formateur")
+  matiere         String?
+  typeFormation   String?    @default("COURTE") @map("type_formation")
+  expiresAt       DateTime?  @map("expires_at") @db.Timestamptz(6)
+  idCandidat      Int?       @map("id_candidat")
+  token           String?    @unique
+  idLot           String?    @map("id_lot")
+  candidat        Candidat?  @relation("HoldsCandidat", fields: [idCandidat], references: [idCandidat])
+  evenement       Evenement? @relation(fields: [idEvenement], references: [idEvenement])
+  formateur       Formateur? @relation("ReservationsFormateur", fields: [idFormateur], references: [idFormateur])
+  salle           Salle      @relation(fields: [idSalle], references: [idSalle])
+  session         Session?   @relation(fields: [idSession], references: [idSession])
 
   @@index([idSalle, dateDebut, dateFin])
   @@index([idSession])
@@ -1013,81 +831,53 @@ model ReservationSalle {
 /// Événements du planning (portes ouvertes, stages, réunions, etc.)
 /// Soft delete : jamais supprimer, changer statut à ANNULE pour conserver l'historique
 model Evenement {
-  idEvenement Int @id @default(autoincrement()) @map("id_evenement")
-
-  // === IDENTIFICATION ===
-  type        String // PORTES_OUVERTES | STAGE_INITIATION | REUNION | REMISE_DIPLOME | ENTRETIEN
-  titre       String
-  description String? @db.Text
-
-  // === PLANNING ===
-  date       DateTime @db.Date
-  heureDebut String   @map("heure_debut") // Format "HH:MM" ex: "09:00"
-  heureFin   String   @map("heure_fin") // Format "HH:MM" ex: "17:00"
-  salle      String // Nom de la salle (pour l'instant String, FK vers Salle plus tard)
-
-  // === PARTICIPANTS ===
-  nombreParticipants   Int  @map("nombre_participants")
-  participantsInscrits Int? @default(0) @map("participants_inscrits") // Nombre réel d'inscrits
-
-  // === STATUT (soft delete - jamais supprimer physiquement) ===
-  statut          String  @default("PLANIFIE") // PLANIFIE | CONFIRME | EN_COURS | TERMINE | ANNULE
-  motifAnnulation String? @map("motif_annulation") @db.Text // Si statut = ANNULE
-
-  // === TRAÇABILITÉ ===
-  creePar    Int? @map("cree_par") // idUtilisateur qui a créé
-  modifiePar Int? @map("modifie_par") // idUtilisateur dernière modification
-  annulePar  Int? @map("annule_par") // idUtilisateur qui a annulé
-
-  creeLe         DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe      DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-  dateAnnulation DateTime? @map("date_annulation") @db.Timestamptz(6)
-
-  // === MÉTADONNÉES ===
-  notes String? @db.Text // Notes internes admin
-
-  // === RELATIONS ===
+  idEvenement             Int                @id @default(autoincrement()) @map("id_evenement")
+  type                    String
+  titre                   String
+  description             String?
+  date                    DateTime           @db.Date
+  heureDebut              String             @map("heure_debut")
+  heureFin                String             @map("heure_fin")
+  salle                   String
+  nombreParticipants      Int                @map("nombre_participants")
+  participantsInscrits    Int?               @default(0) @map("participants_inscrits")
+  statut                  String             @default("PLANIFIE")
+  motifAnnulation         String?            @map("motif_annulation")
+  creePar                 Int?               @map("cree_par")
+  modifiePar              Int?               @map("modifie_par")
+  annulePar               Int?               @map("annule_par")
+  creeLe                  DateTime           @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe               DateTime           @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  dateAnnulation          DateTime?          @map("date_annulation") @db.Timestamptz(6)
+  notes                   String?
+  annulateurUtilisateur   Utilisateur?       @relation("EvenementsCancelled", fields: [annulePar], references: [idUtilisateur])
   createurUtilisateur     Utilisateur?       @relation("EvenementsCreated", fields: [creePar], references: [idUtilisateur])
   modificateurUtilisateur Utilisateur?       @relation("EvenementsModified", fields: [modifiePar], references: [idUtilisateur])
-  annulateurUtilisateur   Utilisateur?       @relation("EvenementsCancelled", fields: [annulePar], references: [idUtilisateur])
   reservationsSalles      ReservationSalle[]
 
-  // === INDEX POUR PERFORMANCES ===
-  @@index([date]) // Recherche par date
-  @@index([type]) // Filtrage par type
-  @@index([statut]) // Filtrage par statut
-  @@index([salle]) // Vérification disponibilité salle
-  @@index([date, salle]) // Composite pour check conflits
+  @@index([date])
+  @@index([type])
+  @@index([statut])
+  @@index([salle])
+  @@index([date, salle])
   @@map("evenements")
 }
 
-// ============================================================================
-// TABLES PARCOURS PROFESSIONNEL FORMATEUR (Indicateurs Qualiopi 21 & 22)
-// ============================================================================
-
 /// Diplômes et titres métier du formateur
 model FormateurDiplome {
-  idDiplome       Int      @id @default(autoincrement()) @map("id_diplome")
-  idFormateur     Int      @map("id_formateur")
-
-  // Informations diplôme
-  nomDiplome      String   @map("nom_diplome")
-  typeFormation   String   @map("type_formation") // CAP, BMA, Licence, Master, Doctorat, etc.
-  specialite      String?
-  dateObtention   DateTime @map("date_obtention") @db.Date
-  etablissement   String
-  ville           String?
-
-  // Justificatif document
-  documentUrl     String?  @map("document_url")
-  statut          String   @default("EN_ATTENTE") // VALIDE | EN_ATTENTE | REFUSE
-
-  // Traçabilité
-  creeLe          DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe       DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+  idDiplome     Int       @id @default(autoincrement()) @map("id_diplome")
+  idFormateur   Int       @map("id_formateur")
+  nomDiplome    String    @map("nom_diplome")
+  typeFormation String    @map("type_formation")
+  specialite    String?
+  dateObtention DateTime  @map("date_obtention") @db.Date
+  etablissement String
+  ville         String?
+  documentUrl   String?   @map("document_url")
+  statut        String    @default("EN_ATTENTE")
+  creeLe        DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe     DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  formateur     Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
 
   @@index([idFormateur])
   @@index([statut])
@@ -1096,25 +886,17 @@ model FormateurDiplome {
 
 /// Certifications professionnelles du formateur
 model FormateurCertification {
-  idCertification Int       @id @default(autoincrement()) @map("id_certification")
-  idFormateur     Int       @map("id_formateur")
-
-  // Informations certification
+  idCertification  Int       @id @default(autoincrement()) @map("id_certification")
+  idFormateur      Int       @map("id_formateur")
   nomCertification String    @map("nom_certification")
   organisme        String
   dateObtention    DateTime  @map("date_obtention") @db.Date
   dateExpiration   DateTime? @map("date_expiration") @db.Date
-
-  // Justificatif document
   documentUrl      String?   @map("document_url")
-  statut           String    @default("VALIDE") // VALIDE | EXPIRE | EN_COURS_RENOUVELLEMENT
-
-  // Traçabilité
+  statut           String    @default("VALIDE")
   creeLe           DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
   modifieLe        DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+  formateur        Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
 
   @@index([idFormateur])
   @@index([statut])
@@ -1124,25 +906,17 @@ model FormateurCertification {
 
 /// Formations pédagogiques du formateur (FPA, etc.)
 model FormateurFormationPedagogique {
-  idFormation   Int      @id @default(autoincrement()) @map("id_formation")
-  idFormateur   Int      @map("id_formateur")
-
-  // Informations formation
+  idFormation   Int       @id @default(autoincrement()) @map("id_formation")
+  idFormateur   Int       @map("id_formateur")
   intitule      String
   organisme     String
-  dateFormation DateTime @map("date_formation") @db.Date
-  dureeHeures   Int      @map("duree_heures")
-
-  // Justificatif document
-  certificatUrl String?  @map("certificat_url")
-  statut        String   @default("VALIDE") // VALIDE | EN_ATTENTE
-
-  // Traçabilité
-  creeLe        DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe     DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+  dateFormation DateTime  @map("date_formation") @db.Date
+  dureeHeures   Int       @map("duree_heures")
+  certificatUrl String?   @map("certificat_url")
+  statut        String    @default("VALIDE")
+  creeLe        DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe     DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  formateur     Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
 
   @@index([idFormateur])
   @@map("formateur_formations_pedagogiques")
@@ -1150,21 +924,15 @@ model FormateurFormationPedagogique {
 
 /// Portfolio des réalisations du formateur
 model FormateurPortfolio {
-  idPortfolio Int     @id @default(autoincrement()) @map("id_portfolio")
-  idFormateur Int     @map("id_formateur")
-
-  // Informations réalisation
+  idPortfolio Int       @id @default(autoincrement()) @map("id_portfolio")
+  idFormateur Int       @map("id_formateur")
   titre       String
-  description String? @db.Text
-  annee       String  // Format "2024" ou "2023-2024"
-  imageUrl    String? @map("image_url")
-
-  // Traçabilité
-  creeLe      DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe   DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+  description String?
+  annee       String
+  imageUrl    String?   @map("image_url")
+  creeLe      DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe   DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  formateur   Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
 
   @@index([idFormateur])
   @@map("formateur_portfolio")
@@ -1172,21 +940,15 @@ model FormateurPortfolio {
 
 /// Compétences techniques métier du formateur
 model FormateurCompetenceTechnique {
-  idCompetence   Int    @id @default(autoincrement()) @map("id_competence")
-  idFormateur    Int    @map("id_formateur")
-
-  // Informations compétence
-  domaine        String // Sertissage, Bijouterie, Polissage, Joaillerie, CAO/DAO, etc.
-  technique      String // Serti griffe, Brasage, Micro-pavage, MatrixGold, etc.
-  niveau         String // Débutant, Intermédiaire, Avancé, Expert
-  anneesPratique Int    @map("annees_pratique")
-
-  // Traçabilité
-  creeLe         DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe      DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+  idCompetence   Int       @id @default(autoincrement()) @map("id_competence")
+  idFormateur    Int       @map("id_formateur")
+  domaine        String
+  technique      String
+  niveau         String
+  anneesPratique Int       @map("annees_pratique")
+  creeLe         DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe      DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  formateur      Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
 
   @@index([idFormateur])
   @@index([domaine])
@@ -1195,27 +957,19 @@ model FormateurCompetenceTechnique {
 
 /// Formations continues du formateur (maintien des compétences)
 model FormateurFormationContinue {
-  idFormation Int      @id @default(autoincrement()) @map("id_formation")
-  idFormateur Int      @map("id_formateur")
-
-  // Informations formation
-  intitule    String
-  organisme   String
-  dateDebut   DateTime @map("date_debut") @db.Date
-  dateFin     DateTime? @map("date_fin") @db.Date
-  dureeHeures Int      @map("duree_heures")
-  domaine     String   // Technique métier, Pédagogie, Sécurité, Numérique, etc.
-
-  // Justificatif document
-  certificatUrl String? @map("certificat_url")
-  statut        String  @default("TERMINE") // PLANIFIE | EN_COURS | TERMINE | ANNULE
-
-  // Traçabilité
-  creeLe        DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe     DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+  idFormation   Int       @id @default(autoincrement()) @map("id_formation")
+  idFormateur   Int       @map("id_formateur")
+  intitule      String
+  organisme     String
+  dateDebut     DateTime  @map("date_debut") @db.Date
+  dateFin       DateTime? @map("date_fin") @db.Date
+  dureeHeures   Int       @map("duree_heures")
+  domaine       String
+  certificatUrl String?   @map("certificat_url")
+  statut        String    @default("TERMINE")
+  creeLe        DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe     DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  formateur     Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
 
   @@index([idFormateur])
   @@index([statut])
@@ -1225,23 +979,17 @@ model FormateurFormationContinue {
 
 /// Veille professionnelle du formateur (salons, conférences, lectures, etc.)
 model FormateurVeilleProfessionnelle {
-  idVeille     Int      @id @default(autoincrement()) @map("id_veille")
-  idFormateur  Int      @map("id_formateur")
-
-  // Informations veille
-  type         String   // Salon, Conférence, Webinaire, Formation, Lecture, Réseau professionnel
-  nomActivite  String   @map("nom_activite")
+  idVeille     Int       @id @default(autoincrement()) @map("id_veille")
+  idFormateur  Int       @map("id_formateur")
+  type         String
+  nomActivite  String    @map("nom_activite")
   organisme    String?
-  dateActivite DateTime @map("date_activite") @db.Date
-  duree        Int?     // Durée en heures ou jours
-  uniteDuree   String   @default("heures") @map("unite_duree") // heures | jours
-
-  // Traçabilité
-  creeLe       DateTime @default(now()) @map("cree_le") @db.Timestamptz(6)
-  modifieLe    DateTime @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
-
-  // Relations
-  formateur Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
+  dateActivite DateTime  @map("date_activite") @db.Date
+  duree        Int?
+  uniteDuree   String    @default("heures") @map("unite_duree")
+  creeLe       DateTime  @default(now()) @map("cree_le") @db.Timestamptz(6)
+  modifieLe    DateTime  @default(now()) @updatedAt @map("modifie_le") @db.Timestamptz(6)
+  formateur    Formateur @relation(fields: [idFormateur], references: [idFormateur], onDelete: Cascade)
 
   @@index([idFormateur])
   @@index([type])

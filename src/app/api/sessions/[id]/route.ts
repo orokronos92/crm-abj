@@ -177,3 +177,124 @@ export async function GET(
     )
   }
 }
+
+/**
+ * DELETE /api/sessions/[id]
+ *
+ * Soft delete d'une session avec effets en cascade :
+ * - Session → statutSession = 'ANNULEE' (traçabilité : qui, quand, motif)
+ * - InscriptionSession → statutInscription = 'ANNULE'
+ * - ReservationSalle → statut = 'ANNULE' (couvre aussi les holds RDV)
+ *
+ * Interdit si la session est EN_COURS (formation active → intervention manuelle requise).
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const sessionId = parseInt(id, 10)
+
+    if (isNaN(sessionId)) {
+      return NextResponse.json(
+        { success: false, error: 'ID de session invalide' },
+        { status: 400 }
+      )
+    }
+
+    // Récupérer la session pour vérifications
+    const session = await prisma.session.findUnique({
+      where: { idSession: sessionId },
+      select: { idSession: true, nomSession: true, statutSession: true }
+    })
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Session introuvable' },
+        { status: 404 }
+      )
+    }
+
+    if (session.statutSession === 'ANNULEE') {
+      return NextResponse.json(
+        { success: false, error: 'Cette session est déjà annulée' },
+        { status: 409 }
+      )
+    }
+
+    if (session.statutSession === 'EN_COURS') {
+      return NextResponse.json(
+        { success: false, error: 'Impossible d\'annuler une session en cours. Toute intervention sur une session active doit être effectuée manuellement.' },
+        { status: 422 }
+      )
+    }
+
+    // Récupérer le motif depuis le body (optionnel)
+    let motifAnnulation: string | null = null
+    try {
+      const body = await request.json()
+      motifAnnulation = body.motif || null
+    } catch {
+      // Body absent ou invalide, motif reste null
+    }
+
+    const dateAnnulation = new Date()
+
+    // Cascade atomique dans une transaction
+    const [nbInscriptions, nbReservations] = await prisma.$transaction(async (tx) => {
+      const inscriptions = await tx.inscriptionSession.updateMany({
+        where: {
+          idSession: sessionId,
+          statutInscription: { notIn: ['ANNULE'] }
+        },
+        data: {
+          statutInscription: 'ANNULE',
+          motifAnnulation: motifAnnulation || 'Session annulée'
+        }
+      })
+
+      const reservations = await tx.reservationSalle.updateMany({
+        where: {
+          idSession: sessionId,
+          statut: { not: 'ANNULE' }
+        },
+        data: {
+          statut: 'ANNULE',
+          motifAnnulation: motifAnnulation || 'Session annulée'
+        }
+      })
+
+      await tx.session.update({
+        where: { idSession: sessionId },
+        data: {
+          statutSession: 'ANNULEE',
+          motifAnnulation,
+          dateAnnulation,
+          // annulePar : null en mode démo (pas d'auth active)
+        }
+      })
+
+      return [inscriptions.count, reservations.count]
+    })
+
+    console.log(`[DELETE /api/sessions/${sessionId}] ✅ Session "${session.nomSession}" annulée — ${nbInscriptions} inscriptions, ${nbReservations} réservations annulées`)
+
+    return NextResponse.json({
+      success: true,
+      message: `Session "${session.nomSession}" annulée avec succès`,
+      data: {
+        sessionId,
+        nbInscriptions,
+        nbReservations
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Erreur DELETE /api/sessions/[id]:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur lors de l\'annulation de la session' },
+      { status: 500 }
+    )
+  }
+}

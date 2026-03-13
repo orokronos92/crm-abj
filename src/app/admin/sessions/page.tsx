@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { SessionFormModal } from '@/components/admin/SessionFormModal'
+import { ConfirmDeleteSessionModal } from '@/components/admin/ConfirmDeleteSessionModal'
 import {
   BookOpen,
   Search,
@@ -42,6 +43,7 @@ const STATUT_COLORS: Record<string, string> = {
   'VALIDE': 'bg-[rgba(var(--success),0.1)] text-[rgb(var(--success))] border border-[rgba(var(--success),0.3)]',
   'REFUSE': 'bg-[rgba(var(--error),0.1)] text-[rgb(var(--error))] border border-[rgba(var(--error),0.3)]',
   'DIFFUSEE': 'bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] border border-[rgba(var(--accent),0.3)]',
+  'ANNULEE': 'bg-[rgba(var(--error),0.1)] text-[rgb(var(--error))] border border-[rgba(var(--error),0.3)]',
 }
 
 const STATUT_LABELS: Record<string, string> = {
@@ -53,6 +55,7 @@ const STATUT_LABELS: Record<string, string> = {
   'VALIDE': 'Validé',
   'REFUSE': 'Refusé',
   'DIFFUSEE': 'Diffusée',
+  'ANNULEE': 'Annulée',
 }
 
 type StatutFilter = 'TOUS' | 'EN_COURS' | 'INSCRIPTIONS_OUVERTES' | 'A_VENIR' | 'TERMINEE' | 'EN_ANALYSE' | 'VALIDE' | 'REFUSE' | 'DIFFUSEE'
@@ -134,6 +137,9 @@ export default function SessionsPage() {
   const [loadingEleves, setLoadingEleves] = useState(false)
   const [desistementEnCours, setDesistementEnCours] = useState<number | null>(null)
   const [desistementMessage, setDesistementMessage] = useState<string | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
 
   // Charger les sessions depuis l'API
   const loadSessions = async () => {
@@ -205,6 +211,35 @@ export default function SessionsPage() {
       setDesistementMessage('Erreur réseau')
     } finally {
       setDesistementEnCours(null)
+    }
+  }
+
+  const handleDeleteSession = async (motif: string) => {
+    if (!selectedSession) return
+    setDeleteLoading(true)
+    try {
+      const response = await fetch(`/api/sessions/${selectedSession.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motif })
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setDeleteConfirmOpen(false)
+        setSelectedSession(null)
+        setDeleteMessage(data.message)
+        await loadSessions()
+        setTimeout(() => setDeleteMessage(null), 5000)
+      } else {
+        setDeleteMessage(data.error || 'Erreur lors de l\'annulation')
+        setDeleteConfirmOpen(false)
+      }
+    } catch {
+      setDeleteMessage('Erreur réseau lors de l\'annulation')
+      setDeleteConfirmOpen(false)
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -953,21 +988,16 @@ export default function SessionsPage() {
 
             {/* Footer actions */}
             <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
-              <div className="flex items-center justify-between">
-                <button className="px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] hover:bg-[rgb(var(--secondary))] transition-all flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  Contacter formateur
+              <div className="flex items-center justify-end">
+                <button
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={selectedSession?.statut_session === 'EN_COURS'}
+                  title={selectedSession?.statut_session === 'EN_COURS' ? 'Impossible d\'annuler une session en cours' : 'Annuler cette session'}
+                  className="px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--error),0.5)] rounded-lg text-[rgb(var(--error))] hover:bg-[rgb(var(--error))] hover:text-white transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[rgb(var(--card))] disabled:hover:text-[rgb(var(--error))]"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Annuler la session
                 </button>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] hover:bg-[rgb(var(--accent))] hover:text-[rgb(var(--primary))] transition-all flex items-center gap-2">
-                    <Edit className="w-4 h-4" />
-                    Modifier
-                  </button>
-                  <button className="px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--error),0.5)] rounded-lg text-[rgb(var(--error))] hover:bg-[rgb(var(--error))] hover:text-white transition-all flex items-center gap-2">
-                    <Trash2 className="w-4 h-4" />
-                    Supprimer
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -980,9 +1010,36 @@ export default function SessionsPage() {
           onClose={() => setModalSessionOuverte(false)}
           onSuccess={() => {
             setModalSessionOuverte(false)
-            loadSessions() // Rafraîchir la liste des sessions
+            loadSessions()
           }}
         />
+      )}
+
+      {/* Modal confirmation suppression */}
+      {deleteConfirmOpen && selectedSession && (
+        <ConfirmDeleteSessionModal
+          session={{
+            idSession: selectedSession.id,
+            nomSession: selectedSession.nom_session,
+            nbInscrits: selectedSession.places_prises,
+            listeAttente: selectedSession.liste_attente ?? 0,
+            formation: selectedSession.formation,
+          }}
+          onConfirm={handleDeleteSession}
+          onCancel={() => setDeleteConfirmOpen(false)}
+          loading={deleteLoading}
+        />
+      )}
+
+      {/* Toast feedback suppression */}
+      {deleteMessage && (
+        <div className="fixed bottom-6 right-6 z-50 px-5 py-3 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl shadow-xl flex items-center gap-3 max-w-sm">
+          <CheckCircle className="w-5 h-5 text-[rgb(var(--success))] flex-shrink-0" />
+          <p className="text-sm text-[rgb(var(--foreground))]">{deleteMessage}</p>
+          <button onClick={() => setDeleteMessage(null)} className="ml-auto p-1 hover:bg-[rgb(var(--secondary))] rounded">
+            <X className="w-3.5 h-3.5 text-[rgb(var(--muted-foreground))]" />
+          </button>
+        </div>
       )}
     </DashboardLayout>
   )
