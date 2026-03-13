@@ -135,22 +135,35 @@ async function inscrireEnListeAttente(numeroDossier: string, responseType: strin
     return
   }
 
-  // Vérifier si déjà inscrit
+  const isEleve = responseType === 'eleve_created'
+
+  // Pour eleve_created, récupérer l'idEleve depuis la table eleves
+  let idEleve: number | null = null
+  if (isEleve) {
+    const eleve = await prisma.eleve.findFirst({
+      where: { numeroDossier },
+      select: { idEleve: true }
+    })
+    idEleve = eleve?.idEleve ?? null
+  }
+
+  // Vérifier si déjà inscrit (selon le type : élève ou candidat)
   const dejaInscrit = await prisma.inscriptionSession.findFirst({
     where: {
       idSession: session.idSession,
-      idCandidat: candidat.idCandidat,
+      ...(isEleve
+        ? { idEleve: idEleve ?? undefined }
+        : { idCandidat: candidat.idCandidat }),
       statutInscription: { notIn: ['ANNULE'] }
     }
   })
   if (dejaInscrit) {
-    console.log(`[webhook/callback] Candidat déjà inscrit/en attente pour session "${conversion.sessionVisee}"`)
+    console.log(`[webhook/callback] ${isEleve ? 'Élève' : 'Candidat'} déjà inscrit/en attente pour session "${conversion.sessionVisee}"`)
     return
   }
 
   // Pour un candidat → toujours EN_ATTENTE (priorité 2)
   // Pour un élève → INSCRIT si place dispo, sinon EN_ATTENTE
-  const isEleve = responseType === 'eleve_created'
   const placesDisponibles = (session.capaciteMax || 0) - session.nbInscrits
   const sessionPleine = placesDisponibles <= 0
 
@@ -171,6 +184,7 @@ async function inscrireEnListeAttente(numeroDossier: string, responseType: strin
     data: {
       idSession: session.idSession,
       idCandidat: isEleve ? null : candidat.idCandidat,
+      idEleve: isEleve ? idEleve : null,
       dateInscription: new Date(),
       statutInscription,
       priorite,
