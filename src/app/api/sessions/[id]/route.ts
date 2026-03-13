@@ -246,21 +246,26 @@ export async function PATCH(
       )
     }
 
-    // Mettre à jour le formateur principal
-    const updated = await prisma.session.update({
-      where: { idSession: sessionId },
-      data: {
-        formateurPrincipalId: formateurPrincipalId ?? null,
-      },
-      select: {
-        idSession: true,
-        nomSession: true,
-        formateurPrincipalId: true,
-        formateurPrincipal: {
-          select: { nom: true, prenom: true }
+    // Mettre à jour le formateur principal + cascade sur les réservations
+    const [updated] = await prisma.$transaction([
+      prisma.session.update({
+        where: { idSession: sessionId },
+        data: { formateurPrincipalId: formateurPrincipalId ?? null },
+        select: {
+          idSession: true,
+          nomSession: true,
+          formateurPrincipalId: true,
+          formateurPrincipal: { select: { nom: true, prenom: true } }
         }
-      }
-    })
+      }),
+      prisma.reservationSalle.updateMany({
+        where: {
+          idSession: sessionId,
+          statut: { not: 'ANNULE' },
+        },
+        data: { idFormateur: formateurPrincipalId ?? null },
+      }),
+    ])
 
     const nomFormateur = updated.formateurPrincipal
       ? `${updated.formateurPrincipal.prenom} ${updated.formateurPrincipal.nom}`
