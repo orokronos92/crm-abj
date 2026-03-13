@@ -159,6 +159,36 @@ export async function GET(
       (e) => e.statutInscription === 'EN_ATTENTE'
     )
 
+    // Récupérer les réservations de salle pour l'onglet planning
+    const reservations = await prisma.reservationSalle.findMany({
+      where: {
+        idSession: sessionId,
+        statut: { not: 'ANNULE' },
+      },
+      select: {
+        idReservation: true,
+        dateDebut: true,
+        dateFin: true,
+        matiere: true,
+        statut: true,
+        notes: true,
+        salle: {
+          select: {
+            idSalle: true,
+            nom: true,
+          },
+        },
+        formateur: {
+          select: {
+            idFormateur: true,
+            nom: true,
+            prenom: true,
+          },
+        },
+      },
+      orderBy: { dateDebut: 'asc' },
+    })
+
     return NextResponse.json({
       success: true,
       sessionId,
@@ -168,11 +198,89 @@ export async function GET(
       total: tous.length,
       nbInscrits: inscrits.length,
       nbAttente: listeAttente.length,
+      reservations,
     })
   } catch (error) {
     console.error('❌ Erreur GET /api/sessions/[id]:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur lors du chargement des élèves de la session' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PATCH /api/sessions/[id]
+ *
+ * Mise à jour partielle d'une session.
+ * Actuellement : assignation du formateur principal (formateurPrincipalId).
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const sessionId = parseInt(id, 10)
+
+    if (isNaN(sessionId)) {
+      return NextResponse.json(
+        { success: false, error: 'ID de session invalide' },
+        { status: 400 }
+      )
+    }
+
+    const body = await request.json()
+    const { formateurPrincipalId } = body
+
+    // Vérifier que la session existe
+    const session = await prisma.session.findUnique({
+      where: { idSession: sessionId },
+      select: { idSession: true, nomSession: true, statutSession: true }
+    })
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Session introuvable' },
+        { status: 404 }
+      )
+    }
+
+    // Mettre à jour le formateur principal
+    const updated = await prisma.session.update({
+      where: { idSession: sessionId },
+      data: {
+        formateurPrincipalId: formateurPrincipalId ?? null,
+      },
+      select: {
+        idSession: true,
+        nomSession: true,
+        formateurPrincipalId: true,
+        formateurPrincipal: {
+          select: { nom: true, prenom: true }
+        }
+      }
+    })
+
+    const nomFormateur = updated.formateurPrincipal
+      ? `${updated.formateurPrincipal.prenom} ${updated.formateurPrincipal.nom}`
+      : null
+
+    console.log(`[PATCH /api/sessions/${sessionId}] Formateur principal → ${nomFormateur ?? 'aucun'}`)
+
+    return NextResponse.json({
+      success: true,
+      message: nomFormateur
+        ? `Formateur ${nomFormateur} assigné avec succès`
+        : 'Formateur désassigné',
+      formateurPrincipalId: updated.formateurPrincipalId,
+      formateurPrincipal: nomFormateur,
+    })
+
+  } catch (error) {
+    console.error('❌ Erreur PATCH /api/sessions/[id]:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur lors de la mise à jour de la session' },
       { status: 500 }
     )
   }

@@ -31,6 +31,8 @@ import {
   Eye,
   BarChart3,
   FileText,
+  UserCheck,
+  ChevronDown,
 } from 'lucide-react'
 
 
@@ -124,6 +126,23 @@ interface Session {
     positionAttente: number
     dateInscription?: string | null
   }>
+  reservations?: Array<{
+    idReservation: number
+    dateDebut: string
+    dateFin: string
+    matiere: string | null
+    statut: string
+    notes: string | null
+    salle: { idSalle: number; nom: string } | null
+    formateur: { idFormateur: number; nom: string; prenom: string } | null
+  }>
+}
+
+interface FormateurOption {
+  idFormateur: number
+  nom: string
+  prenom: string
+  specialites: string[]
 }
 
 export default function SessionsPage() {
@@ -140,6 +159,9 @@ export default function SessionsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
+  const [formateurs, setFormateurs] = useState<FormateurOption[]>([])
+  const [assignLoading, setAssignLoading] = useState(false)
+  const [assignMessage, setAssignMessage] = useState<string | null>(null)
 
   // Charger les sessions depuis l'API
   const loadSessions = async () => {
@@ -160,7 +182,20 @@ export default function SessionsPage() {
     }
   }
 
-  // Charger les élèves d'une session depuis l'API
+  // Charger les formateurs actifs (une seule fois)
+  const loadFormateurs = async () => {
+    try {
+      const response = await fetch('/api/formateurs?statut=ACTIF')
+      const data = await response.json()
+      if (data.success) {
+        setFormateurs(data.formateurs ?? [])
+      }
+    } catch (error) {
+      console.error('Erreur fetch formateurs:', error)
+    }
+  }
+
+  // Charger les élèves + réservations d'une session depuis l'API
   const loadElevesSession = async (session: Session) => {
     try {
       setLoadingEleves(true)
@@ -173,12 +208,42 @@ export default function SessionsPage() {
           eleves: data.eleves,
           inscrits: data.inscrits,
           listeAttente: data.listeAttente,
+          reservations: data.reservations ?? [],
         })
       }
     } catch (error) {
       console.error('Erreur fetch élèves session:', error)
     } finally {
       setLoadingEleves(false)
+    }
+  }
+
+  // Assigner un formateur principal à la session
+  const handleAssignFormateur = async (formateurPrincipalId: number | null) => {
+    if (!selectedSession) return
+    setAssignLoading(true)
+    setAssignMessage(null)
+    try {
+      const response = await fetch(`/api/sessions/${selectedSession.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formateurPrincipalId })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setAssignMessage(data.message)
+        // Mettre à jour le nom affiché dans le modal
+        const nomFormateur = data.formateurPrincipal ?? 'Non assigné'
+        setSelectedSession(prev => prev ? { ...prev, formateur_principal: nomFormateur } : prev)
+        await loadSessions()
+        setTimeout(() => setAssignMessage(null), 4000)
+      } else {
+        setAssignMessage(data.error || 'Erreur lors de l\'assignation')
+      }
+    } catch {
+      setAssignMessage('Erreur réseau')
+    } finally {
+      setAssignLoading(false)
     }
   }
 
@@ -243,9 +308,10 @@ export default function SessionsPage() {
     }
   }
 
-  // Charger les sessions au montage du composant
+  // Charger les sessions et formateurs au montage
   useEffect(() => {
     loadSessions()
+    loadFormateurs()
   }, [])
 
   const filteredSessions = sessions.filter(session => {
@@ -977,23 +1043,116 @@ export default function SessionsPage() {
 
               {/* Tab Planning */}
               {activeTab === 'planning' && (
-                <div className="p-12 text-center bg-[rgb(var(--secondary))] rounded-lg">
-                  <Calendar className="w-16 h-16 text-[rgb(var(--muted-foreground))] mx-auto mb-4 opacity-50" />
-                  <p className="text-[rgb(var(--muted-foreground))]">
-                    Planning détaillé à venir (calendrier dynamique)
-                  </p>
+                <div className="space-y-4">
+                  {/* Rapport IA si disponible */}
+                  {selectedSession.rapport_ia && (
+                    <div className="p-4 bg-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-lg">
+                      <p className="text-xs font-medium text-[rgb(var(--accent))] mb-2 flex items-center gap-2">
+                        <BarChart3 className="w-3.5 h-3.5" />
+                        Rapport IA
+                      </p>
+                      <p className="text-sm text-[rgb(var(--foreground))] whitespace-pre-wrap">{selectedSession.rapport_ia}</p>
+                    </div>
+                  )}
+
+                  {/* Liste des créneaux (ReservationSalle) */}
+                  {loadingEleves ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="w-5 h-5 border-2 border-[rgb(var(--accent))] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : (selectedSession.reservations ?? []).length === 0 ? (
+                    <div className="p-12 text-center bg-[rgb(var(--secondary))] rounded-lg">
+                      <Calendar className="w-12 h-12 text-[rgb(var(--muted-foreground))] mx-auto mb-3 opacity-40" />
+                      <p className="text-sm text-[rgb(var(--muted-foreground))]">Aucun créneau planifié pour cette session</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-[rgb(var(--muted-foreground))] mb-3">
+                        {selectedSession.reservations!.length} créneau{selectedSession.reservations!.length > 1 ? 'x' : ''} planifié{selectedSession.reservations!.length > 1 ? 's' : ''}
+                      </h3>
+                      {selectedSession.reservations!.map((r) => {
+                        const debut = new Date(r.dateDebut)
+                        const fin = new Date(r.dateFin)
+                        const dateStr = debut.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+                        const heureDebut = debut.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                        const heureFin = fin.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                        return (
+                          <div key={r.idReservation} className="p-3 bg-[rgb(var(--secondary))] rounded-lg flex items-center gap-4">
+                            <div className="flex-shrink-0 text-center w-20">
+                              <p className="text-xs font-medium text-[rgb(var(--accent))] capitalize">{dateStr}</p>
+                              <p className="text-xs text-[rgb(var(--muted-foreground))]">{heureDebut} – {heureFin}</p>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-[rgb(var(--foreground))] truncate">
+                                {r.matiere ?? 'Cours'}
+                              </p>
+                              <div className="flex items-center gap-3 mt-0.5">
+                                {r.salle && (
+                                  <span className="text-xs text-[rgb(var(--muted-foreground))] flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {r.salle.nom}
+                                  </span>
+                                )}
+                                {r.formateur && (
+                                  <span className="text-xs text-[rgb(var(--muted-foreground))] flex items-center gap-1">
+                                    <Award className="w-3 h-3" />
+                                    {r.formateur.prenom} {r.formateur.nom}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Footer actions */}
-            <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
-              <div className="flex items-center justify-end">
+            <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))] space-y-3">
+              {/* Feedback assignation */}
+              {assignMessage && (
+                <div className="text-xs text-[rgb(var(--success))] flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {assignMessage}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3">
+                {/* Dropdown assignation formateur */}
+                <div className="flex items-center gap-2 flex-1 max-w-xs">
+                  <UserCheck className="w-4 h-4 text-[rgb(var(--muted-foreground))] flex-shrink-0" />
+                  <div className="relative flex-1">
+                    <select
+                      disabled={assignLoading || selectedSession?.statut_session === 'EN_COURS'}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        handleAssignFormateur(val === '' ? null : parseInt(val, 10))
+                      }}
+                      className="w-full appearance-none px-3 py-2 pr-8 text-sm bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">— Formateur principal —</option>
+                      {formateurs.map((f) => (
+                        <option key={f.idFormateur} value={f.idFormateur}>
+                          {f.prenom} {f.nom}{f.specialites?.length > 0 ? ` · ${f.specialites[0]}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[rgb(var(--muted-foreground))] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  {assignLoading && (
+                    <div className="w-4 h-4 border-2 border-[rgb(var(--accent))] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                  )}
+                </div>
+
+                {/* Bouton annulation */}
                 <button
                   onClick={() => setDeleteConfirmOpen(true)}
                   disabled={selectedSession?.statut_session === 'EN_COURS'}
                   title={selectedSession?.statut_session === 'EN_COURS' ? 'Impossible d\'annuler une session en cours' : 'Annuler cette session'}
-                  className="px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--error),0.5)] rounded-lg text-[rgb(var(--error))] hover:bg-[rgb(var(--error))] hover:text-white transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[rgb(var(--card))] disabled:hover:text-[rgb(var(--error))]"
+                  className="px-4 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--error),0.5)] rounded-lg text-[rgb(var(--error))] hover:bg-[rgb(var(--error))] hover:text-white transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[rgb(var(--card))] disabled:hover:text-[rgb(var(--error))] flex-shrink-0"
                 >
                   <Trash2 className="w-4 h-4" />
                   Annuler la session
