@@ -194,10 +194,30 @@ async function inscrireEnListeAttente(numeroDossier: string, responseType: strin
   })
 
   if (statutInscription === 'INSCRIT') {
-    await prisma.session.update({
+    // Incrémenter le compteur et vérifier si la session est complète
+    const sessionMiseAJour = await prisma.session.update({
       where: { idSession: session.idSession },
-      data: { nbInscrits: { increment: 1 } }
+      data: { nbInscrits: { increment: 1 } },
+      select: { nbInscrits: true, capaciteMax: true, statutSession: true }
     })
+
+    // Si la session vient d'atteindre sa capacité maximale → COMPLETE
+    const capaciteAtteinte = sessionMiseAJour.capaciteMax !== null
+      && sessionMiseAJour.nbInscrits >= sessionMiseAJour.capaciteMax
+
+    const peutPasserComplete = capaciteAtteinte
+      && sessionMiseAJour.statutSession !== 'EN_COURS'
+      && sessionMiseAJour.statutSession !== 'TERMINEE'
+      && sessionMiseAJour.statutSession !== 'ANNULEE'
+      && sessionMiseAJour.statutSession !== 'COMPLETE'
+
+    if (peutPasserComplete) {
+      await prisma.session.update({
+        where: { idSession: session.idSession },
+        data: { statutSession: 'COMPLETE' }
+      })
+      console.log(`[webhook/callback] 🔒 Session "${conversion.sessionVisee}" marquée COMPLETE (${sessionMiseAJour.nbInscrits}/${sessionMiseAJour.capaciteMax} inscrits)`)
+    }
   }
 
   console.log(`[webhook/callback] ✅ ${numeroDossier} ${statutInscription === 'INSCRIT' ? 'inscrit' : `en liste d'attente #${positionAttente}`} pour session "${conversion.sessionVisee}"`)

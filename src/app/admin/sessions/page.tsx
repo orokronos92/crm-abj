@@ -46,6 +46,7 @@ const STATUT_COLORS: Record<string, string> = {
   'REFUSE': 'bg-[rgba(var(--error),0.1)] text-[rgb(var(--error))] border border-[rgba(var(--error),0.3)]',
   'DIFFUSEE': 'bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] border border-[rgba(var(--accent),0.3)]',
   'ANNULEE': 'bg-[rgba(var(--error),0.1)] text-[rgb(var(--error))] border border-[rgba(var(--error),0.3)]',
+  'COMPLETE': 'bg-[rgba(var(--warning),0.15)] text-[rgb(var(--warning))] border border-[rgba(var(--warning),0.4)]',
 }
 
 const STATUT_LABELS: Record<string, string> = {
@@ -58,9 +59,10 @@ const STATUT_LABELS: Record<string, string> = {
   'REFUSE': 'Refusé',
   'DIFFUSEE': 'Diffusée',
   'ANNULEE': 'Annulée',
+  'COMPLETE': 'Complet',
 }
 
-type StatutFilter = 'TOUS' | 'EN_COURS' | 'INSCRIPTIONS_OUVERTES' | 'A_VENIR' | 'TERMINEE' | 'EN_ANALYSE' | 'VALIDE' | 'REFUSE' | 'DIFFUSEE'
+type StatutFilter = 'TOUS' | 'EN_COURS' | 'INSCRIPTIONS_OUVERTES' | 'A_VENIR' | 'TERMINEE' | 'EN_ANALYSE' | 'VALIDE' | 'REFUSE' | 'DIFFUSEE' | 'COMPLETE'
 
 interface Session {
   id: number
@@ -358,6 +360,7 @@ export default function SessionsPage() {
     VALIDE: sessions.filter(s => s.statut_session === 'VALIDE').length,
     REFUSE: sessions.filter(s => s.statut_session === 'REFUSE').length,
     DIFFUSEE: sessions.filter(s => s.statut_session === 'DIFFUSEE').length,
+    COMPLETE: sessions.filter(s => s.statut_session === 'COMPLETE').length,
   }
 
   return (
@@ -448,7 +451,7 @@ export default function SessionsPage() {
           {/* Filtres par onglets */}
           <div className="card p-1">
             <div className="flex gap-2">
-              {(['TOUS', 'EN_COURS', 'INSCRIPTIONS_OUVERTES', 'A_VENIR', 'TERMINEE'] as StatutFilter[]).map((filter) => (
+              {(['TOUS', 'EN_COURS', 'COMPLETE', 'INSCRIPTIONS_OUVERTES', 'A_VENIR', 'TERMINEE'] as StatutFilter[]).map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
