@@ -120,6 +120,7 @@ model Candidat {
   exemptValidationPedagogique      Boolean              @default(false) @map("exempt_validation_pedagogique")
   urlDossierMinio                  String?              @map("url_dossier_minio")
   urlFicheMinio                    String?              @map("url_fiche_minio")
+  cheminMinio                      String?              @map("chemin_minio")
   prospect                         Prospect             @relation(fields: [idProspect], references: [idProspect])
   documentsCandidat                DocumentCandidat[]
   eleve                            Eleve?
@@ -158,6 +159,7 @@ model DocumentCandidat {
   minioBucket    String?   @default("documents-crm") @map("minio_bucket")
   minioKey       String?   @map("minio_key")
   urlMinio       String?   @map("url_minio")
+  cheminMinio    String?   @map("chemin_minio")
   prospect       Prospect  @relation(fields: [idProspect], references: [idProspect])
   candidat       Candidat? @relation(fields: [numeroDossier], references: [numeroDossier])
 
@@ -282,8 +284,8 @@ model Utilisateur {
   notificationsRecues        Notification[]           @relation("NotificationsRecues")
   lecturesNotifications      NotificationLecture[]
   preferencesNotifications   PreferenceNotification[]
-  sessionsAuth               SessionAuth[]
   sessionsAnnulees           Session[]                @relation("SessionsAnnulees")
+  sessionsAuth               SessionAuth[]
 
   @@map("utilisateurs")
 }
@@ -392,10 +394,10 @@ model Session {
   interventions        InterventionFormateur[]
   presences            Presence[]
   reservationsSalles   ReservationSalle[]
+  annulateur           Utilisateur?            @relation("SessionsAnnulees", fields: [annulePar], references: [idUtilisateur])
   formateurPrincipal   Formateur?              @relation(fields: [formateurPrincipalId], references: [idFormateur])
   formation            Formation               @relation(fields: [idFormation], references: [idFormation])
   salle                Salle?                  @relation("SessionsSalle", fields: [idSalle], references: [idSalle])
-  annulateur           Utilisateur?            @relation("SessionsAnnulees", fields: [annulePar], references: [idUtilisateur])
 
   @@index([idFormation])
   @@index([idSalle])
