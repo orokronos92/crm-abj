@@ -137,6 +137,15 @@ async function main() {
       obligatoireQualiopi: false,
       ordreAffichage: 4
     },
+    {
+      code: 'PORTFOLIO',
+      libelle: 'Portfolio',
+      categorie: 'candidature',
+      obligatoire: false,
+      obligatoireQualiopi: false,
+      ordreAffichage: 99,
+      description: 'Portfolio de travaux ou réalisations du candidat'
+    },
 
     // Documents administratifs
     {
