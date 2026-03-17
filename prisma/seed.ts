@@ -33,6 +33,33 @@ async function main() {
     }
   })
 
+  // Admins production
+  await prisma.utilisateur.upsert({
+    where: { email: 'orokronos.pro@gmail.com' },
+    update: {},
+    create: {
+      email: 'orokronos.pro@gmail.com',
+      motDePasseHash: '$2b$12$ei1V1uZrGf87/THTxxZcbu8iPiQV3wKGj87XfbE.AgGB.2rhSE5S2',
+      nom: 'Duhamel',
+      prenom: 'David',
+      role: 'admin',
+      statutCompte: 'ACTIF'
+    }
+  })
+
+  await prisma.utilisateur.upsert({
+    where: { email: 'david-duhamel@live.fr' },
+    update: {},
+    create: {
+      email: 'david-duhamel@live.fr',
+      motDePasseHash: '$2b$12$/.LnagPbP0weQ/aAcxqrNuhoxh5ChXYMJgQ7tnO/oIOr8DlCYmKZS',
+      nom: 'Duhamel',
+      prenom: 'David',
+      role: 'admin',
+      statutCompte: 'ACTIF'
+    }
+  })
+
   // Formateur
   const formateur = await prisma.utilisateur.upsert({
     where: { email: 'formateur@abj.fr' },
@@ -515,9 +542,11 @@ async function main() {
 
   console.log('\n🎉 Seed terminé avec succès!')
   console.log('\n📝 Comptes de test créés:')
-  console.log('   Admin: admin@abj.fr / ABJ2024!')
-  console.log('   Formateur: formateur@abj.fr / ABJ2024!')
-  console.log('   Élève: eleve@abj.fr / ABJ2024!')
+  console.log('   Admin (démo): admin@abj.fr / ABJ2024!')
+  console.log('   Formateur (démo): formateur@abj.fr / ABJ2024!')
+  console.log('   Élève (démo): eleve@abj.fr / ABJ2024!')
+  console.log('   Admin (prod): orokronos.pro@gmail.com')
+  console.log('   Admin (prod): david-duhamel@live.fr')
 }
 
 main()
