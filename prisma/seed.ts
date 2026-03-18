@@ -91,6 +91,76 @@ async function main() {
   console.log('✅ Utilisateurs créés')
 
   // ============================================================
+  // 1b. CRÉATION DES SALLES
+  // ============================================================
+  console.log('🏢 Création des salles...')
+
+  const sallesData = [
+    {
+      nom: 'Atelier S',
+      code: 'ATEL_S',
+      capaciteMax: 4,
+      surfaceM2: 45,
+      etage: 0,
+      equipements: ['ETABLI_BIJOU', 'POSTE_SOUDURE', 'LAMINOIR', 'MARTEAU_BAGUE', 'PERCEUSE_COLONNE'],
+      formationsCompatibles: ['CAP_ATBJ', 'BIJ_CREATEUR_N1', 'BIJ_CREATEUR_N2', 'BIJ_CREATEUR_N3', 'BIJ_TECHNIQUE_N1', 'BIJ_TECHNIQUE_N2', 'BIJ_TECHNIQUE_N3', 'JOAILLERIE_N1', 'JOAILLERIE_N2', 'JOAILLERIE_N3'],
+      disponibleWeekend: true,
+      disponibleSoir: false,
+      statut: 'ACTIVE',
+      notes: 'Atelier principal bijouterie. 8 postes de travail individuels avec établis.'
+    },
+    {
+      nom: 'Atelier B2',
+      code: 'ATEL_B2',
+      capaciteMax: 8,
+      surfaceM2: 35,
+      etage: 0,
+      equipements: ['ETABLI_BIJOU', 'POSTE_SERTI', 'MICROSCOPE_SERTI', 'LOUPE_BINOCULAIRE'],
+      formationsCompatibles: ['CAP_ATBJ', 'SERTI_N1', 'SERTI_N2', 'SERTI_N3', 'CISELURE_N1', 'CISELURE_N2', 'CISELURE_N3'],
+      disponibleWeekend: true,
+      disponibleSoir: false,
+      statut: 'ACTIVE',
+      notes: 'Atelier sertissage et ciselure. Postes équipés de microscopes et loupes binoculaires.'
+    },
+    {
+      nom: 'Atelier B1',
+      code: 'ATEL_B1',
+      capaciteMax: 10,
+      surfaceM2: 30,
+      etage: 0,
+      equipements: ['FOUR_EMAIL', 'ETABLI_BIJOU', 'MATERIEL_EMAIL', 'LAMPE_CHALUMEAU'],
+      formationsCompatibles: ['EMAIL_INITIATION', 'EMAIL_CLOISONNE', 'EMAIL_CHAMPLÈVE', 'EMAIL_PLIQUE_A_JOUR', 'ATD_BIJ_EMAIL', 'ATD_CISELURE_EMAIL'],
+      disponibleWeekend: false,
+      disponibleSoir: false,
+      statut: 'ACTIVE',
+      notes: 'Atelier émail grand feu. Four et matériel d\'émaillage. Ventilation spécifique.'
+    },
+    {
+      nom: 'Salle C',
+      code: 'SALLE_C',
+      capaciteMax: 10,
+      surfaceM2: 30,
+      etage: 1,
+      equipements: ['ORDINATEUR_CAO', 'LOGICIEL_RHINO', 'LOGICIEL_MATRIX_GOLD', 'ECRAN_TACTILE', 'VIDEO_PROJECTEUR'],
+      formationsCompatibles: ['CAO_DAO'],
+      disponibleWeekend: false,
+      disponibleSoir: false,
+      statut: 'ACTIVE',
+      notes: 'Salle équipée pour la formation CAO/DAO. Logiciels Rhino et MatrixGold installés.'
+    }
+  ]
+
+  for (const salle of sallesData) {
+    await prisma.salle.upsert({
+      where: { code: salle.code },
+      update: {},
+      create: salle
+    })
+  }
+
+  console.log('✅ Salles créées')
+
+  // ============================================================
   // 2. CRÉATION DES FORMATIONS
   // ============================================================
   console.log('📚 Création des formations...')
