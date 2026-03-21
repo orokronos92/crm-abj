@@ -5,10 +5,10 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ProspectDetailPanel } from './ProspectDetailPanel'
 import type { FormationCatalogue } from './GenererDevisModal'
-import { MessageSquare, Users } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 
 interface Prospect {
   id: string
@@ -28,7 +28,6 @@ interface Prospect {
 
 interface ProspectsPageClientProps {
   prospects: Prospect[]
-  total: number
   formations: FormationCatalogue[]
 }
 
@@ -49,35 +48,22 @@ const STATUT_COLORS: Record<string, string> = {
   CONTACT: 'badge-info',
 }
 
-export function ProspectsPageClient({ prospects: initialProspects, total: initialTotal, formations }: ProspectsPageClientProps) {
+export function ProspectsPageClient({ prospects: initialProspects, formations }: ProspectsPageClientProps) {
   const [prospects, setProspects] = useState<Prospect[]>(initialProspects)
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null)
+
+  // Synchroniser la liste quand les filtres changent (nouvelles props serveur)
+  useEffect(() => {
+    setProspects(initialProspects)
+  }, [initialProspects])
 
   const handleProspectConverti = (prospectId: string) => {
     setProspects(prev => prev.filter(p => p.id !== prospectId))
     setSelectedProspectId(null)
   }
 
-  // Compteur réactif basé sur la liste locale (se met à jour sans rechargement)
-  const total = initialTotal - (initialProspects.length - prospects.length)
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Card total prospects — réactive aux conversions */}
-      <div className="p-4 bg-gradient-to-br from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-xl">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-[rgb(var(--accent))] flex items-center justify-center">
-            <Users className="w-6 h-6 text-[rgb(var(--primary))]" />
-          </div>
-          <div>
-            <p className="text-sm text-[rgb(var(--muted-foreground))] font-medium">
-              Total prospects
-            </p>
-            <p className="text-2xl font-bold text-[rgb(var(--foreground))]">{total}</p>
-          </div>
-        </div>
-      </div>
-
       {/* Liste principale */}
       <div className={`flex flex-col ${selectedProspectId ? 'pr-96' : ''}`}>
         {/* Tableau */}

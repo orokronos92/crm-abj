@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { CandidatDetailModal } from './CandidatDetailModal'
 import type { FormationCatalogue } from './GenererDevisModal'
@@ -35,6 +35,12 @@ export function CandidatsPageClient({ candidats: initialCandidats, total: initia
   const [candidats, setCandidats] = useState<Candidat[]>(initialCandidats)
   const [total, setTotal] = useState(initialTotal)
   const [selectedCandidatId, setSelectedCandidatId] = useState<number | null>(null)
+
+  // Synchroniser la liste quand les filtres changent (nouvelles props serveur)
+  useEffect(() => {
+    setCandidats(initialCandidats)
+    setTotal(initialTotal)
+  }, [initialCandidats, initialTotal])
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-[rgb(var(--success))]'

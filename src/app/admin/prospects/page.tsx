@@ -11,7 +11,7 @@ import { ProspectsFilters } from '@/components/admin/ProspectsFilters'
 import { ProspectService } from '@/services/prospect.service'
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
 
 interface ProspectsPageProps {
   searchParams: Promise<{
@@ -69,6 +69,19 @@ export default async function ProspectsPage({ searchParams }: ProspectsPageProps
             </Link>
           </div>
 
+          {/* Card total prospects - fixe, au-dessus des filtres */}
+          <div className="p-4 bg-gradient-to-br from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent),0.05)] border border-[rgba(var(--accent),0.2)] rounded-xl">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-[rgb(var(--accent))] flex items-center justify-center">
+                <Users className="w-6 h-6 text-[rgb(var(--primary))]" />
+              </div>
+              <div>
+                <p className="text-sm text-[rgb(var(--muted-foreground))] font-medium">Total prospects</p>
+                <p className="text-2xl font-bold text-[rgb(var(--foreground))]">{total}</p>
+              </div>
+            </div>
+          </div>
+
           {/* Filtres de recherche */}
           <ProspectsFilters formations={formations} />
         </div>
@@ -76,7 +89,7 @@ export default async function ProspectsPage({ searchParams }: ProspectsPageProps
         {/* Contenu scrollable */}
         <div className="flex-1 overflow-y-auto pt-6">
           {/* Composant client pour le tableau interactif */}
-          <ProspectsPageClient prospects={prospects} total={total} formations={formationsCatalogue} />
+          <ProspectsPageClient prospects={prospects} formations={formationsCatalogue} />
         </div>
       </div>
     </DashboardLayout>
