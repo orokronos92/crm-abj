@@ -66,6 +66,13 @@ npm run db:push
 npm run db:seed
 ```
 
+6. **Appliquer les contraintes CHECK** *(obligatoire — Prisma ne les génère pas)*
+```bash
+psql -h localhost -U marjorie -d abj_crm -f prisma/constraints.sql
+```
+> Ce script est idempotent (DROP IF EXISTS + ADD). À réexécuter après chaque `db:push`.
+> Voir `prisma/constraints.sql` pour le détail des contraintes (prospects, historique_emails, documents_candidat).
+
 6. **Démarrer le serveur de développement**
 ```bash
 npm run dev
