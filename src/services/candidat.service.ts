@@ -63,7 +63,7 @@ export class CandidatService {
     } else {
       // Par défaut, masquer les candidats déjà convertis en élèves
       where.statutDossier = {
-        notIn: ['INSCRIT', 'CONVERTI']
+        notIn: ['INSCRIT', 'CONVERTI', 'REFUSE', 'ANCIEN_CANDIDAT_CONVERTI']
       }
     }
 
