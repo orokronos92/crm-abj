@@ -82,7 +82,8 @@
       "Bash(head:*)",
       "Bash(cat:*)",
       "Bash(cd:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
