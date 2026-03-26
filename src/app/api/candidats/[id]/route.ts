@@ -40,7 +40,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             typeDocument: true,
             statut: true,
             nomFichier: true,
-            obligatoire: true
+            obligatoire: true,
+            minioKey: true,
+            mimeType: true
           }
         }
       }
@@ -126,7 +128,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         type: doc.typeDocument,
         statut: doc.statut || 'ATTENDU',
         nom_fichier: doc.nomFichier,
-        obligatoire: doc.obligatoire
+        obligatoire: doc.obligatoire,
+        minio_key: doc.minioKey || null,
+        mime_type: doc.mimeType || null
       })) || [],
 
       // Notes IA

@@ -32,6 +32,7 @@ import type { FormationCatalogue } from './GenererDevisModal'
 import { ValiderEtapeModal, type EtapeType } from './ValiderEtapeModal'
 import { ConvertirEleveModal } from './ConvertirEleveModal'
 import { RefuserCandidatModal } from './RefuserCandidatModal'
+import { DocumentsOnglet } from './DocumentsOnglet'
 
 interface SessionOption {
   idSession: number
@@ -93,8 +94,10 @@ interface CandidatDetail {
     id: number
     type: string
     statut: string
-    nom_fichier: string
+    nom_fichier: string | null
     obligatoire: boolean
+    minio_key?: string | null
+    mime_type?: string | null
   }>
   // Notes IA
 }
@@ -657,30 +660,11 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
 
           {/* Tab Documents */}
           {activeTab === 'documents' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-4">
-                Documents ({candidat.documents.length})
-              </h3>
-              {candidat.documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between p-4 bg-[rgb(var(--secondary))] rounded-lg border border-[rgba(var(--border),0.3)]"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                      {doc.type.replace(/_/g, ' ')}
-                      {doc.obligatoire && <span className="text-[rgb(var(--error))] ml-1">*</span>}
-                    </p>
-                    <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
-                      {doc.nom_fichier}
-                    </p>
-                  </div>
-                  <span className={`text-sm font-medium ${STATUT_DOCUMENT_COLORS[doc.statut] || 'text-[rgb(var(--muted-foreground))]'}`}>
-                    {doc.statut}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <DocumentsOnglet
+              documents={candidat.documents}
+              numeroDossier={candidat.numero_dossier}
+              onDocumentsUpdated={rechargerCandidat}
+            />
           )}
 
           {/* Tab Financement */}
