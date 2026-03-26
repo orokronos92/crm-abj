@@ -137,8 +137,9 @@ export function DocumentsOnglet({
       })
       if (res.ok) {
         const created = await res.json()
+        // setUploadDoc AVANT onDocumentsUpdated pour éviter le re-render
+        // qui démonterait le composant avant l'ouverture du modal
         setUploadDoc({ ...doc, id: created.idDocument })
-        onDocumentsUpdated()
       }
     } catch (err) {
       console.error('Erreur création placeholder:', err)
