@@ -10,6 +10,35 @@ type RouteParams = {
   params: Promise<{ id: string }>
 }
 
+// Normalise les typeDocument écrits par n8n (minuscules ou alias différents)
+// vers les constantes attendues par le frontend
+const TYPE_DOCUMENT_MAP: Record<string, string> = {
+  cv:                    'CV',
+  lettre_motivation:     'LETTRE_MOTIVATION',
+  diplomes:              'DIPLOMES',
+  diplome:               'DIPLOMES',
+  bulletins_scolaires:   'BULLETINS_SCOLAIRES',
+  bulletin_scolaire:     'BULLETINS_SCOLAIRES',
+  justif_domicile:       'JUSTIF_DOMICILE',
+  justificatif_domicile: 'JUSTIF_DOMICILE',
+  portfolio:             'PORTFOLIO_REALISATIONS',
+  portfolio_realisations:'PORTFOLIO_REALISATIONS',
+  cni_recto:             'CNI_RECTO',
+  cni_verso:             'CNI_VERSO',
+  devis_signe:           'DEVIS_SIGNE',
+  accord_opco:           'ACCORD_OPCO',
+  accord_cpf:            'ACCORD_CPF',
+  accord_france_travail: 'ACCORD_FRANCE_TRAVAIL',
+  accord_pole_emploi:    'ACCORD_FRANCE_TRAVAIL',
+  convention_formation:  'CONVENTION_FORMATION',
+}
+
+function normaliserTypeDocument(type: string): string {
+  if (!type) return type
+  const lower = type.toLowerCase()
+  return TYPE_DOCUMENT_MAP[lower] ?? type.toUpperCase()
+}
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
@@ -125,9 +154,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       reste_a_charge: Number(candidat.resteACharge ?? (Number(candidat.montantTotalFormation || 0) - Number(candidat.montantPriseEnCharge || 0))),
 
       // Documents
+      // Normalisation des types écrits par n8n (minuscules ou alias différents)
       documents: candidat.documentsCandidat?.map(doc => ({
         id: doc.idDocument,
-        type: doc.typeDocument,
+        type: normaliserTypeDocument(doc.typeDocument),
         statut: doc.statut || 'ATTENDU',
         nom_fichier: doc.nomFichier,
         obligatoire: doc.obligatoire,
