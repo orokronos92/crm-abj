@@ -42,6 +42,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             nomFichier: true,
             obligatoire: true,
             minioKey: true,
+            urlMinio: true,
+            cheminMinio: true,
             mimeType: true
           }
         }
@@ -130,6 +132,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         nom_fichier: doc.nomFichier,
         obligatoire: doc.obligatoire,
         minio_key: doc.minioKey || null,
+        url_minio: doc.urlMinio || null,
+        chemin_minio: doc.cheminMinio || null,
         mime_type: doc.mimeType || null
       })) || [],
 

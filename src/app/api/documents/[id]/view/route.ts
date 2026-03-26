@@ -30,6 +30,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         nomFichier: true,
         minioKey: true,
         minioBucket: true,
+        urlMinio: true,
+        cheminMinio: true,
         mimeType: true,
         statut: true,
       },
@@ -39,17 +41,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
     }
 
-    if (!doc.minioKey) {
-      return NextResponse.json({ error: 'Fichier non disponible (pas de clé MinIO)' }, { status: 404 })
+    // Résoudre la clé MinIO : minio_key en priorité, sinon extraire depuis url_minio ou chemin_minio
+    const resolvedKey = resolveMinioKey(doc.minioKey, doc.urlMinio, doc.cheminMinio)
+
+    if (!resolvedKey) {
+      return NextResponse.json({ error: 'Fichier non disponible (aucune clé MinIO trouvée)' }, { status: 404 })
     }
 
     const bucket = doc.minioBucket || MINIO_BUCKET
 
     // Récupérer le stream depuis MinIO
-    const stream = await minioClient.getObject(bucket, doc.minioKey)
+    const stream = await minioClient.getObject(bucket, resolvedKey)
 
     // Déterminer le Content-Type
-    const contentType = doc.mimeType || detectMimeFromKey(doc.minioKey)
+    const contentType = doc.mimeType || detectMimeFromKey(resolvedKey)
 
     // Streamer directement au navigateur
     const webStream = new ReadableStream({
@@ -66,7 +71,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     })
 
-    const filename = doc.nomFichier || doc.minioKey.split('/').pop() || 'document'
+    const filename = doc.nomFichier || resolvedKey.split('/').pop() || 'document'
     const disposition = contentType.startsWith('image/') || contentType === 'application/pdf'
       ? `inline; filename="${filename}"`
       : `attachment; filename="${filename}"`
@@ -85,6 +90,41 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     )
   }
+}
+
+/**
+ * Résout la clé MinIO depuis les différentes colonnes possibles
+ * n8n peut écrire dans minio_key, url_minio ou chemin_minio
+ */
+function resolveMinioKey(
+  minioKey: string | null,
+  urlMinio: string | null,
+  cheminMinio: string | null
+): string | null {
+  // 1. Clé directe (upload via CRM)
+  if (minioKey) return minioKey
+
+  // 2. chemin_minio (chemin relatif dans le bucket)
+  if (cheminMinio) return cheminMinio
+
+  // 3. url_minio — extraire le chemin après le bucket
+  // Format typique : http://host:9000/bucket/chemin/vers/fichier.pdf
+  if (urlMinio) {
+    try {
+      const url = new URL(urlMinio)
+      // pathname = /bucket/chemin/vers/fichier.pdf → supprimer /bucket/
+      const parts = url.pathname.split('/').filter(Boolean)
+      if (parts.length > 1) {
+        // parts[0] = bucket, le reste = clé
+        return parts.slice(1).join('/')
+      }
+    } catch {
+      // Si pas une URL valide, utiliser directement comme chemin
+      return urlMinio
+    }
+  }
+
+  return null
 }
 
 function detectMimeFromKey(key: string): string {

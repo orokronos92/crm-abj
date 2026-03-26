@@ -97,6 +97,8 @@ interface CandidatDetail {
     nom_fichier: string | null
     obligatoire: boolean
     minio_key?: string | null
+    url_minio?: string | null
+    chemin_minio?: string | null
     mime_type?: string | null
   }>
   // Notes IA

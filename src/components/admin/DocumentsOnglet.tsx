@@ -17,6 +17,8 @@ interface Document {
   nom_fichier: string | null
   obligatoire: boolean
   minio_key?: string | null
+  url_minio?: string | null
+  chemin_minio?: string | null
   mime_type?: string | null
 }
 
@@ -113,7 +115,8 @@ export function DocumentsOnglet({
     }
   }
 
-  const hasFile = (doc: Document) => !!doc.minio_key
+  // Un fichier est disponible si minio_key, chemin_minio ou url_minio est renseigné (n8n peut écrire dans l'une ou l'autre)
+  const hasFile = (doc: Document) => !!(doc.minio_key || doc.chemin_minio || doc.url_minio)
 
   if (documents.length === 0) {
     return (
