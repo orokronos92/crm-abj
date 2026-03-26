@@ -259,31 +259,20 @@ export function DocumentsOnglet({
                 }
               </button>
 
-              {/* Valider / Refuser */}
-              {filePresent && !isPlaceholder && doc.statut !== 'VALIDE' && doc.statut !== 'REFUSE' && (
-                <>
-                  <button
-                    type="button"
-                    disabled={isChanging}
-                    onClick={() => handleChangerStatut(doc.id, 'VALIDE')}
-                    className="p-2 hover:bg-[rgba(var(--success),0.1)] rounded-lg transition-colors disabled:opacity-50"
-                    title="Valider"
-                  >
-                    <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isChanging}
-                    onClick={() => handleChangerStatut(doc.id, 'REFUSE')}
-                    className="p-2 hover:bg-[rgba(var(--error),0.1)] rounded-lg transition-colors disabled:opacity-50"
-                    title="Refuser"
-                  >
-                    <XCircle className="w-4 h-4 text-[rgb(var(--error))]" />
-                  </button>
-                </>
+              {/* Valider */}
+              {filePresent && !isPlaceholder && doc.statut !== 'VALIDE' && (
+                <button
+                  type="button"
+                  disabled={isChanging}
+                  onClick={() => handleChangerStatut(doc.id, 'VALIDE')}
+                  className="p-2 hover:bg-[rgba(var(--success),0.1)] rounded-lg transition-colors disabled:opacity-50"
+                  title="Valider"
+                >
+                  <CheckCircle className="w-4 h-4 text-[rgb(var(--success))]" />
+                </button>
               )}
 
-              {/* Supprimer fichier pour en déposer un nouveau */}
+              {/* Supprimer fichier (MinIO + BDD) — remet à Attendu pour re-upload */}
               {filePresent && !isPlaceholder && (
                 <button
                   type="button"

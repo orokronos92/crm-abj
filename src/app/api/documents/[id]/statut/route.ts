@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { minioClient, MINIO_BUCKET } from '@/lib/minio'
 
 type RouteParams = {
   params: Promise<{ id: string }>
@@ -44,13 +45,30 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.commentaire = commentaire || null
     }
 
-    // Vider les champs fichier si supprimerFichier=true (permet de re-uploader)
+    // Suppression physique du fichier MinIO + vidage BDD
     if (supprimerFichier) {
+      // Récupérer le chemin MinIO actuel avant de le vider
+      const docActuel = await prisma.documentCandidat.findUnique({
+        where: { idDocument: docId },
+        select: { minioKey: true, cheminMinio: true },
+      })
+      const cleASupprimer = docActuel?.cheminMinio || docActuel?.minioKey || null
+
+      if (cleASupprimer) {
+        try {
+          await minioClient.removeObject(MINIO_BUCKET, cleASupprimer)
+        } catch (minioErr) {
+          // Log mais on continue — la BDD doit être nettoyée même si MinIO échoue
+          console.error('Avertissement suppression MinIO:', minioErr)
+        }
+      }
+
       updateData.minioKey = null
       updateData.urlMinio = null
       updateData.cheminMinio = null
       updateData.nomFichier = null
       updateData.mimeType = null
+      updateData.tailleOctets = null
     }
 
     const updated = await prisma.documentCandidat.update({
