@@ -50,11 +50,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Candidat non trouvé' }, { status: 404 })
     }
 
-    // Récupérer le nom de la formation depuis la BDD (pas de hardcode)
+    // Récupérer les infos complètes de la formation depuis la BDD
     const formationBdd = candidat.formationRetenue
       ? await prisma.formation.findFirst({
           where: { codeFormation: candidat.formationRetenue },
-          select: { nom: true }
+          select: { idFormation: true, nom: true, codeFormation: true, tarifStandard: true }
         })
       : null
 
@@ -67,8 +67,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       prenom: candidat.prospect?.prenom || '',
       email: candidat.prospect?.emails?.[0] || '',
       telephone: candidat.prospect?.telephones?.[0] || '',
-      formation: formationBdd?.nom || candidat.formationRetenue || 'Non définie',
-      session: candidat.sessionVisee || 'Non définie',
+      formation: formationBdd?.nom || candidat.formationRetenue || 'Non choisie',
+      formation_code: formationBdd?.codeFormation || candidat.formationRetenue || '',
+      formation_tarif: Number(formationBdd?.tarifStandard || 0),
+      id_formation: formationBdd?.idFormation || null,
+      id_session: null,
+      session: candidat.sessionVisee || null,
       statut_dossier: candidat.statutDossier || 'RECU',
       statut_financement: candidat.statutFinancement || 'EN_ATTENTE',
       score: candidat.score || 0,
@@ -134,6 +138,45 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     console.error('Erreur lors de la récupération du candidat:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération du candidat' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const candidatId = parseInt(id, 10)
+
+    if (isNaN(candidatId)) {
+      return NextResponse.json({ error: 'ID invalide' }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const { formationCode, sessionNom, montantTotal } = body
+
+    const updateData: Record<string, unknown> = {}
+
+    if (formationCode !== undefined) {
+      updateData.formationRetenue = formationCode || null
+    }
+    if (sessionNom !== undefined) {
+      updateData.sessionVisee = sessionNom || null
+    }
+    if (montantTotal !== undefined) {
+      updateData.montantTotalFormation = montantTotal
+    }
+
+    await prisma.candidat.update({
+      where: { idCandidat: candidatId },
+      data: updateData
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du candidat:', error)
+    return NextResponse.json(
+      { error: 'Erreur lors de la mise à jour du candidat' },
       { status: 500 }
     )
   }

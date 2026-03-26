@@ -18,7 +18,7 @@ interface Candidat {
   email: string
   telephone: string
   formation: string
-  session: string
+  session: string | null
   statut_dossier: string
   statut_financement: string
   score: number

@@ -33,6 +33,15 @@ import { ValiderEtapeModal, type EtapeType } from './ValiderEtapeModal'
 import { ConvertirEleveModal } from './ConvertirEleveModal'
 import { RefuserCandidatModal } from './RefuserCandidatModal'
 
+interface SessionOption {
+  idSession: number
+  nomSession: string
+  dateDebut: string
+  dateFin: string
+  capaciteMax: number
+  nbInscrits: number
+}
+
 interface CandidatDetail {
   id: number
   id_prospect: string
@@ -42,7 +51,11 @@ interface CandidatDetail {
   email: string
   telephone: string
   formation: string
-  session: string
+  formation_code: string
+  formation_tarif: number
+  id_formation: number | null
+  id_session: number | null
+  session: string | null
   statut_dossier: string
   statut_financement: string
   score: number
@@ -115,6 +128,14 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
   const [etapeAValider, setEtapeAValider] = useState<EtapeType | null>(null)
   const [exemptEnCours, setExemptEnCours] = useState<EtapeType | null>(null)
 
+  // États pour l'édition formation/session
+  const [editFormationCode, setEditFormationCode] = useState<string>('')
+  const [editSessionNom, setEditSessionNom] = useState<string>('')
+  const [editMontantTotal, setEditMontantTotal] = useState<number>(0)
+  const [sessionsDisponibles, setSessionsDisponibles] = useState<SessionOption[]>([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const [savingFormation, setSavingFormation] = useState(false)
+
   useEffect(() => {
     async function fetchCandidat() {
       try {
@@ -123,6 +144,13 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
         if (!res.ok) throw new Error('Erreur chargement candidat')
         const data = await res.json()
         setCandidat(data)
+        setEditFormationCode(data.formation_code || '')
+        setEditSessionNom(data.session || '')
+        setEditMontantTotal(data.montant_total || 0)
+        // Charger les sessions si une formation est déjà retenue
+        if (data.id_formation) {
+          chargerSessions(data.id_formation)
+        }
       } catch (error) {
         console.error('Erreur:', error)
       } finally {
@@ -132,6 +160,70 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
 
     fetchCandidat()
   }, [candidatId])
+
+  const chargerSessions = async (idFormation: number) => {
+    setLoadingSessions(true)
+    try {
+      const res = await fetch(`/api/sessions?idFormation=${idFormation}&statutSession=PREVUE,CONFIRMEE,EN_COURS`)
+      if (res.ok) {
+        const data = await res.json()
+        setSessionsDisponibles(data.sessions || [])
+      }
+    } catch (err) {
+      console.error('Erreur chargement sessions:', err)
+    } finally {
+      setLoadingSessions(false)
+    }
+  }
+
+  const handleFormationChange = async (code: string) => {
+    setEditFormationCode(code)
+    setEditSessionNom('')
+    setSessionsDisponibles([])
+    if (!code) return
+
+    // Récupérer tarif depuis le catalogue local
+    const formation = formations.find(f => f.code === code)
+    if (formation?.tarif) {
+      setEditMontantTotal(Number(formation.tarif))
+    }
+
+    // Chercher l'idFormation via l'API formations pour charger les sessions
+    const res = await fetch('/api/formations')
+    if (res.ok) {
+      const data = await res.json()
+      const found = (data.formations || data).find(
+        (f: { codeFormation: string; idFormation: number; tarifStandard?: number }) => f.codeFormation === code
+      )
+      if (found) {
+        if (found.tarifStandard) setEditMontantTotal(Number(found.tarifStandard))
+        chargerSessions(found.idFormation)
+      }
+    }
+  }
+
+  const handleSauvegarderFormation = async () => {
+    if (!candidat) return
+    setSavingFormation(true)
+    try {
+      const res = await fetch(`/api/candidats/${candidat.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formationCode: editFormationCode,
+          sessionNom: editSessionNom,
+          montantTotal: editMontantTotal
+        })
+      })
+      if (res.ok) {
+        await rechargerCandidat()
+      }
+    } catch (err) {
+      console.error('Erreur sauvegarde formation:', err)
+    } finally {
+      setSavingFormation(false)
+    }
+  }
 
   const rechargerCandidat = async () => {
     const res = await fetch(`/api/candidats/${candidatId}`)
@@ -337,25 +429,79 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                 </div>
               </div>
 
-              {/* Infos formation */}
-              <div className="grid grid-cols-3 gap-4 p-4 bg-[rgb(var(--secondary))] rounded-lg">
-                <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Formation</p>
-                  <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                    {candidat.formation}
-                  </p>
+              {/* Infos formation — section éditable */}
+              <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <GraduationCap className="w-4 h-4 text-[rgb(var(--accent))]" />
+                  <p className="text-sm font-semibold text-[rgb(var(--foreground))]">Formation & Session</p>
                 </div>
-                <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Session</p>
-                  <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                    {candidat.session}
-                  </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Select formation */}
+                  <div>
+                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Formation retenue</p>
+                    <select
+                      value={editFormationCode}
+                      onChange={(e) => handleFormationChange(e.target.value)}
+                      className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-sm text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                    >
+                      <option value="">— Non choisie —</option>
+                      {formations.map((f) => (
+                        <option key={f.code} value={f.code}>{f.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Tarif */}
+                  <div>
+                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Montant total (€)</p>
+                    <input
+                      type="number"
+                      value={editMontantTotal}
+                      onChange={(e) => setEditMontantTotal(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-sm text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                      min={0}
+                    />
+                  </div>
                 </div>
+
+                {/* Select session */}
                 <div>
-                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Date candidature</p>
-                  <p className="text-sm font-medium text-[rgb(var(--foreground))]">
-                    {candidat.date_candidature}
+                  <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Session visée</p>
+                  {loadingSessions ? (
+                    <p className="text-xs text-[rgb(var(--muted-foreground))] italic">Chargement sessions…</p>
+                  ) : (
+                    <select
+                      value={editSessionNom}
+                      onChange={(e) => setEditSessionNom(e.target.value)}
+                      disabled={!editFormationCode}
+                      className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-sm text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none disabled:opacity-50"
+                    >
+                      <option value="">— Aucune session —</option>
+                      {sessionsDisponibles.map((s) => (
+                        <option key={s.idSession} value={s.nomSession}>
+                          {s.nomSession} ({new Date(s.dateDebut).toLocaleDateString('fr-FR')} → {new Date(s.dateFin).toLocaleDateString('fr-FR')}) — {s.nbInscrits}/{s.capaciteMax} inscrits
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Bouton Enregistrer */}
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                    Candidature le {candidat.date_candidature}
                   </p>
+                  <button
+                    onClick={handleSauvegarderFormation}
+                    disabled={savingFormation}
+                    className="px-4 py-2 bg-[rgb(var(--accent))] text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {savingFormation ? (
+                      <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-black inline-block" />
+                    ) : null}
+                    {savingFormation ? 'Enregistrement…' : 'Enregistrer'}
+                  </button>
                 </div>
               </div>
             </div>
