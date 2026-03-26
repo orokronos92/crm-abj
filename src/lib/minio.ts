@@ -8,17 +8,21 @@ import * as Minio from 'minio'
 function createMinioClient(): Minio.Client {
   const endpointRaw = process.env.MINIO_ENDPOINT || 'localhost:9000'
 
-  // Parser l'endpoint pour séparer host et port
-  // Le client npm minio prend host et port séparément
+  // Parser l'endpoint : supporte "http://host:port", "host:port" ou "host"
+  // Le client npm minio prend endPoint (host uniquement) et port séparément
   let endpointHost: string
   let endpointPort: number
 
-  if (endpointRaw.includes(':')) {
-    const parts = endpointRaw.split(':')
-    endpointHost = parts[0]
-    endpointPort = parseInt(parts[1], 10)
-  } else {
-    endpointHost = endpointRaw
+  try {
+    // Si l'URL a un schéma (http:// ou https://), utiliser l'API URL
+    const hasScheme = /^https?:\/\//i.test(endpointRaw)
+    const urlToParse = hasScheme ? endpointRaw : `http://${endpointRaw}`
+    const parsed = new URL(urlToParse)
+    endpointHost = parsed.hostname
+    endpointPort = parsed.port ? parseInt(parsed.port, 10) : (hasScheme && parsed.protocol === 'https:' ? 443 : 9000)
+  } catch {
+    // Fallback si le parsing échoue
+    endpointHost = 'localhost'
     endpointPort = 9000
   }
 
