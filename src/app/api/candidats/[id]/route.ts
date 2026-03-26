@@ -165,6 +165,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
     if (montantTotal !== undefined) {
       updateData.montantTotalFormation = montantTotal
+
+      // Recalculer le reste à charge en récupérant la PEC actuelle
+      const current = await prisma.candidat.findUnique({
+        where: { idCandidat: candidatId },
+        select: { montantPriseEnCharge: true }
+      })
+      const pec = Number(current?.montantPriseEnCharge || 0)
+      updateData.resteACharge = Math.max(0, montantTotal - pec)
     }
 
     await prisma.candidat.update({

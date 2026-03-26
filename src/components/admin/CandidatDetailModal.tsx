@@ -132,6 +132,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
   const [editFormationCode, setEditFormationCode] = useState<string>('')
   const [editSessionNom, setEditSessionNom] = useState<string>('')
   const [editMontantTotal, setEditMontantTotal] = useState<number>(0)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [sessionsDisponibles, setSessionsDisponibles] = useState<SessionOption[]>([])
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [savingFormation, setSavingFormation] = useState(false)
@@ -217,6 +218,8 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
       })
       if (res.ok) {
         await rechargerCandidat()
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 3000)
       }
     } catch (err) {
       console.error('Erreur sauvegarde formation:', err)
@@ -492,16 +495,25 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                   <p className="text-xs text-[rgb(var(--muted-foreground))]">
                     Candidature le {candidat.date_candidature}
                   </p>
-                  <button
-                    onClick={handleSauvegarderFormation}
-                    disabled={savingFormation}
-                    className="px-4 py-2 bg-[rgb(var(--accent))] text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {savingFormation ? (
-                      <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-black inline-block" />
-                    ) : null}
-                    {savingFormation ? 'Enregistrement…' : 'Enregistrer'}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {saveSuccess && (
+                      <span className="text-xs text-[rgb(var(--success))] flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4" />
+                        Enregistré
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSauvegarderFormation}
+                      disabled={savingFormation}
+                      className="px-4 py-2 bg-[rgb(var(--accent))] text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {savingFormation ? (
+                        <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-black inline-block" />
+                      ) : null}
+                      {savingFormation ? 'Enregistrement…' : 'Enregistrer'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
