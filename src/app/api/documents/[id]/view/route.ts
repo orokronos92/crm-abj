@@ -54,7 +54,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const stream = await minioClient.getObject(bucket, resolvedKey)
 
     // Déterminer le Content-Type
-    const contentType = doc.mimeType || detectMimeFromKey(resolvedKey)
+    // Priorité : détecter depuis le nom de fichier (plus fiable que la BDD qui stocke souvent
+    // application/octet-stream par défaut, notamment pour les documents créés par n8n)
+    const filenameForMime = doc.nomFichier || resolvedKey
+    const detectedFromFilename = detectMimeFromKey(filenameForMime)
+    const contentType = (detectedFromFilename !== 'application/octet-stream')
+      ? detectedFromFilename
+      : (doc.mimeType || 'application/octet-stream')
 
     // Streamer directement au navigateur
     const webStream = new ReadableStream({

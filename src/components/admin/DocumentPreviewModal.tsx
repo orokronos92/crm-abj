@@ -24,7 +24,28 @@ export function DocumentPreviewModal({
 }: DocumentPreviewModalProps) {
   const viewUrl = `/api/documents/${documentId}/view`
   const filename = nomFichier || `${typeDocument}.bin`
-  const mime = mimeType || ''
+
+  // Détecter le type depuis l'extension du nom de fichier
+  // (la BDD stocke souvent application/octet-stream par défaut, notamment via n8n)
+  const detectMimeFromFilename = (name: string): string => {
+    const ext = name.split('.').pop()?.toLowerCase()
+    const map: Record<string, string> = {
+      pdf: 'application/pdf',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    }
+    return map[ext || ''] || 'application/octet-stream'
+  }
+
+  const detectedMime = detectMimeFromFilename(filename)
+  const mime = (mimeType && mimeType !== 'application/octet-stream')
+    ? mimeType
+    : detectedMime
 
   const isImage = mime.startsWith('image/')
   const isPdf = mime === 'application/pdf'
