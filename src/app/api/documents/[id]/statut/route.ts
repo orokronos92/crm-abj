@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json()
-    const { statut, commentaire } = body
+    const { statut, commentaire, supprimerFichier } = body
 
     if (!statut || !STATUTS_VALIDES.includes(statut)) {
       return NextResponse.json(
@@ -42,6 +42,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (commentaire !== undefined) {
       updateData.commentaire = commentaire || null
+    }
+
+    // Vider les champs fichier si supprimerFichier=true (permet de re-uploader)
+    if (supprimerFichier) {
+      updateData.minioKey = null
+      updateData.urlMinio = null
+      updateData.cheminMinio = null
+      updateData.nomFichier = null
+      updateData.mimeType = null
     }
 
     const updated = await prisma.documentCandidat.update({

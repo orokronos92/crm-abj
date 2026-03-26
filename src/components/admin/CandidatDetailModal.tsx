@@ -698,6 +698,8 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
             <DocumentsOnglet
               documents={candidat.documents}
               numeroDossier={candidat.numero_dossier}
+              idProspect={candidat.id_prospect}
+              modeFinancement={editModeFinancement || candidat.mode_financement || ''}
               onDocumentsUpdated={rechargerCandidat}
             />
           )}
