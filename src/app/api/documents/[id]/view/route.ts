@@ -101,11 +101,11 @@ function resolveMinioKey(
   urlMinio: string | null,
   cheminMinio: string | null
 ): string | null {
-  // 1. Clé directe (upload via CRM)
-  if (minioKey) return minioKey
-
-  // 2. chemin_minio (chemin relatif dans le bucket)
+  // 1. chemin_minio — chemin relatif écrit par n8n (priorité)
   if (cheminMinio) return cheminMinio
+
+  // 2. minio_key — upload via le CRM
+  if (minioKey) return minioKey
 
   // 3. url_minio — extraire le chemin après le bucket
   // Format typique : http://host:9000/bucket/chemin/vers/fichier.pdf
