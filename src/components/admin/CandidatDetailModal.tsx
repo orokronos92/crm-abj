@@ -142,6 +142,12 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [savingFormation, setSavingFormation] = useState(false)
 
+  // États pour l'édition financement
+  const [editModeFinancement, setEditModeFinancement] = useState<string>('')
+  const [editMontantPec, setEditMontantPec] = useState<number>(0)
+  const [savingFinancement, setSavingFinancement] = useState(false)
+  const [saveFinancementSuccess, setSaveFinancementSuccess] = useState(false)
+
   useEffect(() => {
     async function fetchCandidat() {
       try {
@@ -153,6 +159,8 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
         setEditFormationCode(data.formation_code || '')
         setEditSessionNom(data.session || '')
         setEditMontantTotal(data.montant_total || 0)
+        setEditModeFinancement(data.mode_financement === 'Non défini' ? '' : (data.mode_financement || ''))
+        setEditMontantPec(data.montant_pec || 0)
         // Charger les sessions si une formation est déjà retenue
         if (data.id_formation) {
           chargerSessions(data.id_formation)
@@ -230,6 +238,31 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
       console.error('Erreur sauvegarde formation:', err)
     } finally {
       setSavingFormation(false)
+    }
+  }
+
+  const handleSauvegarderFinancement = async () => {
+    if (!candidat) return
+    setSavingFinancement(true)
+    try {
+      const res = await fetch(`/api/candidats/${candidat.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modeFinancement: editModeFinancement || null,
+          montantPec: editMontantPec,
+          montantTotal: editMontantTotal
+        })
+      })
+      if (res.ok) {
+        await rechargerCandidat()
+        setSaveFinancementSuccess(true)
+        setTimeout(() => setSaveFinancementSuccess(false), 3000)
+      }
+    } catch (err) {
+      console.error('Erreur sauvegarde financement:', err)
+    } finally {
+      setSavingFinancement(false)
     }
   }
 
@@ -672,35 +705,81 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
           {/* Tab Financement */}
           {activeTab === 'financement' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-4">
-                Détail financier
-              </h3>
               <div className="p-4 bg-[rgb(var(--secondary))] rounded-lg space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Euro className="w-4 h-4 text-[rgb(var(--accent))]" />
+                  <p className="text-sm font-semibold text-[rgb(var(--foreground))]">Mode de financement</p>
+                </div>
+
+                {/* Select mode financement */}
                 <div>
                   <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Mode de financement</p>
-                  <p className="text-base font-medium text-[rgb(var(--foreground))]">
-                    {candidat.mode_financement}
+                  <select
+                    value={editModeFinancement}
+                    onChange={(e) => setEditModeFinancement(e.target.value)}
+                    className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-sm text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                  >
+                    <option value="">— Non défini —</option>
+                    <option value="PERSONNEL">Personnel</option>
+                    <option value="CPF">CPF</option>
+                    <option value="OPCO">OPCO</option>
+                    <option value="FRANCE_TRAVAIL">France Travail</option>
+                    <option value="ENTREPRISE">Entreprise</option>
+                    <option value="AUTRE">Autre</option>
+                  </select>
+                </div>
+
+                {/* Montants */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Montant total (€)</p>
+                    <input
+                      type="number"
+                      value={editMontantTotal}
+                      onChange={(e) => setEditMontantTotal(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-sm text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Prise en charge (€)</p>
+                    <input
+                      type="number"
+                      value={editMontantPec}
+                      onChange={(e) => setEditMontantPec(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-sm text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
+                      min={0}
+                    />
+                  </div>
+                </div>
+
+                {/* Reste à charge calculé */}
+                <div className="flex items-center justify-between px-3 py-2 bg-[rgb(var(--card))] rounded-lg border border-[rgba(var(--border),0.3)]">
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Reste à charge</p>
+                  <p className="text-lg font-bold text-[rgb(var(--warning))]">
+                    {Math.max(0, editMontantTotal - editMontantPec).toLocaleString('fr-FR')} €
                   </p>
                 </div>
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[rgba(var(--border),0.3)]">
-                  <div>
-                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Montant total</p>
-                    <p className="text-lg font-bold text-[rgb(var(--foreground))]">
-                      {candidat.montant_total.toLocaleString('fr-FR')} €
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Prise en charge</p>
-                    <p className="text-lg font-bold text-[rgb(var(--success))]">
-                      {candidat.montant_pec.toLocaleString('fr-FR')} €
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Reste à charge</p>
-                    <p className="text-lg font-bold text-[rgb(var(--warning))]">
-                      {candidat.reste_a_charge.toLocaleString('fr-FR')} €
-                    </p>
-                  </div>
+
+                {/* Bouton Enregistrer */}
+                <div className="flex items-center justify-end gap-3 pt-1">
+                  {saveFinancementSuccess && (
+                    <span className="text-xs text-[rgb(var(--success))] flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Enregistré
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSauvegarderFinancement}
+                    disabled={savingFinancement}
+                    className="px-4 py-2 bg-[rgb(var(--accent))] text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {savingFinancement && (
+                      <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-black inline-block" />
+                    )}
+                    {savingFinancement ? 'Enregistrement…' : 'Enregistrer'}
+                  </button>
                 </div>
               </div>
             </div>

@@ -161,7 +161,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json()
-    const { formationCode, sessionNom, montantTotal } = body
+    const { formationCode, sessionNom, montantTotal, modeFinancement, montantPec } = body
 
     const updateData: Record<string, unknown> = {}
 
@@ -171,16 +171,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (sessionNom !== undefined) {
       updateData.sessionVisee = sessionNom || null
     }
-    if (montantTotal !== undefined) {
-      updateData.montantTotalFormation = montantTotal
+    if (modeFinancement !== undefined) {
+      updateData.modeFinancement = modeFinancement || null
+    }
 
-      // Recalculer le reste à charge en récupérant la PEC actuelle
+    // Recalcul reste à charge si montantTotal ou montantPec change
+    if (montantTotal !== undefined || montantPec !== undefined) {
       const current = await prisma.candidat.findUnique({
         where: { idCandidat: candidatId },
-        select: { montantPriseEnCharge: true }
+        select: { montantTotalFormation: true, montantPriseEnCharge: true }
       })
-      const pec = Number(current?.montantPriseEnCharge || 0)
-      updateData.resteACharge = Math.max(0, montantTotal - pec)
+      const total = montantTotal !== undefined ? montantTotal : Number(current?.montantTotalFormation || 0)
+      const pec = montantPec !== undefined ? montantPec : Number(current?.montantPriseEnCharge || 0)
+      if (montantTotal !== undefined) updateData.montantTotalFormation = total
+      if (montantPec !== undefined) updateData.montantPriseEnCharge = pec
+      updateData.resteACharge = Math.max(0, total - pec)
     }
 
     await prisma.candidat.update({
