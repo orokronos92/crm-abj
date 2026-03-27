@@ -11,6 +11,7 @@ import { ConvertirCandidatModal } from './ConvertirCandidatModal'
 import { EnvoyerDossierModal } from './EnvoyerDossierModal'
 import { GenererDevisModal, type FormationCatalogue } from './GenererDevisModal'
 import { EnvoyerEmailModal } from './EnvoyerEmailModal'
+import { EditProspectModal } from './EditProspectModal'
 import {
   Mail,
   Phone,
@@ -24,6 +25,8 @@ import {
   FileText,
   Send,
   User,
+  Pencil,
+  AlertTriangle,
 } from 'lucide-react'
 
 interface ProspectDetailPanelProps {
@@ -49,6 +52,7 @@ interface ProspectDetail {
   ville: string
   codePostal: string
   resumeIa: string
+  dateNaissance?: string | null
 }
 
 const STATUT_COLORS: Record<string, string> = {
@@ -73,6 +77,7 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
   const [showEnvoyerDossierModal, setShowEnvoyerDossierModal] = useState(false)
   const [showGenererDevisModal, setShowGenererDevisModal] = useState(false)
   const [showEnvoyerEmailModal, setShowEnvoyerEmailModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     async function fetchProspect() {
@@ -101,6 +106,26 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
       onClose()
     }, 2000)
   }
+
+  const handleEditSuccess = (updated: { nom: string; prenom: string; dateNaissance: string | null }) => {
+    // Mettre à jour les données locales après édition
+    if (prospect) {
+      setProspect(prev => prev ? {
+        ...prev,
+        nom: updated.nom,
+        prenom: updated.prenom,
+        dateNaissance: updated.dateNaissance,
+      } : null)
+    }
+  }
+
+  // Vérifie si le prospect peut être converti en candidat
+  const canConvert = !!(prospect?.nom?.trim() && prospect?.prenom?.trim() && prospect?.dateNaissance)
+  const missingFields = prospect ? [
+    !prospect.nom?.trim() && 'nom',
+    !prospect.prenom?.trim() && 'prénom',
+    !prospect.dateNaissance && 'date de naissance',
+  ].filter(Boolean) as string[] : []
 
   const handleEnvoiDossierSuccess = async () => {
     // Recharger les données du prospect après envoi dossier
@@ -156,11 +181,12 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-dark))] flex items-center justify-center text-[rgb(var(--primary))] font-bold text-lg">
-              {prospect.prenom.charAt(0)}
+              {prospect.prenom?.charAt(0) || prospect.email?.charAt(0) || '?'}
             </div>
             <div>
               <h2 className="text-lg font-semibold text-[rgb(var(--foreground))]">
-                {prospect.prenom} {prospect.nom}
+                {prospect.prenom || prospect.email || prospect.id}
+                {prospect.nom ? ` ${prospect.nom}` : ''}
               </h2>
               <span
                 className={`px-2 py-0.5 text-xs rounded-full ${
@@ -171,12 +197,21 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
               </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
-          >
-            <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
+              title="Compléter la fiche"
+            >
+              <Pencil className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
+            >
+              <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+            </button>
+          </div>
         </div>
 
         {/* Actions rapides */}
@@ -304,9 +339,31 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
               <Send className="w-4 h-4" />
               Envoyer dossier
             </button>
+            {/* Alerte champs manquants pour conversion */}
+            {missingFields.length > 0 && (
+              <div className="flex items-start gap-2 p-3 bg-[rgba(var(--warning),0.1)] border border-[rgba(var(--warning),0.3)] rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-[rgb(var(--warning))] flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-[rgb(var(--warning))]">
+                    Conversion impossible
+                  </p>
+                  <p className="text-xs text-[rgb(var(--muted-foreground))] mt-0.5">
+                    Champs manquants : {missingFields.join(', ')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="text-xs text-[rgb(var(--accent))] hover:underline flex-shrink-0"
+                >
+                  Compléter
+                </button>
+              </div>
+            )}
             <button
-              onClick={() => setShowConvertirModal(true)}
-              className="w-full px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center justify-center gap-2"
+              onClick={() => canConvert && setShowConvertirModal(true)}
+              disabled={!canConvert}
+              className="w-full px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg text-sm font-medium hover:bg-[rgb(var(--accent-light))] transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              title={!canConvert ? `Champs manquants : ${missingFields.join(', ')}` : ''}
             >
               <User className="w-4 h-4" />
               Convertir en candidat
@@ -389,6 +446,26 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
           }}
           onClose={() => setShowEnvoyerEmailModal(false)}
           onSuccess={handleEnvoyerEmailSuccess}
+        />
+      )}
+
+      {/* Modal Édition Prospect */}
+      {showEditModal && prospect && (
+        <EditProspectModal
+          prospect={{
+            id: prospect.id,
+            nom: prospect.nom,
+            prenom: prospect.prenom,
+            email: prospect.email,
+            telephone: prospect.telephone,
+            ville: prospect.ville,
+            codePostal: prospect.codePostal,
+            formationSouhaitee: prospect.formationSouhaitee,
+            financement: prospect.financement,
+            dateNaissance: prospect.dateNaissance,
+          }}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={handleEditSuccess}
         />
       )}
     </div>

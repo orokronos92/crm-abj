@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
         nom: true,
         prenom: true,
         emails: true,
-        statutProspect: true
+        statutProspect: true,
+        dateNaissance: true
       }
     })
 
@@ -42,6 +43,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Prospect introuvable' },
         { status: 404 }
+      )
+    }
+
+    // Vérification des champs requis pour générer le numéro de dossier
+    // Format : 2L nom + 2L prénom + date_naissance JJMMAAAA (ex: BRRE06021991)
+    const champManquants: string[] = []
+    if (!prospect.nom?.trim()) champManquants.push('nom')
+    if (!prospect.prenom?.trim()) champManquants.push('prénom')
+    if (!prospect.dateNaissance) champManquants.push('date de naissance')
+
+    if (champManquants.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Impossible de convertir : champs manquants pour générer le numéro de dossier : ${champManquants.join(', ')}`,
+          champManquants
+        },
+        { status: 422 }
       )
     }
 
