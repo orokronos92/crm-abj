@@ -84,14 +84,8 @@ export async function POST(
 
       let promeuu = null
 
-      // 2. Si c'était un inscrit → libérer une place + promouvoir
+      // 2. Si c'était un inscrit → promouvoir le premier EN_ATTENTE
       if (etaitInscrit) {
-        // Décrementer nbInscrits
-        await tx.session.update({
-          where: { idSession: sessionId },
-          data: { nbInscrits: { decrement: 1 } },
-        })
-
         // Trouver le premier EN_ATTENTE par priorité (1=ELEVE, 2=CANDIDAT) puis position
         const premierEnAttente = await tx.inscriptionSession.findFirst({
           where: {
@@ -132,12 +126,6 @@ export async function POST(
             },
           })
 
-          // Incrémenter nbInscrits
-          await tx.session.update({
-            where: { idSession: sessionId },
-            data: { nbInscrits: { increment: 1 } },
-          })
-
           // Recompacter les positions d'attente restantes
           const restantsEnAttente = await tx.inscriptionSession.findMany({
             where: {
@@ -170,6 +158,19 @@ export async function POST(
           }
         }
       }
+
+      // 3. Recalculer nbInscrits depuis le vrai compte INSCRIT/CONFIRME actifs
+      //    (s'applique toujours, que ce soit INSCRIT, CONFIRME ou EN_ATTENTE annulé)
+      const nbReel = await tx.inscriptionSession.count({
+        where: {
+          idSession: sessionId,
+          statutInscription: { in: ['INSCRIT', 'CONFIRME'] },
+        },
+      })
+      await tx.session.update({
+        where: { idSession: sessionId },
+        data: { nbInscrits: nbReel },
+      })
 
       return { etaitInscrit, promeuu }
     })
