@@ -183,6 +183,10 @@ export async function GET(request: NextRequest) {
         (i) => i.statutInscription === 'EN_ATTENTE'
       ).length
 
+      const nbInscritsReel = session.nbInscrits ?? session.inscriptionsSessions.filter(
+        (i) => i.statutInscription === 'INSCRIT' || i.statutInscription === 'CONFIRME'
+      ).length
+
       return {
         // Champs camelCase — attendus par ConvertirCandidatModal et autres composants frontend
         idSession: session.idSession,
@@ -190,7 +194,7 @@ export async function GET(request: NextRequest) {
         dateDebut: session.dateDebut.toISOString().split('T')[0],
         dateFin: session.dateFin.toISOString().split('T')[0],
         capaciteMax: nbParticipants ?? session.capaciteMax ?? 0,
-        nbInscrits: session.nbInscrits || session.inscriptionsSessions.length,
+        nbInscrits: nbInscritsReel,
         formation: session.formation?.nom || 'Formation non définie',
         codeFormation: session.formation?.codeFormation || '',
         formateurPrincipal: formateurPrincipal,
@@ -210,7 +214,7 @@ export async function GET(request: NextRequest) {
         date_debut: session.dateDebut.toISOString().split('T')[0],
         date_fin: session.dateFin.toISOString().split('T')[0],
         capacite_max: nbParticipants ?? session.capaciteMax ?? 0,
-        places_prises: session.nbInscrits || session.inscriptionsSessions.length,
+        places_prises: nbInscritsReel,
         code_formation: session.formation?.codeFormation || '',
         formateur_principal: formateurPrincipal,
         liste_attente: nbAttente,
