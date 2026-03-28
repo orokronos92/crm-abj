@@ -53,6 +53,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Fix 1 : REFUSER_CANDIDAT → nettoyer les inscriptions AVANT d'envoyer à n8n
+    // Car n8n ne rappelle pas toujours avec candidat_refused
+    if (body.actionType === 'REFUSER_CANDIDAT') {
+      const idCandidat = body.entiteData?.idCandidat as number | undefined
+      if (idCandidat) {
+        // Trouver toutes les inscriptions actives du candidat
+        const inscriptionsActives = await prisma.inscriptionSession.findMany({
+          where: {
+            idCandidat,
+            statutInscription: { not: 'ANNULE' }
+          },
+          select: { idInscription: true, idSession: true }
+        })
+
+        // Annuler chaque inscription active
+        for (const insc of inscriptionsActives) {
+          await prisma.inscriptionSession.update({
+            where: { idInscription: insc.idInscription },
+            data: { statutInscription: 'ANNULE', motifAnnulation: 'Candidat refusé' }
+          })
+        }
+
+        // Recalculer nbInscrits pour chaque session impactée
+        const sessionsImpactees = [...new Set(inscriptionsActives.map(i => i.idSession))]
+        for (const idSession of sessionsImpactees) {
+          const nbReel = await prisma.inscriptionSession.count({
+            where: { idSession, statutInscription: { in: ['INSCRIT', 'CONFIRME'] } }
+          })
+          await prisma.session.update({
+            where: { idSession },
+            data: { nbInscrits: nbReel }
+          })
+        }
+
+        if (inscriptionsActives.length > 0) {
+          console.log(`[actions/trigger] 🚫 ${inscriptionsActives.length} inscription(s) annulée(s) pour candidat ${idCandidat} refusé`)
+        }
+      }
+    }
+
     // Persister ConversionEnCours pour que le callback puisse retrouver sessionVisee
     if (body.actionType === 'CONVERTIR_CANDIDAT') {
       await prisma.conversionEnCours.create({

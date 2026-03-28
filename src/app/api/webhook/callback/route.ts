@@ -198,17 +198,15 @@ async function inscrireEnListeAttente(numeroDossier: string, responseType: strin
     idEleve = eleve?.idEleve ?? null
   }
 
-  // Vérifier si déjà inscrit (selon le type : élève ou candidat)
-  const dejaInscrit = await prisma.inscriptionSession.findFirst({
+  // Vérifier si une inscription active existe déjà (éviter doublon)
+  const dejaActif = await prisma.inscriptionSession.findFirst({
     where: {
       idSession: session.idSession,
-      ...(isEleve
-        ? { idEleve: idEleve ?? undefined }
-        : { idCandidat: candidat.idCandidat }),
+      ...(isEleve ? { idEleve: idEleve ?? undefined } : { idCandidat: candidat.idCandidat }),
       statutInscription: { notIn: ['ANNULE'] }
     }
   })
-  if (dejaInscrit) {
+  if (dejaActif) {
     console.log(`[webhook/callback] ${isEleve ? 'Élève' : 'Candidat'} déjà inscrit/en attente pour session "${conversion.sessionVisee}"`)
     return
   }
@@ -231,18 +229,43 @@ async function inscrireEnListeAttente(numeroDossier: string, responseType: strin
     positionAttente = (dernierePosition?.positionAttente || 0) + 1
   }
 
-  await prisma.inscriptionSession.create({
-    data: {
+  // Fix 2 : réactiver une inscription ANNULE existante au lieu d'en créer une nouvelle
+  const inscriptionAnnulee = await prisma.inscriptionSession.findFirst({
+    where: {
       idSession: session.idSession,
-      idCandidat: isEleve ? null : candidat.idCandidat,
-      idEleve: isEleve ? idEleve : null,
-      dateInscription: new Date(),
-      statutInscription,
-      priorite,
-      positionAttente,
-      notifiePar: 'auto'
-    }
+      ...(isEleve ? { idEleve: idEleve ?? undefined } : { idCandidat: candidat.idCandidat }),
+      statutInscription: 'ANNULE'
+    },
+    orderBy: { idInscription: 'desc' }
   })
+
+  if (inscriptionAnnulee) {
+    await prisma.inscriptionSession.update({
+      where: { idInscription: inscriptionAnnulee.idInscription },
+      data: {
+        statutInscription,
+        priorite,
+        positionAttente,
+        motifAnnulation: null,
+        dateInscription: new Date(),
+        notifiePar: 'auto'
+      }
+    })
+    console.log(`[webhook/callback] ♻️ Inscription ${inscriptionAnnulee.idInscription} réactivée (${statutInscription}) pour session "${conversion.sessionVisee}"`)
+  } else {
+    await prisma.inscriptionSession.create({
+      data: {
+        idSession: session.idSession,
+        idCandidat: isEleve ? null : candidat.idCandidat,
+        idEleve: isEleve ? idEleve : null,
+        dateInscription: new Date(),
+        statutInscription,
+        priorite,
+        positionAttente,
+        notifiePar: 'auto'
+      }
+    })
+  }
 
   if (statutInscription === 'INSCRIT') {
     // Incrémenter le compteur et vérifier si la session est complète
