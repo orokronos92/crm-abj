@@ -197,21 +197,12 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
-              title="Compléter la fiche"
-            >
-              <Pencil className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
-            >
-              <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
+          >
+            <X className="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+          </button>
         </div>
 
         {/* Actions rapides */}
@@ -223,9 +214,12 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
             <Mail className="w-4 h-4" />
             Envoyer email
           </button>
-          <button className="flex-1 px-3 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)]">
-            <Phone className="w-4 h-4" />
-            Appeler
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="flex-1 px-3 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[rgba(var(--accent),0.1)] transition-colors border border-[rgba(var(--border),0.5)]"
+          >
+            <Pencil className="w-4 h-4" />
+            Modifier
           </button>
         </div>
       </div>
