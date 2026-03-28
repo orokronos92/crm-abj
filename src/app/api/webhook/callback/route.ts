@@ -95,6 +95,39 @@ async function creerDocumentsRequis(numeroDossier: string, correlationId: string
 }
 
 /**
+ * Après refus d'un candidat par n8n :
+ * n8n annule l'InscriptionSession en BDD mais ne touche pas sessions.nb_inscrits.
+ * On recalcule nb_inscrits depuis le vrai nombre d'inscrits confirmés.
+ */
+async function syncNbInscritsApresRefus(idCandidat: number): Promise<void> {
+  // Trouver toutes les inscriptions ANNULEES récemment pour ce candidat
+  const inscriptions = await prisma.inscriptionSession.findMany({
+    where: {
+      idCandidat,
+      statutInscription: 'ANNULE'
+    },
+    select: { idSession: true }
+  })
+
+  for (const inscription of inscriptions) {
+    // Recompter les inscrits réels (INSCRIT ou CONFIRME) pour cette session
+    const nbReel = await prisma.inscriptionSession.count({
+      where: {
+        idSession: inscription.idSession,
+        statutInscription: { in: ['INSCRIT', 'CONFIRME'] }
+      }
+    })
+
+    await prisma.session.update({
+      where: { idSession: inscription.idSession },
+      data: { nbInscrits: nbReel }
+    })
+
+    console.log(`[webhook/callback] 🔄 Session ${inscription.idSession} : nbInscrits recalculé → ${nbReel}`)
+  }
+}
+
+/**
  * Inscrit automatiquement un candidat/élève en liste d'attente
  * si une session était visée lors de la conversion (ConversionEnCours.sessionVisee)
  */
@@ -298,6 +331,19 @@ export async function POST(request: NextRequest) {
           )
         } else {
           console.warn(`[webhook/callback] ${body.response} reçu sans data.numeroDossier`)
+        }
+      }
+
+      // Refus d'un candidat : décrémenter nbInscrits si l'inscription était confirmée
+      // n8n annule l'InscriptionSession en BDD mais ne touche pas le compteur sessions.nb_inscrits
+      if (body.status === 'success' && body.response === 'candidat_refused') {
+        const idCandidat = body.data?.idCandidat as number | undefined
+        if (idCandidat) {
+          syncNbInscritsApresRefus(idCandidat).catch(err =>
+            console.error('[webhook/callback] Erreur sync nbInscrits après refus:', err)
+          )
+        } else {
+          console.warn('[webhook/callback] candidat_refused reçu sans data.idCandidat')
         }
       }
 
