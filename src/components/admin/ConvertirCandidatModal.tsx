@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, User, Calendar, GraduationCap, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { X, User, Calendar, GraduationCap, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
 import { useCallbackListener } from '@/hooks/use-callback-listener'
 
 interface ConvertirCandidatModalProps {
@@ -46,6 +46,7 @@ export function ConvertirCandidatModal({
   const [checkingConversion, setCheckingConversion] = useState(true)
   const [conversionEnCours, setConversionEnCours] = useState(false)
   const [conversionMessage, setConversionMessage] = useState('')
+  const [forcingReset, setForcingReset] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [actionStatus, setActionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
   const correlationId = useRef(crypto.randomUUID())
@@ -139,6 +140,23 @@ export function ConvertirCandidatModal({
 
     fetchSessions()
   }, [formData.formationRetenue, formations])
+
+  const handleForceReset = async () => {
+    setForcingReset(true)
+    try {
+      const response = await fetch(`/api/prospects/${prospect.idProspect}/conversion-status`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        setConversionEnCours(false)
+        setConversionMessage('')
+      }
+    } catch (error) {
+      console.error('Erreur déblocage:', error)
+    } finally {
+      setForcingReset(false)
+    }
+  }
 
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -268,12 +286,26 @@ export function ConvertirCandidatModal({
             {conversionMessage}
           </p>
 
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium hover:bg-[rgb(var(--accent-light))] transition-all"
-          >
-            Compris
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleForceReset}
+              disabled={forcingReset}
+              className="w-full px-4 py-2 bg-[rgba(var(--warning),0.15)] text-[rgb(var(--warning))] border border-[rgba(var(--warning),0.3)] rounded-lg font-medium hover:bg-[rgba(var(--warning),0.25)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {forcingReset ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              Forcer le déblocage et réessayer
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg font-medium hover:bg-[rgba(var(--accent),0.05)] transition-all border border-[rgba(var(--border),0.5)]"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       </div>
     )
