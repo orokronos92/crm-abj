@@ -100,17 +100,35 @@ async function creerDocumentsRequis(numeroDossier: string, correlationId: string
  * On recalcule nb_inscrits depuis le vrai nombre d'inscrits confirmés.
  */
 async function syncNbInscritsApresRefus(idCandidat: number): Promise<void> {
-  // Trouver toutes les inscriptions ANNULEES récemment pour ce candidat
-  const inscriptions = await prisma.inscriptionSession.findMany({
+  // 1. Annuler toutes les inscriptions encore actives du candidat refusé
+  //    (n8n n'annule que les INSCRIT/CONFIRME, pas les EN_ATTENTE)
+  const inscriptionsActives = await prisma.inscriptionSession.findMany({
     where: {
       idCandidat,
-      statutInscription: 'ANNULE'
+      statutInscription: { not: 'ANNULE' }
     },
-    select: { idSession: true }
+    select: { idInscription: true, idSession: true }
   })
 
-  for (const inscription of inscriptions) {
-    // Recompter les inscrits réels (INSCRIT ou CONFIRME) pour cette session
+  for (const inscription of inscriptionsActives) {
+    await prisma.inscriptionSession.update({
+      where: { idInscription: inscription.idInscription },
+      data: {
+        statutInscription: 'ANNULE',
+        motifAnnulation: 'Candidat refusé'
+      }
+    })
+    console.log(`[webhook/callback] 🚫 Inscription ${inscription.idInscription} annulée (candidat refusé)`)
+  }
+
+  // 2. Recalculer nbInscrits pour toutes les sessions concernées
+  const toutesInscriptions = await prisma.inscriptionSession.findMany({
+    where: { idCandidat },
+    select: { idSession: true },
+    distinct: ['idSession']
+  })
+
+  for (const inscription of toutesInscriptions) {
     const nbReel = await prisma.inscriptionSession.count({
       where: {
         idSession: inscription.idSession,
