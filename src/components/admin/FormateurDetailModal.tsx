@@ -171,11 +171,11 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-7xl h-[95vh] flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-2xl md:max-w-4xl lg:max-w-7xl h-[95vh] flex flex-col">
         {/* Header avec stats */}
         <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-start justify-between mb-6">
-            <div className="flex items-start gap-6">
+            <div className="flex items-start gap-3 sm:gap-6">
               {/* Placeholder photo - Rectangle pointillé */}
               <div className="w-20 h-20 rounded-lg border-2 border-dashed border-[rgba(var(--accent),0.4)] bg-[rgba(var(--accent),0.05)] flex items-center justify-center">
                 <User className="w-8 h-8 text-[rgba(var(--accent),0.3)]" />
@@ -225,7 +225,7 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
           </div>
 
           {/* Statistiques rapides */}
-          <div className="grid grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
             <div className="bg-[rgb(var(--secondary))] rounded-lg p-3">
               <p className="text-xs text-[rgb(var(--muted-foreground))]">Sessions actives</p>
               <p className="text-lg font-bold text-[rgb(var(--foreground))] mt-1">
@@ -259,7 +259,7 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
           </div>
 
           {/* Onglets en forme de dossier */}
-          <div className="flex gap-1 pt-4">
+          <div className="flex gap-1 pt-4 overflow-x-auto scrollbar-none">
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.key
@@ -268,7 +268,7 @@ export function FormateurDetailModal({ formateurId, onClose }: FormateurDetailMo
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`
-                    relative px-6 py-3 rounded-t-lg font-medium text-sm transition-all
+                    relative px-3 sm:px-6 py-3 rounded-t-lg font-medium text-sm transition-all whitespace-nowrap flex-shrink-0
                     ${isActive
                       ? 'bg-[rgb(var(--card))] text-[rgb(var(--accent))] border-t-2 border-[rgb(var(--accent))] -mb-px'
                       : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))] hover:bg-[rgba(var(--accent),0.05)]'

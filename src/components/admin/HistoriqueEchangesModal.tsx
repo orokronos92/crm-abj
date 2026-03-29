@@ -51,7 +51,7 @@ export function HistoriqueEchangesModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col border border-[rgba(var(--accent),0.2)]">
+      <div className="bg-[rgb(var(--card))] rounded-xl shadow-2xl max-w-full sm:max-w-2xl w-full max-h-[80vh] flex flex-col border border-[rgba(var(--accent),0.2)]">
         {/* Header */}
         <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-start justify-between">

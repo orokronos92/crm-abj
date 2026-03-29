@@ -112,17 +112,17 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl overflow-hidden flex flex-col max-w-6xl w-full h-[90vh]">
+      <div className="bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-xl overflow-hidden flex flex-col max-w-full sm:max-w-2xl md:max-w-4xl lg:max-w-6xl w-full h-[95vh] sm:h-[90vh]">
 
         {/* Onglets en forme de dossier */}
-        <div className="relative flex gap-1 px-4 pt-4 bg-[rgb(var(--background))]">
+        <div className="relative flex gap-1 px-4 pt-4 bg-[rgb(var(--background))] overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`group relative px-6 py-3 rounded-t-lg transition-all ${
+                className={`group relative px-3 sm:px-6 py-3 rounded-t-lg transition-all whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'bg-[rgb(var(--card))] text-[rgb(var(--accent))] border-t-2 border-x-2 border-[rgba(var(--accent),0.5)] -mb-[2px]'
                     : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))] hover:bg-[rgba(var(--accent),0.05)] hover:text-[rgb(var(--foreground))]'
@@ -192,7 +192,7 @@ export function EleveDetailModal({ eleveId, onClose }: EleveDetailModalProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <button
               onClick={() => setShowEnvoyerMessageModal(true)}
               className="px-4 py-2 bg-[rgb(var(--warning))] text-[rgb(var(--primary))] rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"

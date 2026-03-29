@@ -56,7 +56,7 @@ export function DocumentPreviewModal({
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-[rgb(var(--card))] rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div className="bg-[rgb(var(--card))] rounded-xl w-full max-w-full sm:max-w-2xl md:max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(var(--border),0.3)]">
           <div>

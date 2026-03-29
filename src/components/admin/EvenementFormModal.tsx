@@ -140,7 +140,7 @@ export function EvenementFormModal({ evenement, onClose, onSuccess }: EvenementF
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-center gap-3">
@@ -210,7 +210,7 @@ export function EvenementFormModal({ evenement, onClose, onSuccess }: EvenementF
             </div>
 
             {/* Date et horaires */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
@@ -253,7 +253,7 @@ export function EvenementFormModal({ evenement, onClose, onSuccess }: EvenementF
             </div>
 
             {/* Salle et participants */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
                   <MapPin className="w-4 h-4 inline mr-1" />

@@ -125,7 +125,7 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-lg md:max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
                 <User className="w-4 h-4" />
                 Identité
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
                     Nom *
@@ -202,7 +202,7 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
                 <Mail className="w-4 h-4" />
                 Contact
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
                     Email *
@@ -251,7 +251,7 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
                     className="w-full px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
                       Code postal
@@ -310,7 +310,7 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
                 <Euro className="w-4 h-4" />
                 Informations professionnelles
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
                     Tarif journalier (€)
@@ -341,7 +341,7 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
             </div>
 
             {/* Expérience */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
                   Années d'expérience

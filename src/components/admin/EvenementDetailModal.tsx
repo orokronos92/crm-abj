@@ -101,7 +101,7 @@ export function EvenementDetailModal({ idEvenement, onClose, onDateChanged }: Ev
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-[rgb(var(--card))] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl"
+        className="bg-[rgb(var(--card))] rounded-xl w-full max-w-full sm:max-w-2xl max-h-[90vh] flex flex-col shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -135,7 +135,7 @@ export function EvenementDetailModal({ idEvenement, onClose, onDateChanged }: Ev
           {!loading && evenement && (
             <>
               {/* Infos événement */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Date avec bouton modifier */}
                 <div className="flex items-start gap-2 p-3 bg-[rgb(var(--secondary))] rounded-lg">
                   <Calendar className="w-4 h-4 text-[rgb(var(--accent))] mt-0.5 flex-shrink-0" />

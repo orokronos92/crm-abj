@@ -180,7 +180,7 @@ export function ValiderEtapeModal({ candidat, etape, onClose, onSuccess }: Valid
   // Formulaire principal
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-lg flex flex-col max-h-[90vh]">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-lg flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[rgba(var(--border),0.3)] flex-shrink-0">
           <div className="flex items-center gap-3">

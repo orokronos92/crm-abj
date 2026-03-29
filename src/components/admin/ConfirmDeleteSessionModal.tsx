@@ -30,7 +30,7 @@ export function ConfirmDeleteSessionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-xl w-full max-w-md shadow-2xl border border-[rgba(var(--error),0.3)]">
+      <div className="bg-[rgb(var(--card))] rounded-xl w-full max-w-full sm:max-w-md shadow-2xl border border-[rgba(var(--error),0.3)]">
 
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[rgba(var(--border),0.3)]">

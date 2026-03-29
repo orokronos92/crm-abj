@@ -128,7 +128,7 @@ export function EditProspectModal({ prospect, onClose, onSuccess }: EditProspect
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-xl max-h-[90vh] flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-center gap-3">
@@ -174,7 +174,7 @@ export function EditProspectModal({ prospect, onClose, onSuccess }: EditProspect
               <p className="text-xs font-semibold uppercase tracking-wider text-[rgb(var(--muted-foreground))] mb-3">
                 Identité
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[rgb(var(--foreground))] mb-1">
                     Nom <span className="text-[rgb(var(--error))]">*</span>
@@ -256,7 +256,7 @@ export function EditProspectModal({ prospect, onClose, onSuccess }: EditProspect
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-[rgb(var(--foreground))] mb-1">Code postal</label>
                     <div className="relative">

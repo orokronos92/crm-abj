@@ -354,7 +354,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col border border-[rgba(var(--accent),0.2)]">
+      <div className="bg-[rgb(var(--card))] rounded-xl shadow-2xl w-full max-w-full sm:max-w-2xl md:max-w-5xl h-[95vh] sm:h-[90vh] flex flex-col border border-[rgba(var(--accent),0.2)]">
         {/* Header */}
         <div className="p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-start justify-between">
@@ -380,7 +380,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
           </div>
 
           {/* Onglets en forme de dossier */}
-          <div className="flex gap-1 mt-4 pt-4">
+          <div className="flex gap-1 mt-4 pt-4 overflow-x-auto scrollbar-none">
             {[
               { id: 'general', label: 'Général', icon: FileText },
               { id: 'parcours', label: 'Parcours', icon: Target },
@@ -394,7 +394,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    relative px-6 py-3 rounded-t-lg font-medium text-sm transition-all
+                    relative px-4 sm:px-6 py-3 rounded-t-lg font-medium text-sm transition-all whitespace-nowrap flex-shrink-0
                     ${isActive
                       ? 'bg-[rgb(var(--card))] text-[rgb(var(--accent))] border-t-2 border-[rgb(var(--accent))] -mb-px'
                       : 'bg-[rgb(var(--secondary))] text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))] hover:bg-[rgba(var(--accent),0.05)]'
@@ -417,7 +417,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
           {activeTab === 'general' && (
             <div className="space-y-6">
               {/* Infos contact */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-[rgb(var(--accent))]" />
                   <div>
@@ -445,7 +445,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-[rgb(var(--secondary))] rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[rgb(var(--secondary))] rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg">
                     <TrendingUp className="w-5 h-5 text-[rgb(var(--accent))]" />
@@ -477,7 +477,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                   <p className="text-sm font-semibold text-[rgb(var(--foreground))]">Formation & Session</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Select formation */}
                   <div>
                     <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Formation retenue</p>
@@ -732,7 +732,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                 </div>
 
                 {/* Montants */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Montant total (€)</p>
                     <input
@@ -791,9 +791,9 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
 
         {/* Footer */}
         <div className="p-4 border-t border-[rgba(var(--border),0.3)] bg-[rgb(var(--secondary))]">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Gauche : Envoyer mail + Envoyer devis */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setShowEnvoyerMessageModal(true)}
                 className="px-4 py-2 bg-[rgb(var(--warning))] text-[rgb(var(--primary))] rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
@@ -812,7 +812,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
 
             {/* Droite : Refuser + Convertir en élève (masqués si statut terminé) */}
             {!statutTermine && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setShowRefuserCandidatModal(true)}
                   className="px-4 py-2 bg-[rgb(var(--error))] text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"

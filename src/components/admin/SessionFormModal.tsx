@@ -119,7 +119,7 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full h-full md:h-[90vh] md:max-w-5xl flex flex-col relative overflow-hidden">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full h-full sm:h-[95vh] md:h-[90vh] sm:max-w-2xl md:max-w-5xl flex flex-col relative overflow-hidden">
 
         {/* Bouton fermeture */}
         <button

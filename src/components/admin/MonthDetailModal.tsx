@@ -62,7 +62,7 @@ export function MonthDetailModal({
   if (type === 'salle') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-6xl flex flex-col" style={{ height: '90vh' }}>
+        <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-3xl md:max-w-6xl flex flex-col" style={{ height: '90vh' }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(var(--border),0.3)] flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -138,7 +138,7 @@ export function MonthDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-3xl md:max-w-6xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-center gap-3">

@@ -148,7 +148,7 @@ export function DemanderDocumentModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-lg flex flex-col">
+      <div className="bg-[rgb(var(--card))] rounded-lg w-full max-w-full sm:max-w-lg flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[rgba(var(--border),0.3)]">
           <div className="flex items-center gap-3">
