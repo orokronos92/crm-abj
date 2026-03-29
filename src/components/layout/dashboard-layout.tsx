@@ -229,7 +229,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   {showNotifications && (
                     <div className="absolute right-0 mt-2 w-96 max-h-[600px] overflow-y-auto bg-[rgb(var(--card))] border border-[rgba(var(--accent),0.2)] rounded-xl shadow-2xl z-50 animate-fadeIn">
                       {/* Header popup */}
-                      <div className="sticky top-0 bg-[rgb(var(--card))] p-4 border-b border-[rgba(var(--border),0.3)] flex items-center justify-between">
+                      <div className="sticky top-0 z-10 p-4 border-b border-[rgba(var(--border),0.3)] flex items-center justify-between bg-[rgb(var(--card))]">
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-5 h-5 text-[rgb(var(--accent))]" />
                           <h3 className="font-semibold text-[rgb(var(--foreground))]">
