@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { Sidebar } from './sidebar'
-import { Bell, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp, Palette, Moon, Sun, RefreshCw } from 'lucide-react'
+import { Bell, Settings, LogOut, CheckCircle, AlertCircle, Info, Clock, XCircle, Sparkles, FileText, Send, Calendar, MessageSquare, X, ArrowUp, Palette, Moon, Sun, RefreshCw, Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useNotifications } from '@/hooks/use-notifications'
 import { NotificationSkeleton } from '@/components/ui/notification-skeleton'
@@ -73,6 +73,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [darkMode, setDarkMode] = useState(true)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [showMarjorieChat, setShowMarjorieChat] = useState(false)
   const [showSettingsCanvas, setShowSettingsCanvas] = useState(false)
 
@@ -199,13 +200,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Layout principal */}
       <div className="flex min-h-screen bg-[rgb(var(--background))]">
         {/* Sidebar */}
-        <Sidebar role={userRole as any} userName={userName} />
+        <Sidebar
+          role={userRole as any}
+          userName={userName}
+          isMobileOpen={isMobileSidebarOpen}
+          onMobileClose={() => setIsMobileSidebarOpen(false)}
+        />
 
         {/* Main content */}
         <div className="flex-1 lg:ml-64">
           {/* Header */}
           <header className="sticky top-0 z-30 h-16 bg-[rgb(var(--card))]/80 backdrop-blur-xl border-b border-[rgba(var(--accent),0.1)]">
-            <div className="flex h-full items-center justify-end px-6">
+            <div className="flex h-full items-center justify-between px-6">
+              {/* Bouton hamburger — mobile uniquement */}
+              <button
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
+              >
+                <Menu className="w-5 h-5 text-[rgb(var(--foreground))]" />
+              </button>
+              <div className="hidden lg:block" />
               {/* Actions header */}
               <div className="flex items-center gap-4">
                 {/* Notifications */}

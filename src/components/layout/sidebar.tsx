@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard,
@@ -37,9 +37,11 @@ import { DiamondLogo } from '@/components/ui/diamond-logo'
 interface SidebarProps {
   role: 'admin' | 'professeur' | 'eleve'
   userName?: string
+  isMobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-export function Sidebar({ role, userName }: SidebarProps) {
+export function Sidebar({ role, userName, isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -91,7 +93,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
       <aside
         className={`fixed left-0 top-0 z-40 h-screen transition-all duration-300 ${
           isCollapsed ? 'w-20' : 'w-64'
-        } sidebar flex flex-col`}
+        } sidebar flex-col ${isMobileOpen ? 'flex' : 'hidden lg:flex'}`}
       >
         {/* Header avec logo */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-[rgba(var(--accent),0.1)]">
@@ -116,6 +118,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    onClick={() => onMobileClose?.()}
                     className={`
                       flex items-center gap-3 px-3 py-2.5 rounded-lg
                       transition-all duration-200 group relative
@@ -184,12 +187,12 @@ export function Sidebar({ role, userName }: SidebarProps) {
       </aside>
 
       {/* Overlay mobile */}
-      <div
-        className={`fixed inset-0 bg-black/50 z-30 lg:hidden ${
-          isCollapsed ? 'hidden' : 'block'
-        }`}
-        onClick={() => setIsCollapsed(true)}
-      />
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => onMobileClose?.()}
+        />
+      )}
     </>
   )
 }
