@@ -404,6 +404,26 @@ async function main() {
     }
   })
 
+  await prisma.formation.upsert({
+    where: { codeFormation: 'SERTI_N1' },
+    update: {
+      equipementRequis: ['POSTE_SERTI', 'MICROSCOPE_SERTI']
+    },
+    create: {
+      codeFormation: 'SERTI_N1',
+      nom: 'Sertissage — Niveau 1 (serti clos)',
+      categorie: 'FORMATION_COURTE',
+      dureeHeures: 30,
+      dureeJours: 4,
+      tarifStandard: 1130,
+      description: 'Initiation au sertissage : technique du serti clos.',
+      prerequis: [],
+      objectifs: ['Maitriser le serti clos', 'Poser des pierres en serti clos'],
+      equipementRequis: ['POSTE_SERTI', 'MICROSCOPE_SERTI'],
+      actif: true
+    }
+  })
+
   // Recuperer les 5 formations pour les references ci-dessous
   const formations = await Promise.all([
     prisma.formation.findUniqueOrThrow({ where: { codeFormation: 'CAP_ATBJ' } }),
