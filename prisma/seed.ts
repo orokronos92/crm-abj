@@ -169,25 +169,42 @@ async function main() {
       capaciteMax: 4,
       surfaceM2: 45,
       etage: 0,
-      equipements: ['ETABLI_BIJOU', 'POSTE_SOUDURE', 'LAMINOIR', 'MARTEAU_BAGUE', 'PERCEUSE_COLONNE'],
-      formationsCompatibles: ['CAP_ATBJ', 'BIJ_CREATEUR_N1', 'BIJ_CREATEUR_N2', 'BIJ_CREATEUR_N3', 'BIJ_TECHNIQUE_N1', 'BIJ_TECHNIQUE_N2', 'BIJ_TECHNIQUE_N3', 'JOAILLERIE_N1', 'JOAILLERIE_N2', 'JOAILLERIE_N3'],
+      equipements: ['ETABLI_BIJOU', 'POSTE_SOUDURE', 'LAMINOIR', 'MARTEAU_BAGUE', 'PERCEUSE_COLONNE', 'POSTE_SERTI', 'MICROSCOPE_SERTI', 'LOUPE_BINOCULAIRE'],
+      formationsCompatibles: [
+        'CAP_ATBJ',
+        'BIJ_CREATEUR_N1', 'BIJ_CREATEUR_N2', 'BIJ_CREATEUR_N3',
+        'BIJ_TECHNIQUE_N1', 'BIJ_TECHNIQUE_N2', 'BIJ_TECHNIQUE_N3',
+        'JOAILLERIE_N1', 'JOAILLERIE_N2', 'JOAILLERIE_N3',
+        'SERTI_N1', 'SERTI_N2', 'SERTI_N3', 'PERF_SERTI',
+        'HF_N1', 'HF_N2', 'HF_N3',
+        'MAQUETTE_N1', 'MAQUETTE_N2', 'MAQUETTE_N3'
+      ],
       disponibleWeekend: true,
       disponibleSoir: false,
       statut: 'ACTIVE',
-      notes: 'Atelier principal bijouterie. 8 postes de travail individuels avec etablis.'
+      notes: 'Atelier serti et bijouterie technique. Postes equipes binoculaires et materiel serti.'
     },
     {
       nom: 'Atelier B2',
       code: 'ATEL_B2',
-      capaciteMax: 8,
+      capaciteMax: 6,
       surfaceM2: 35,
       etage: 0,
-      equipements: ['ETABLI_BIJOU', 'POSTE_SERTI', 'MICROSCOPE_SERTI', 'LOUPE_BINOCULAIRE'],
-      formationsCompatibles: ['CAP_ATBJ', 'SERTI_N1', 'SERTI_N2', 'SERTI_N3', 'CISELURE_N1', 'CISELURE_N2', 'CISELURE_N3'],
+      equipements: ['ETABLI_BIJOU', 'FOUR_EMAIL', 'MATERIEL_EMAIL', 'LAMPE_CHALUMEAU'],
+      formationsCompatibles: [
+        'CAP_ATBJ',
+        'BIJ_CREATEUR_N1', 'BIJ_CREATEUR_N2', 'BIJ_CREATEUR_N3',
+        'BIJ_TECHNIQUE_N1', 'BIJ_TECHNIQUE_N2', 'BIJ_TECHNIQUE_N3',
+        'JOAILLERIE_N1', 'JOAILLERIE_N2', 'JOAILLERIE_N3',
+        'EMAIL_INITIATION', 'EMAIL_CHAMPLEVE', 'EMAIL_CLOISONNE', 'EMAIL_PLIQUE_A_JOUR',
+        'HF_N1', 'HF_N2', 'HF_N3',
+        'MAQUETTE_N1', 'MAQUETTE_N2', 'MAQUETTE_N3',
+        'ATD_BIJ_EMAIL', 'ATD_BIJ_LAPIDAIRE', 'ATD_CISELURE_EMAIL'
+      ],
       disponibleWeekend: true,
       disponibleSoir: false,
       statut: 'ACTIVE',
-      notes: 'Atelier sertissage et ciselure. Postes equipes de microscopes et loupes binoculaires.'
+      notes: 'Atelier bijouterie polyvalent. Le four email est gere par Yasmina.'
     },
     {
       nom: 'Atelier B1',
@@ -195,12 +212,21 @@ async function main() {
       capaciteMax: 10,
       surfaceM2: 30,
       etage: 0,
-      equipements: ['FOUR_EMAIL', 'ETABLI_BIJOU', 'MATERIEL_EMAIL', 'LAMPE_CHALUMEAU'],
-      formationsCompatibles: ['EMAIL_INITIATION', 'EMAIL_CLOISONNE', 'EMAIL_CHAMPLEVE', 'EMAIL_PLIQUE_A_JOUR', 'ATD_BIJ_EMAIL', 'ATD_CISELURE_EMAIL'],
+      equipements: ['ETABLI_BIJOU', 'FOUR_EMAIL', 'MATERIEL_EMAIL', 'LAMPE_CHALUMEAU'],
+      formationsCompatibles: [
+        'CAP_ATBJ',
+        'BIJ_CREATEUR_N1', 'BIJ_CREATEUR_N2', 'BIJ_CREATEUR_N3',
+        'BIJ_TECHNIQUE_N1', 'BIJ_TECHNIQUE_N2', 'BIJ_TECHNIQUE_N3',
+        'JOAILLERIE_N1', 'JOAILLERIE_N2', 'JOAILLERIE_N3',
+        'EMAIL_INITIATION', 'EMAIL_CHAMPLEVE', 'EMAIL_CLOISONNE', 'EMAIL_PLIQUE_A_JOUR',
+        'HF_N1', 'HF_N2', 'HF_N3',
+        'MAQUETTE_N1', 'MAQUETTE_N2', 'MAQUETTE_N3',
+        'ATD_BIJ_EMAIL', 'ATD_BIJ_LAPIDAIRE', 'ATD_CISELURE_EMAIL'
+      ],
       disponibleWeekend: false,
       disponibleSoir: false,
       statut: 'ACTIVE',
-      notes: 'Atelier email grand feu. Four et materiel emaillage. Ventilation specifique.'
+      notes: 'Atelier bijouterie polyvalent. Le four email est gere par Yasmina.'
     },
     {
       nom: 'Salle C',
@@ -208,19 +234,38 @@ async function main() {
       capaciteMax: 10,
       surfaceM2: 30,
       etage: 1,
-      equipements: ['ORDINATEUR_CAO', 'LOGICIEL_RHINO', 'LOGICIEL_MATRIX_GOLD', 'ECRAN_TACTILE', 'VIDEO_PROJECTEUR'],
-      formationsCompatibles: ['CAO_DAO'],
+      equipements: ['ORDINATEUR_CAO', 'LOGICIEL_RHINO', 'LOGICIEL_MATRIX_GOLD', 'ECRAN_TACTILE', 'VIDEO_PROJECTEUR', 'TABLE_LAPIDAIRE'],
+      formationsCompatibles: [
+        'CAO_DAO',
+        'GEMMO_N1', 'GEMMO_N2',
+        'HISTOIRE_ART',
+        'DESSIN_GOUACHE', 'DESSIN_TECHNIQUE',
+        'DOUANE_GARANTIE',
+        'LAPIDAIRE_N1', 'LAPIDAIRE_N2', 'LAPIDAIRE_N3', 'LAPIDAIRE_N4',
+        'CISELURE_N1', 'CISELURE_N2', 'CISELURE_N3',
+        'EMAIL_INITIATION', 'EMAIL_CHAMPLEVE', 'EMAIL_CLOISONNE', 'EMAIL_PLIQUE_A_JOUR',
+        'ATD_CISELURE_EMAIL', 'ATD_BIJ_LAPIDAIRE'
+      ],
       disponibleWeekend: false,
       disponibleSoir: false,
       statut: 'ACTIVE',
-      notes: 'Salle equipee pour la formation CAO/DAO. Logiciels Rhino et MatrixGold installes.'
+      notes: 'Salle theorique et lapidaire. CAO/DAO, gemmologie, ciselure, lapidaire.'
     }
   ]
 
   for (const salle of sallesData) {
     await prisma.salle.upsert({
       where: { code: salle.code },
-      update: {},
+      update: {
+        nom: salle.nom,
+        capaciteMax: salle.capaciteMax,
+        equipements: salle.equipements,
+        formationsCompatibles: salle.formationsCompatibles,
+        disponibleWeekend: salle.disponibleWeekend,
+        disponibleSoir: salle.disponibleSoir,
+        statut: salle.statut,
+        notes: salle.notes
+      },
       create: salle
     })
   }
@@ -324,7 +369,7 @@ async function main() {
   // On le cree ici si absent (premier seed), sinon on le laisse tel quel
   await prisma.formation.upsert({
     where: { codeFormation: 'CAP_ATBJ' },
-    update: {},
+    update: { equipementRequis: ['ETABLI_BIJOU'] },
     create: {
       codeFormation: 'CAP_ATBJ',
       nom: 'CAP Art et Techniques de la Bijouterie-Joaillerie',
@@ -336,13 +381,14 @@ async function main() {
       description: 'Cursus de 1 an. Formation en presentiel preparant au diplome CAP ATBJ.',
       prerequis: ['Niveau Baccalaureat', 'Entretien de selection'],
       objectifs: ['Maitriser les techniques de base', 'Obtenir le CAP ATBJ'],
+      equipementRequis: ['ETABLI_BIJOU'],
       actif: true
     }
   })
 
   await prisma.formation.upsert({
     where: { codeFormation: 'INIT_BJ' },
-    update: {},
+    update: { equipementRequis: ['ETABLI_BIJOU'] },
     create: {
       codeFormation: 'INIT_BJ',
       nom: 'Initiation Bijouterie',
@@ -352,13 +398,14 @@ async function main() {
       description: 'Stage d initiation aux techniques de base en bijouterie.',
       prerequis: [],
       objectifs: ['Decouvrir la bijouterie'],
+      equipementRequis: ['ETABLI_BIJOU'],
       actif: true
     }
   })
 
   await prisma.formation.upsert({
     where: { codeFormation: 'PERF_SERTI' },
-    update: {},
+    update: { equipementRequis: ['POSTE_SERTI', 'MICROSCOPE_SERTI'] },
     create: {
       codeFormation: 'PERF_SERTI',
       nom: 'Perfectionnement Sertissage',
@@ -368,13 +415,14 @@ async function main() {
       description: 'Perfectionnement aux techniques de sertissage.',
       prerequis: ['Notions de base en bijouterie'],
       objectifs: ['Maitriser le sertissage'],
+      equipementRequis: ['POSTE_SERTI', 'MICROSCOPE_SERTI'],
       actif: true
     }
   })
 
   await prisma.formation.upsert({
     where: { codeFormation: 'CAO_DAO' },
-    update: {},
+    update: { equipementRequis: ['ORDINATEUR_CAO', 'LOGICIEL_RHINO'] },
     create: {
       codeFormation: 'CAO_DAO',
       nom: 'CAO/DAO Bijouterie',
@@ -384,13 +432,14 @@ async function main() {
       description: 'Formation CAO/DAO pour bijoutiers (Rhino, MatrixGold).',
       prerequis: [],
       objectifs: ['Modelisation 3D bijoux'],
+      equipementRequis: ['ORDINATEUR_CAO', 'LOGICIEL_RHINO'],
       actif: true
     }
   })
 
   await prisma.formation.upsert({
     where: { codeFormation: 'GEMMO' },
-    update: {},
+    update: { equipementRequis: ['LOUPE_BINOCULAIRE'] },
     create: {
       codeFormation: 'GEMMO',
       nom: 'Gemmologie',
@@ -400,6 +449,7 @@ async function main() {
       description: 'Introduction a la gemmologie : identification et classement des pierres.',
       prerequis: [],
       objectifs: ['Identifier les pierres precieuses'],
+      equipementRequis: ['LOUPE_BINOCULAIRE'],
       actif: true
     }
   })
@@ -423,6 +473,71 @@ async function main() {
       actif: true
     }
   })
+
+  // --- Mise a jour equipementRequis pour toutes les formations du catalogue ---
+  // Sertissage (niveaux 2 et 3) — Atelier S uniquement
+  for (const code of ['SERTI_N2', 'SERTI_N3', 'PERF_SERTI']) {
+    await prisma.formation.updateMany({
+      where: { codeFormation: code },
+      data: { equipementRequis: ['POSTE_SERTI', 'MICROSCOPE_SERTI'] }
+    })
+  }
+
+  // CAO/DAO — Salle C
+  await prisma.formation.updateMany({
+    where: { codeFormation: 'CAO_DAO' },
+    data: { equipementRequis: ['ORDINATEUR_CAO', 'LOGICIEL_RHINO'] }
+  })
+
+  // Formations theoriques (video-projecteur) — Salle C
+  for (const code of ['DESSIN_GOUACHE', 'DESSIN_TECHNIQUE', 'DOUANE_GARANTIE', 'HISTOIRE_ART']) {
+    await prisma.formation.updateMany({
+      where: { codeFormation: code },
+      data: { equipementRequis: ['VIDEO_PROJECTEUR'] }
+    })
+  }
+
+  // Gemmologie — Salle C (loupe binoculaire, pas microscope serti)
+  for (const code of ['GEMMO_N1', 'GEMMO_N2', 'GEMMO']) {
+    await prisma.formation.updateMany({
+      where: { codeFormation: code },
+      data: { equipementRequis: ['LOUPE_BINOCULAIRE'] }
+    })
+  }
+
+  // Lapidaire — Salle C (table lapidaire)
+  for (const code of ['LAPIDAIRE_N1', 'LAPIDAIRE_N2', 'LAPIDAIRE_N3', 'LAPIDAIRE_N4', 'ATD_BIJ_LAPIDAIRE']) {
+    await prisma.formation.updateMany({
+      where: { codeFormation: code },
+      data: { equipementRequis: ['TABLE_LAPIDAIRE'] }
+    })
+  }
+
+  // Email — Ateliers B1 et B2 (four email + materiel email)
+  for (const code of ['EMAIL_INITIATION', 'EMAIL_CHAMPLEVE', 'EMAIL_CLOISONNE', 'EMAIL_PLIQUE_A_JOUR', 'ATD_BIJ_EMAIL', 'ATD_CISELURE_EMAIL']) {
+    await prisma.formation.updateMany({
+      where: { codeFormation: code },
+      data: { equipementRequis: ['FOUR_EMAIL', 'MATERIEL_EMAIL'] }
+    })
+  }
+
+  // Bijouterie / Joaillerie / Haute Fantaisie / Maquette / Ciselure / CAP — etabli bijou
+  for (const code of [
+    'CAP_ATBJ', 'INIT_BJ',
+    'BIJ_CREATEUR_N1', 'BIJ_CREATEUR_N2', 'BIJ_CREATEUR_N3',
+    'BIJ_TECHNIQUE_N1', 'BIJ_TECHNIQUE_N2', 'BIJ_TECHNIQUE_N3',
+    'JOAILLERIE_N1', 'JOAILLERIE_N2', 'JOAILLERIE_N3',
+    'HF_N1', 'HF_N2', 'HF_N3',
+    'MAQUETTE_N1', 'MAQUETTE_N2', 'MAQUETTE_N3',
+    'CISELURE_N1', 'CISELURE_N2', 'CISELURE_N3'
+  ]) {
+    await prisma.formation.updateMany({
+      where: { codeFormation: code },
+      data: { equipementRequis: ['ETABLI_BIJOU'] }
+    })
+  }
+
+  console.log('EquipementRequis mis a jour sur toutes les formations')
 
   // Recuperer les 5 formations pour les references ci-dessous
   const formations = await Promise.all([
