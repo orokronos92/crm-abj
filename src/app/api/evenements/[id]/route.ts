@@ -375,19 +375,33 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Soft delete : mise à jour du statut
+    // Soft delete : mise à jour du statut + cascade vers ReservationSalle
     // TODO: Récupérer userId depuis session NextAuth
     const userId = null
 
-    const evenementAnnule = await prisma.evenement.update({
-      where: { idEvenement },
-      data: {
-        statut: 'ANNULE',
-        motifAnnulation,
-        annulePar: userId,
-        dateAnnulation: new Date()
-      }
-    })
+    const [reservationsAnnulees, evenementAnnule] = await prisma.$transaction([
+      // 1. Annuler toutes les réservations de salle liées à cet événement
+      prisma.reservationSalle.updateMany({
+        where: {
+          idEvenement,
+          statut: { not: 'ANNULE' }
+        },
+        data: {
+          statut: 'ANNULE',
+          motifAnnulation: motifAnnulation || 'Événement annulé'
+        }
+      }),
+      // 2. Annuler l'événement lui-même
+      prisma.evenement.update({
+        where: { idEvenement },
+        data: {
+          statut: 'ANNULE',
+          motifAnnulation,
+          annulePar: userId,
+          dateAnnulation: new Date()
+        }
+      })
+    ])
 
     return NextResponse.json({
       success: true,
@@ -398,7 +412,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         statut: evenementAnnule.statut,
         motifAnnulation: evenementAnnule.motifAnnulation,
         dateAnnulation: evenementAnnule.dateAnnulation?.toISOString()
-      }
+      },
+      reservationsAnnulees: reservationsAnnulees.count
     })
 
   } catch (error) {
