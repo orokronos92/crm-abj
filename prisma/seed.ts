@@ -237,7 +237,7 @@ async function main() {
       equipements: ['ORDINATEUR_CAO', 'LOGICIEL_RHINO', 'LOGICIEL_MATRIX_GOLD', 'ECRAN_TACTILE', 'VIDEO_PROJECTEUR', 'TABLE_LAPIDAIRE'],
       formationsCompatibles: [
         'CAO_DAO',
-        'GEMMO_N1', 'GEMMO_N2',
+        'GEMMO', 'GEMMO_N1', 'GEMMO_N2',
         'HISTOIRE_ART',
         'DESSIN_GOUACHE', 'DESSIN_TECHNIQUE',
         'DOUANE_GARANTIE',
@@ -439,7 +439,7 @@ async function main() {
 
   await prisma.formation.upsert({
     where: { codeFormation: 'GEMMO' },
-    update: { equipementRequis: ['LOUPE_BINOCULAIRE'] },
+    update: { equipementRequis: [] },
     create: {
       codeFormation: 'GEMMO',
       nom: 'Gemmologie',
@@ -449,7 +449,7 @@ async function main() {
       description: 'Introduction a la gemmologie : identification et classement des pierres.',
       prerequis: [],
       objectifs: ['Identifier les pierres precieuses'],
-      equipementRequis: ['LOUPE_BINOCULAIRE'],
+      equipementRequis: [],
       actif: true
     }
   })
@@ -497,11 +497,11 @@ async function main() {
     })
   }
 
-  // Gemmologie — Salle C (loupe binoculaire, pas microscope serti)
+  // Gemmologie — Salle C (pas d'equipement specifique, la salle est choisie via formationsCompatibles)
   for (const code of ['GEMMO_N1', 'GEMMO_N2', 'GEMMO']) {
     await prisma.formation.updateMany({
       where: { codeFormation: code },
-      data: { equipementRequis: ['LOUPE_BINOCULAIRE'] }
+      data: { equipementRequis: [] }
     })
   }
 
