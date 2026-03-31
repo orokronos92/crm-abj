@@ -59,8 +59,9 @@ export async function GET(request: NextRequest) {
         capaciteMax: true,
         nbInscrits: true,
         statutSession: true,
+        totalHeuresProgramme: true,
         formation: {
-          select: { nom: true, codeFormation: true }
+          select: { nom: true, codeFormation: true, dureeHeures: true }
         }
       }
     })
@@ -210,42 +211,53 @@ export async function GET(request: NextRequest) {
           return evtDate >= debutMois && evtDate <= finMois
         })
 
-        // Calculer les jours réellement occupés (Set pour éviter doublons)
-        const joursOccupes = new Set<number>()
+        // Calcul horaire : heures occupées / capacité totale (13h/jour × nb jours du mois)
+        // L'école est ouverte 08h–21h = 13h/jour
+        const HEURES_PAR_JOUR = 13
+        const capaciteTotaleHeures = nbJoursDansMois * HEURES_PAR_JOUR
+        let heuresOccupees = 0
 
-        // Jours via reservationSalle (source principale pour sessions CAP multi-salles)
-        reservationsCeMois.forEach(r => {
-          const rDebut = new Date(r.dateDebut)
-          const rFin = new Date(r.dateFin)
-          const dateDebutEffective = rDebut < debutMois ? debutMois : rDebut
-          const dateFinEffective = rFin > finMois ? finMois : rFin
-          const current = new Date(dateDebutEffective)
-          while (current <= dateFinEffective) {
-            joursOccupes.add(current.getDate())
-            current.setDate(current.getDate() + 1)
-          }
-        })
+        // Réservations de cours (sans token = séances planifiées, pas holds RDV)
+        // dateDebut/dateFin sont à l'heure précise → durée exacte
+        reservationsCeMois
+          .filter(r => r.token === null)
+          .forEach(r => {
+            const dureeH = (new Date(r.dateFin).getTime() - new Date(r.dateDebut).getTime()) / (1000 * 3600)
+            if (dureeH > 0) heuresOccupees += dureeH
+          })
 
-        // Jours via sessions directes (sessions simples sans reservationSalle)
+        // Sessions directes (sans reservationSalle associée)
+        // On proratise les heures totales de la formation au nombre de jours dans ce mois
         sessionsDirCeMois.forEach(s => {
-          const sDebut = new Date(s.dateDebut)
-          const sFin = new Date(s.dateFin)
-          const dateDebutEffective = sDebut < debutMois ? debutMois : sDebut
-          const dateFinEffective = sFin > finMois ? finMois : sFin
-          const current = new Date(dateDebutEffective)
-          while (current <= dateFinEffective) {
-            joursOccupes.add(current.getDate())
-            current.setDate(current.getDate() + 1)
+          const heuresFormation = s.totalHeuresProgramme ?? s.formation.dureeHeures ?? 0
+          if (heuresFormation <= 0) return
+          // Durée totale de la session en jours calendaires
+          const debutSession = new Date(s.dateDebut)
+          const finSession = new Date(s.dateFin)
+          const dureeTotaleMs = finSession.getTime() - debutSession.getTime()
+          const dureeTotaleJours = dureeTotaleMs / (1000 * 3600 * 24) + 1
+          // Jours de la session dans ce mois
+          const debutEffectif = debutSession < debutMois ? debutMois : debutSession
+          const finEffectif = finSession > finMois ? finMois : finSession
+          const joursDansMoisMs = finEffectif.getTime() - debutEffectif.getTime()
+          const joursDansMois = joursDansMoisMs / (1000 * 3600 * 24) + 1
+          // Prorata : heures formation × (jours dans ce mois / durée totale)
+          const heuresProratisees = heuresFormation * (joursDansMois / dureeTotaleJours)
+          heuresOccupees += heuresProratisees
+        })
+
+        // Événements : durée via heureDebut/heureFin (format HH:MM)
+        evenementsCeMois.forEach(evt => {
+          if (evt.heureDebut && evt.heureFin) {
+            const [hD, mD] = evt.heureDebut.split(':').map(Number)
+            const [hF, mF] = evt.heureFin.split(':').map(Number)
+            const dureeH = (hF * 60 + mF - (hD * 60 + mD)) / 60
+            if (dureeH > 0) heuresOccupees += dureeH
           }
         })
 
-        evenementsCeMois.forEach(evt => {
-          const evtDate = new Date(evt.date)
-          joursOccupes.add(evtDate.getDate())
-        })
-
-        const occupation = joursOccupes.size > 0
-          ? Math.round((joursOccupes.size / nbJoursDansMois) * 100)
+        const occupation = heuresOccupees > 0
+          ? Math.min(100, Math.round((heuresOccupees / capaciteTotaleHeures) * 100))
           : 0
 
         // Sessions associées à cette salle ce mois (via reservations OU direct)
@@ -260,7 +272,8 @@ export async function GET(request: NextRequest) {
         return {
           moisIndex: moisIdx,
           occupation,
-          joursOccupes: joursOccupes.size,
+          heuresOccupees: Math.round(heuresOccupees * 10) / 10,
+          capaciteTotaleHeures,
           nbJoursDansMois,
           sessions: sessionsCeMois.map(s => ({
             id: s.idSession,
