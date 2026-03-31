@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Users, MapPin, User, Clock, AlertCircle } from 'lucide-react'
-import type { FormationCourteData, JourSemaine } from './session-form.types'
+import { Calendar, Users, MapPin, User, Clock, AlertCircle, Plus, Trash2 } from 'lucide-react'
+import type { FormationCourteData, JourSemaine, PlageHoraireSimple } from './session-form.types'
 
 interface FormationCourteFormProps {
   onSubmit: (data: FormationCourteData) => void
@@ -18,6 +18,9 @@ const JOURS_SEMAINE: { value: JourSemaine; label: string }[] = [
   { value: 'SAMEDI', label: 'Sam' },
   { value: 'DIMANCHE', label: 'Dim' },
 ]
+
+const HEURE_MIN = '08:00'
+const HEURE_MAX = '21:00'
 
 interface Formation {
   idFormation: number
@@ -40,13 +43,35 @@ interface Salle {
   capaciteMax: number
 }
 
+/** Durée en minutes entre deux HH:MM */
+function dureeMinutes(debut: string, fin: string): number {
+  if (!debut || !fin) return 0
+  const [hd, md] = debut.split(':').map(Number)
+  const [hf, mf] = fin.split(':').map(Number)
+  return (hf * 60 + mf) - (hd * 60 + md)
+}
+
+/** Durée en heures (décimal) */
+function dureeHeuresPlage(p: PlageHoraireSimple): number {
+  const min = dureeMinutes(p.debut, p.fin)
+  return min > 0 ? min / 60 : 0
+}
+
+/** Formatte un nb de minutes en "Xh" ou "Xh30" */
+function formatDuree(heuresDecimal: number): string {
+  if (heuresDecimal <= 0) return '0h'
+  const h = Math.floor(heuresDecimal)
+  const min = Math.round((heuresDecimal - h) * 60)
+  return min === 0 ? `${h}h` : `${h}h${min}`
+}
+
 export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormProps) {
   const [formData, setFormData] = useState<FormationCourteData>({
     codeFormation: '',
     dateDebut: '',
     dateFin: '',
     dureeHeures: 0,
-    heuresParJour: 8,
+    plagesHoraires: [{ debut: '', fin: '' }],
     joursActifs: ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI'],
     nbParticipants: 8,
     description: '',
@@ -64,6 +89,16 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
     ? Math.ceil((new Date(formData.dateFin).getTime() - new Date(formData.dateDebut).getTime()) / (1000 * 60 * 60 * 24)) + 1
     : 0
 
+  // Total heures/jour selon les plages saisies
+  const heuresParJourTotal = formData.plagesHoraires.reduce(
+    (sum, p) => sum + dureeHeuresPlage(p), 0
+  )
+
+  // Nb séances estimées
+  const nbSeancesEstime = heuresParJourTotal > 0 && formData.dureeHeures > 0
+    ? Math.ceil(formData.dureeHeures / heuresParJourTotal)
+    : 0
+
   // Charger le catalogue formations depuis la BDD
   useEffect(() => {
     setLoadingFormations(true)
@@ -71,10 +106,7 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          // Filtrer uniquement les formations courtes (pas CAP)
-          const courtes = (data.formations as Formation[]).filter(
-            f => f.categorie !== 'CAP'
-          )
+          const courtes = (data.formations as Formation[]).filter(f => f.categorie !== 'CAP')
           setFormations(courtes)
         }
       })
@@ -95,7 +127,6 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
   // Charger salles et formateurs depuis la BDD
   useEffect(() => {
     if (!formData.codeFormation || !formData.dateDebut || !formData.dateFin) return
-
     setLoadingRessources(true)
     Promise.all([
       fetch(`/api/salles?capacite=${formData.nbParticipants}`).then(r => r.json()),
@@ -118,6 +149,61 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
     }))
   }
 
+  const handlePlageChange = (idx: number, field: 'debut' | 'fin', value: string) => {
+    setFormData(prev => {
+      const plages = [...prev.plagesHoraires]
+      plages[idx] = { ...plages[idx], [field]: value }
+      return { ...prev, plagesHoraires: plages }
+    })
+  }
+
+  const handleAjouterPlage = () => {
+    if (formData.plagesHoraires.length >= 3) return
+    setFormData(prev => ({
+      ...prev,
+      plagesHoraires: [...prev.plagesHoraires, { debut: '', fin: '' }],
+    }))
+  }
+
+  const handleSupprimerPlage = (idx: number) => {
+    setFormData(prev => ({
+      ...prev,
+      plagesHoraires: prev.plagesHoraires.filter((_, i) => i !== idx),
+    }))
+  }
+
+  const validatePlages = (): string[] => {
+    const errs: string[] = []
+    const plagesValides = formData.plagesHoraires.filter(p => p.debut && p.fin)
+
+    if (plagesValides.length === 0) {
+      errs.push('Au moins une plage horaire complète est requise')
+      return errs
+    }
+
+    plagesValides.forEach((p, i) => {
+      if (dureeMinutes(p.debut, p.fin) <= 0) {
+        errs.push(`Plage ${i + 1} : l'heure de fin doit être après l'heure de début`)
+      }
+      if (p.debut < HEURE_MIN || p.fin > HEURE_MAX) {
+        errs.push(`Plage ${i + 1} : les horaires doivent être entre 08:00 et 21:00`)
+      }
+    })
+
+    // Vérifier les chevauchements
+    for (let i = 0; i < plagesValides.length - 1; i++) {
+      for (let j = i + 1; j < plagesValides.length; j++) {
+        const a = plagesValides[i]
+        const b = plagesValides[j]
+        if (a.debut < b.fin && a.fin > b.debut) {
+          errs.push(`Les plages ${i + 1} et ${j + 1} se chevauchent`)
+        }
+      }
+    }
+
+    return errs
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: string[] = []
@@ -129,18 +215,20 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
       newErrors.push('La date de fin doit être après la date de début')
     }
     if (!formData.dureeHeures || formData.dureeHeures <= 0) newErrors.push('Durée en heures requise')
-    if (!formData.heuresParJour || formData.heuresParJour <= 0) newErrors.push('Heures par jour requises')
-    if (formData.heuresParJour > formData.dureeHeures) newErrors.push('Les heures par jour ne peuvent pas dépasser la durée totale')
     if (formData.joursActifs.length === 0) newErrors.push('Au moins un jour actif requis')
     if (formData.nbParticipants <= 0) newErrors.push('Nombre de participants invalide')
+
+    newErrors.push(...validatePlages())
 
     if (newErrors.length > 0) {
       setErrors(newErrors)
       return
     }
 
+    // Nettoyer les plages incomplètes avant envoi
+    const plagesFiltrees = formData.plagesHoraires.filter(p => p.debut && p.fin)
     setErrors([])
-    onSubmit(formData)
+    onSubmit({ ...formData, plagesHoraires: plagesFiltrees })
   }
 
   return (
@@ -150,7 +238,7 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
           Formation Courte
         </h2>
         <p className="text-sm text-[rgb(var(--muted-foreground))]">
-          Marjorie planifiera les séances dans la fenêtre temporelle selon la durée et les jours actifs
+          Marjorie planifiera les séances dans la fenêtre temporelle selon la durée et les plages horaires
         </p>
       </div>
 
@@ -190,7 +278,7 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
       </div>
 
       {/* Dates + Durée heures */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
             <Calendar className="w-4 h-4 inline mr-1" />
@@ -232,41 +320,83 @@ export function FormationCourteForm({ onSubmit, onBack }: FormationCourteFormPro
             required
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
+      </div>
+
+      {/* Plages horaires */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-medium text-[rgb(var(--foreground))]">
             <Clock className="w-4 h-4 inline mr-1" />
-            Heures / jour *
+            Plages horaires journalières *
+            <span className="text-[rgb(var(--muted-foreground))] font-normal ml-1">(08:00 – 21:00)</span>
           </label>
-          <input
-            type="number"
-            value={formData.heuresParJour || ''}
-            onChange={(e) => setFormData({ ...formData, heuresParJour: parseInt(e.target.value) || 0 })}
-            className="w-full px-4 py-2.5 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none"
-            min="1"
-            max="12"
-            placeholder="ex: 8"
-            required
-          />
+          {formData.plagesHoraires.length < 3 && (
+            <button
+              type="button"
+              onClick={handleAjouterPlage}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))] border border-[rgba(var(--accent),0.3)] rounded-lg hover:bg-[rgba(var(--accent),0.2)] transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Ajouter une plage
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          {formData.plagesHoraires.map((plage, idx) => {
+            const duree = dureeHeuresPlage(plage)
+            return (
+              <div key={idx} className="flex items-center gap-3">
+                <span className="text-xs text-[rgb(var(--muted-foreground))] w-14 flex-shrink-0">
+                  Plage {idx + 1}
+                </span>
+                <input
+                  type="time"
+                  value={plage.debut}
+                  min={HEURE_MIN}
+                  max={HEURE_MAX}
+                  onChange={(e) => handlePlageChange(idx, 'debut', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none text-sm"
+                />
+                <span className="text-xs text-[rgb(var(--muted-foreground))]">→</span>
+                <input
+                  type="time"
+                  value={plage.fin}
+                  min={HEURE_MIN}
+                  max={HEURE_MAX}
+                  onChange={(e) => handlePlageChange(idx, 'fin', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-[rgb(var(--card))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] focus:border-[rgb(var(--accent))] focus:outline-none text-sm"
+                />
+                {duree > 0 && (
+                  <span className="text-xs font-medium text-[rgb(var(--accent))] w-10 flex-shrink-0">
+                    {formatDuree(duree)}
+                  </span>
+                )}
+                {formData.plagesHoraires.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleSupprimerPlage(idx)}
+                    className="p-1.5 hover:bg-[rgba(var(--error),0.1)] rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4 text-[rgb(var(--error))]" />
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      {/* Résumé fenêtre temporelle */}
-      {nbJours > 0 && formData.dureeHeures > 0 && formData.heuresParJour > 0 && (
+      {/* Récapitulatif */}
+      {nbJours > 0 && formData.dureeHeures > 0 && heuresParJourTotal > 0 && (
         <div className="p-3 bg-[rgba(var(--accent),0.08)] border border-[rgba(var(--accent),0.2)] rounded-lg">
           <p className="text-sm text-[rgb(var(--foreground))]">
             📅 Fenêtre : <span className="font-bold">{nbJours} jours</span> pour planifier{' '}
             <span className="font-bold">{formData.dureeHeures}h</span> de formation
             {' '}→{' '}
             <span className="font-bold text-[rgb(var(--accent))]">
-              {(() => {
-                const seancesCompletes = Math.floor(formData.dureeHeures / formData.heuresParJour)
-                const reliquat = formData.dureeHeures % formData.heuresParJour
-                const totalJours = seancesCompletes + (reliquat > 0 ? 1 : 0)
-                if (reliquat === 0) {
-                  return `${totalJours} jour${totalJours > 1 ? 's' : ''} de ${formData.heuresParJour}h`
-                }
-                return `${totalJours} jours (${seancesCompletes}×${formData.heuresParJour}h + 1×${reliquat}h)`
-              })()}
+              ~{nbSeancesEstime} jour{nbSeancesEstime > 1 ? 's' : ''} à{' '}
+              {formatDuree(heuresParJourTotal)}/jour
             </span>
             {formData.joursActifs.length > 0 && (
               <span className="text-[rgb(var(--muted-foreground))]">

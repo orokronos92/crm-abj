@@ -35,12 +35,17 @@ export interface PlageHoraire {
   }
 }
 
+export interface PlageHoraireSimple {
+  debut: string  // HH:MM (entre 08:00 et 21:00)
+  fin: string    // HH:MM (entre 08:00 et 21:00, > debut)
+}
+
 export interface FormationCourteData {
   codeFormation: string
   dateDebut: string
   dateFin: string
-  dureeHeures: number       // Durée totale en heures (ex: 40h, 4h...) — n8n planifie
-  heuresParJour: number     // Durée d'une séance (ex: 4h ou 8h) — n8n calcule nb séances = dureeHeures / heuresParJour
+  dureeHeures: number              // Durée totale en heures (ex: 40h, 4h...) — n8n planifie
+  plagesHoraires: PlageHoraireSimple[]  // 1 à 3 plages par jour (ex: matin + soir)
   joursActifs: JourSemaine[]
   nbParticipants: number
   salleId?: number

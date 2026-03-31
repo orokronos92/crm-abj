@@ -54,10 +54,9 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
             dateDebut: data.dataCourte.dateDebut,
             dateFin: data.dataCourte.dateFin,
             dureeHeures: data.dataCourte.dureeHeures,
-            heuresParJour: data.dataCourte.heuresParJour,
-            nbSeances: Math.ceil(data.dataCourte.dureeHeures / data.dataCourte.heuresParJour),
             nbParticipants: data.dataCourte.nbParticipants,
           },
+          plagesHoraires: data.dataCourte.plagesHoraires,
           joursActifs: data.dataCourte.joursActifs,
           ressources: {
             salleId: data.dataCourte.salleId || null,
