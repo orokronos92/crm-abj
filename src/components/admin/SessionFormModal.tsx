@@ -6,7 +6,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Loader2, CheckCircle } from 'lucide-react'
+import { X, Loader2, CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { SessionTypeSelector } from './session-form/SessionTypeSelector'
 import { FormationCourteForm } from './session-form/FormationCourteForm'
 import { FormationCAPForm } from './session-form/FormationCAPForm'
@@ -17,12 +17,22 @@ interface SessionFormModalProps {
   onSuccess: () => void
 }
 
-type Step = 'type' | 'form' | 'sending' | 'success'
+interface N8nError {
+  titre: string
+  message?: string
+  erreurs?: string[]
+  rapport?: string
+  reseau?: boolean
+}
+
+type Step = 'type' | 'form' | 'sending' | 'success' | 'error'
 
 export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) {
   const [step, setStep] = useState<Step>('type')
   const [sessionType, setSessionType] = useState<SessionType | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [n8nError, setN8nError] = useState<N8nError | null>(null)
+  // Conserver les données du formulaire pour permettre le retour en arrière
+  const [lastFormData, setLastFormData] = useState<SessionFormData | null>(null)
 
   const handleTypeSelected = (type: SessionType) => {
     setSessionType(type)
@@ -34,10 +44,60 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
     setStep('type')
   }
 
+  const handleRetourFormulaire = () => {
+    setN8nError(null)
+    setStep('form')
+  }
+
+  // Parse la réponse d'erreur n8n selon les formats connus
+  const parseN8nError = (status: number, body: Record<string, unknown>): N8nError => {
+    const bodyStatus = body.status as string | undefined
+
+    // Format 1 : validation_failed (422) — erreurs métier avec rapport
+    if (bodyStatus === 'validation_failed') {
+      const erreurs = Array.isArray(body.erreurs) ? (body.erreurs as string[]) : []
+      return {
+        titre: 'Planification impossible',
+        erreurs,
+        rapport: typeof body.rapport === 'string' ? body.rapport : undefined,
+      }
+    }
+
+    // Format 2 : refused (422) — refus avec message et détails
+    if (bodyStatus === 'refused') {
+      const details: string[] = []
+      if (body.budgetDisponible) details.push(`Budget disponible : ${body.budgetDisponible}`)
+      if (body.programmeRequis) details.push(`Programme requis : ${body.programmeRequis}`)
+      if (body.codeFormation) details.push(`Code formation : ${body.codeFormation}`)
+      return {
+        titre: 'Demande refusée par Marjorie',
+        message: typeof body.message === 'string' ? body.message : undefined,
+        erreurs: details.length > 0 ? details : undefined,
+      }
+    }
+
+    // Format 3 : error (400) — payload invalide
+    if (bodyStatus === 'error') {
+      const erreurs = Array.isArray(body.erreurs) ? (body.erreurs as string[]) : []
+      return {
+        titre: 'Données invalides',
+        message: typeof body.message === 'string' ? body.message : undefined,
+        erreurs: erreurs.length > 0 ? erreurs : undefined,
+      }
+    }
+
+    // Fallback générique
+    return {
+      titre: `Erreur ${status}`,
+      message: typeof body.message === 'string' ? body.message : 'Une erreur inattendue s\'est produite.',
+    }
+  }
+
   // Envoi direct au webhook n8n
   const handleFormSubmit = async (data: SessionFormData) => {
+    setLastFormData(data)
     setStep('sending')
-    setError(null)
+    setN8nError(null)
 
     try {
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
@@ -101,18 +161,37 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
       })
 
       if (!response.ok) {
-        throw new Error(`Erreur webhook n8n : ${response.status}`)
+        let errorBody: Record<string, unknown> = {}
+        try {
+          errorBody = await response.json()
+        } catch {
+          // Body non-JSON (ex: HTML nginx) — erreur réseau/serveur
+          setN8nError({
+            titre: 'Serveur inaccessible',
+            message: `n8n a répondu avec une erreur ${response.status} sans détail. Vérifiez que le serveur est en ligne.`,
+            reseau: true,
+          })
+          setStep('error')
+          return
+        }
+        setN8nError(parseN8nError(response.status, errorBody))
+        setStep('error')
+        return
       }
 
       setStep('success')
-      // Rafraîchir la liste après 2s puis fermer
       setTimeout(() => {
         onSuccess()
         onClose()
       }, 2000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue')
-      setStep('form')
+    } catch {
+      // Erreur réseau (fetch failed, CORS, timeout…)
+      setN8nError({
+        titre: 'Connexion impossible',
+        message: 'Impossible de joindre le serveur n8n. Vérifiez votre connexion ou contactez l\'administrateur.',
+        reseau: true,
+      })
+      setStep('error')
     }
   }
 
@@ -179,23 +258,79 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
               </div>
             </div>
           )}
-        </div>
 
-        {/* Erreur */}
-        {error && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-md w-full mx-4">
-            <div className="bg-[rgb(var(--error))] text-white rounded-lg p-4 shadow-lg">
-              <p className="text-sm font-medium mb-1">Erreur</p>
-              <p className="text-sm opacity-90">{error}</p>
-              <button
-                onClick={() => setError(null)}
-                className="mt-2 text-xs underline hover:no-underline"
-              >
-                Fermer
-              </button>
+          {/* Erreur n8n — écran dédié */}
+          {step === 'error' && n8nError && (
+            <div className="flex flex-col items-center justify-center h-full gap-6 p-8 md:p-12">
+
+              {/* Icône */}
+              <div className="w-16 h-16 rounded-full bg-[rgba(var(--error),0.1)] flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-8 h-8 text-[rgb(var(--error))]" />
+              </div>
+
+              {/* Titre */}
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-[rgb(var(--foreground))] mb-1">
+                  {n8nError.titre}
+                </h3>
+                {n8nError.message && (
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">
+                    {n8nError.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Liste des erreurs métier */}
+              {n8nError.erreurs && n8nError.erreurs.length > 0 && (
+                <div className="w-full max-w-lg bg-[rgba(var(--error),0.08)] border border-[rgba(var(--error),0.25)] rounded-lg p-4">
+                  <p className="text-xs font-semibold text-[rgb(var(--error))] uppercase tracking-wide mb-3">
+                    Détail des problèmes
+                  </p>
+                  <ul className="space-y-2">
+                    {n8nError.erreurs.map((err, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-[rgb(var(--foreground))]">
+                        <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-[rgb(var(--error))] flex-shrink-0" />
+                        {err}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Rapport technique (repliable) */}
+              {n8nError.rapport && (
+                <details className="w-full max-w-lg">
+                  <summary className="text-xs text-[rgb(var(--muted-foreground))] cursor-pointer hover:text-[rgb(var(--foreground))] transition-colors select-none">
+                    Rapport technique complet
+                  </summary>
+                  <pre className="mt-2 p-3 bg-[rgb(var(--secondary))] rounded-lg text-xs text-[rgb(var(--muted-foreground))] whitespace-pre-wrap break-words leading-relaxed">
+                    {n8nError.rapport}
+                  </pre>
+                </details>
+              )}
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 mt-2">
+                {!n8nError.reseau && lastFormData && (
+                  <button
+                    onClick={handleRetourFormulaire}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[rgb(var(--accent))] text-[rgb(var(--primary))] rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Modifier la demande
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="px-5 py-2.5 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg text-sm hover:bg-[rgba(var(--border),0.5)] transition-colors"
+                >
+                  Fermer
+                </button>
+              </div>
+
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
