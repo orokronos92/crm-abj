@@ -386,6 +386,7 @@ model Session {
   programmeResume      String?                 @map("programme_resume")
   totalHeuresProgramme Int?                    @map("total_heures_programme")
   typeFormation        String?                 @default("COURTE") @map("type_formation")
+  plagesHoraires       Json?                   @map("plages_horaires")
   annulePar            Int?                    @map("annule_par")
   dateAnnulation       DateTime?               @map("date_annulation") @db.Timestamptz(6)
   motifAnnulation      String?                 @map("motif_annulation")
