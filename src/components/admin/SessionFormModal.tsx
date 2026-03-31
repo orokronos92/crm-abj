@@ -117,6 +117,13 @@ export function SessionFormModal({ onClose, onSuccess }: SessionFormModalProps) 
             nbParticipants: data.dataCourte.nbParticipants,
           },
           plagesHoraires: data.dataCourte.plagesHoraires,
+          heuresParJour: data.dataCourte.plagesHoraires.reduce((sum, p) => {
+            if (!p.debut || !p.fin) return sum
+            const [hd, md] = p.debut.split(':').map(Number)
+            const [hf, mf] = p.fin.split(':').map(Number)
+            const minutes = (hf * 60 + mf) - (hd * 60 + md)
+            return sum + (minutes > 0 ? minutes / 60 : 0)
+          }, 0),
           joursActifs: data.dataCourte.joursActifs,
           ressources: {
             salleId: data.dataCourte.salleId || null,
