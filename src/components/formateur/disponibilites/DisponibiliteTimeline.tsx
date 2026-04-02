@@ -74,8 +74,8 @@ export function DisponibiliteTimeline({
             const disposCeMois = getDisposCeMois(moisIdx)
             const indisposCeMois = getIndisposCeMois(moisIdx)
 
-            const nbDispos = disposCeMois.length
-            const nbIndispos = indisposCeMois.length
+            const nbDispos = new Set(disposCeMois.map((d) => new Date(d.date).toDateString())).size
+            const nbIndispos = new Set(indisposCeMois.map((d) => new Date(d.date).toDateString())).size
             const enSession = !!sessionCeMois
 
             return (
@@ -158,7 +158,7 @@ export function DisponibiliteTimeline({
         <div className="p-4 bg-[rgba(34,197,94,0.05)] rounded-lg border border-[rgba(34,197,94,0.2)]">
           <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Jours disponibles</p>
           <p className="text-2xl font-bold" style={{ color: 'rgb(34, 197, 94)' }}>
-            {disponibilites.filter((d) => d.typeDisponibilite === 'DISPONIBLE').length}
+            {new Set(disponibilites.filter((d) => d.typeDisponibilite === 'DISPONIBLE').map((d) => new Date(d.date).toDateString())).size}
           </p>
         </div>
 
@@ -172,7 +172,7 @@ export function DisponibiliteTimeline({
         <div className="p-4 bg-[rgba(239,68,68,0.05)] rounded-lg border border-[rgba(239,68,68,0.2)]">
           <p className="text-xs text-[rgb(var(--muted-foreground))] mb-1">Jours indisponibles</p>
           <p className="text-2xl font-bold" style={{ color: 'rgb(239, 68, 68)' }}>
-            {disponibilites.filter((d) => d.typeDisponibilite === 'INDISPONIBLE').length}
+            {new Set(disponibilites.filter((d) => d.typeDisponibilite === 'INDISPONIBLE').map((d) => new Date(d.date).toDateString())).size}
           </p>
         </div>
       </div>
