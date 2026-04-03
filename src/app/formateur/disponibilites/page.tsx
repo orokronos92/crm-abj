@@ -28,12 +28,8 @@ export default function DisponibilitesPage() {
     async function fetchData() {
       setLoading(true)
       try {
-        // TODO: Récupérer l'ID du formateur connecté depuis la session
-        // Pour l'instant on utilise formateurId=1 en dur
-        const formateurId = 1
-
         const response = await fetch(
-          `/api/formateur/disponibilites?formateurId=${formateurId}&annee=${anneeSelectionnee}`
+          `/api/formateur/disponibilites?annee=${anneeSelectionnee}`
         )
         const data = await response.json()
 
@@ -62,16 +58,12 @@ export default function DisponibilitesPage() {
 
   const handleSaveDispo = async (date: string, creneau: string, statut: string) => {
     try {
-      // TODO: Récupérer l'ID du formateur connecté depuis la session
-      const formateurId = 1
-
       const response = await fetch('/api/formateur/disponibilites', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          formateurId,
           date,
           creneauJournee: creneau,
           typeDisponibilite: statut,
@@ -83,7 +75,7 @@ export default function DisponibilitesPage() {
       if (data.success) {
         // Recharger les données pour mettre à jour l'UI
         const reloadResponse = await fetch(
-          `/api/formateur/disponibilites?formateurId=${formateurId}&annee=${anneeSelectionnee}`
+          `/api/formateur/disponibilites?annee=${anneeSelectionnee}`
         )
         const reloadData = await reloadResponse.json()
 

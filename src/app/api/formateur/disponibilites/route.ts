@@ -5,22 +5,29 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authConfig } from '@/config/auth.config'
 import prisma from '@/lib/prisma'
 
-// GET /api/formateur/disponibilites?formateurId=1&annee=2026
+// GET /api/formateur/disponibilites?annee=2026
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const formateurId = searchParams.get('formateurId')
-    const annee = searchParams.get('annee')
-
-    if (!formateurId) {
-      return NextResponse.json(
-        { success: false, error: 'formateurId requis' },
-        { status: 400 }
-      )
+    const session = await getServerSession(authConfig)
+    if (!session || !session.user || session.user.role !== 'professeur') {
+      return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 })
     }
 
+    const formateur = await prisma.formateur.findUnique({
+      where: { idUtilisateur: session.user.id },
+      select: { idFormateur: true },
+    })
+
+    if (!formateur) {
+      return NextResponse.json({ success: false, error: 'Formateur non trouvé' }, { status: 404 })
+    }
+
+    const searchParams = request.nextUrl.searchParams
+    const annee = searchParams.get('annee')
     const anneeInt = annee ? parseInt(annee) : new Date().getFullYear()
 
     // Récupérer toutes les disponibilités de l'année
@@ -29,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     const disponibilites = await prisma.disponibiliteFormateur.findMany({
       where: {
-        idFormateur: parseInt(formateurId),
+        idFormateur: formateur.idFormateur,
         date: {
           gte: dateDebut,
           lte: dateFin,
@@ -43,7 +50,7 @@ export async function GET(request: NextRequest) {
     // Récupérer aussi les sessions confirmées du formateur pour l'année
     const sessions = await prisma.session.findMany({
       where: {
-        formateurPrincipalId: parseInt(formateurId),
+        formateurPrincipalId: formateur.idFormateur,
         OR: [
           {
             dateDebut: {
@@ -99,11 +106,25 @@ export async function GET(request: NextRequest) {
 // POST /api/formateur/disponibilites
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authConfig)
+    if (!session || !session.user || session.user.role !== 'professeur') {
+      return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const formateur = await prisma.formateur.findUnique({
+      where: { idUtilisateur: session.user.id },
+      select: { idFormateur: true },
+    })
+
+    if (!formateur) {
+      return NextResponse.json({ success: false, error: 'Formateur non trouvé' }, { status: 404 })
+    }
+
     const body = await request.json()
-    const { formateurId, date, creneauJournee, typeDisponibilite, commentaire } = body
+    const { date, creneauJournee, typeDisponibilite, commentaire } = body
 
     // Validation
-    if (!formateurId || !date || !creneauJournee || !typeDisponibilite) {
+    if (!date || !creneauJournee || !typeDisponibilite) {
       return NextResponse.json(
         { success: false, error: 'Champs requis manquants' },
         { status: 400 }
@@ -113,7 +134,7 @@ export async function POST(request: NextRequest) {
     // Vérifier si une disponibilité existe déjà pour ce jour/créneau
     const existing = await prisma.disponibiliteFormateur.findFirst({
       where: {
-        idFormateur: formateurId,
+        idFormateur: formateur.idFormateur,
         date: new Date(date),
         creneauJournee,
       },
@@ -136,7 +157,7 @@ export async function POST(request: NextRequest) {
       // Création
       result = await prisma.disponibiliteFormateur.create({
         data: {
-          idFormateur: formateurId,
+          idFormateur: formateur.idFormateur,
           date: new Date(date),
           creneauJournee,
           typeDisponibilite,
