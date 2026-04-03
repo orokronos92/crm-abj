@@ -49,7 +49,7 @@ export class DashboardRepository {
     return await prisma.candidat.count({
       where: {
         statutDossier: {
-          notIn: ['INSCRIT', 'CONVERTI']
+          notIn: ['INSCRIT', 'CONVERTI', 'REFUSE']
         }
       }
     })
