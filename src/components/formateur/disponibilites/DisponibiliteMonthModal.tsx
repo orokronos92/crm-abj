@@ -26,7 +26,7 @@ const MOIS_NOMS = [
 const CRENEAUX = [
   { code: 'MATIN', label: 'Matin' },
   { code: 'APRES_MIDI', label: 'Après-midi' },
-  { code: 'JOURNEE', label: 'Soir' },
+  { code: 'SOIR', label: 'Soir' },
 ]
 
 interface DisponibiliteMonthModalProps {
@@ -146,7 +146,7 @@ export function DisponibiliteMonthModal({
       onAddDispo(dateStr, 'APRES_MIDI', statutApresMidi)
     }
     if (statutSoir) {
-      onAddDispo(dateStr, 'JOURNEE', statutSoir)
+      onAddDispo(dateStr, 'SOIR', statutSoir)
     }
 
     // Fermer le mini formulaire
