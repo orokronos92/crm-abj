@@ -90,6 +90,37 @@ export async function POST(request: NextRequest) {
         if (inscriptionsActives.length > 0) {
           console.log(`[actions/trigger] 🚫 ${inscriptionsActives.length} inscription(s) annulée(s) pour candidat ${idCandidat} refusé`)
         }
+
+        // Reset complet des étapes du parcours d'admission
+        // Ainsi si le candidat recandidate plus tard, il repart de zéro
+        // (sauf exemptions explicitement accordées à nouveau par l'admin)
+        await prisma.candidat.update({
+          where: { idCandidat },
+          data: {
+            entretienTelephonique: false,
+            dateEntretienTel: null,
+            valideParEntretienTel: null,
+            observationEntretienTel: null,
+            exemptEntretienTelephonique: false,
+            rdvPresentiel: false,
+            dateRdvPresentiel: null,
+            valideParRdvPresentiel: null,
+            observationRdvPresentiel: null,
+            exemptRdvPresentiel: false,
+            testTechnique: false,
+            dateTestTechnique: null,
+            valideParTestTechnique: null,
+            observationTestTechnique: null,
+            exemptTestTechnique: false,
+            validationPedagogique: false,
+            dateValidationPedagogique: null,
+            valideParValidationPedagogique: null,
+            observationValidationPedagogique: null,
+            exemptValidationPedagogique: false,
+          }
+        })
+
+        console.log(`[actions/trigger] 🔄 Parcours d'admission remis à zéro pour candidat ${idCandidat} refusé`)
       }
     }
 
