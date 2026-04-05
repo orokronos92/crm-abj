@@ -22,8 +22,6 @@ interface FormateurFormData {
   siret: string
   anneesExperience: string
   anneesEnseignement: string
-  bio: string
-  notes: string
 }
 
 interface FormateurFormModalProps {
@@ -62,8 +60,6 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
     siret: '',
     anneesExperience: '',
     anneesEnseignement: '',
-    bio: '',
-    notes: '',
   })
 
   const handleChange = (field: keyof FormateurFormData, value: string | string[]) => {
@@ -97,8 +93,6 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
         siret: formData.siret || null,
         anneesExperience: formData.anneesExperience ? parseInt(formData.anneesExperience) : null,
         anneesEnseignement: formData.anneesEnseignement ? parseInt(formData.anneesEnseignement) : null,
-        bio: formData.bio || null,
-        notes: formData.notes || null,
       }
 
       const res = await fetch('/api/formateurs', {
@@ -370,33 +364,6 @@ export function FormateurFormModal({ onClose, onSuccess }: FormateurFormModalPro
               </div>
             </div>
 
-            {/* Bio */}
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Biographie / Présentation
-              </label>
-              <textarea
-                value={formData.bio}
-                onChange={(e) => handleChange('bio', e.target.value)}
-                placeholder="Parcours, expertise, réalisations..."
-                rows={3}
-                className="w-full px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none resize-none"
-              />
-            </div>
-
-            {/* Notes internes */}
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-2">
-                Notes internes (non visibles par le formateur)
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Notes d'entretien, impressions..."
-                rows={2}
-                className="w-full px-4 py-2 bg-[rgb(var(--secondary))] border border-[rgba(var(--border),0.5)] rounded-lg text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted-foreground))] focus:border-[rgb(var(--accent))] focus:outline-none resize-none"
-              />
-            </div>
           </div>
         </form>
 
