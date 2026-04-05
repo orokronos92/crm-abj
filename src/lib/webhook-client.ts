@@ -379,6 +379,7 @@ export const formateurWebhooks = {
    */
   async nouveauFormateur(data: {
     idFormateur: number
+    idUtilisateur: number
     email: string
     nom: string
     prenom: string

@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
     // Marjorie va envoyer un email de bienvenue et demander les documents requis
     formateurWebhooks.nouveauFormateur({
       idFormateur: result.formateur.idFormateur,
+      idUtilisateur: result.utilisateur.idUtilisateur,
       email: result.formateur.email,
       nom: result.formateur.nom,
       prenom: result.formateur.prenom,
