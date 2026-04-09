@@ -369,9 +369,8 @@ export function ProspectDetailPanel({ prospectId, formations, onClose, onProspec
       {/* Modal Historique */}
       {showHistorique && prospect && (
         <HistoriqueEchangesModal
-          prospectId={prospect.id}
-          prospectName={`${prospect.prenom} ${prospect.nom}`}
-          nbEchanges={prospect.nbEchanges}
+          idProspect={prospect.id}
+          nomCandidat={`${prospect.prenom} ${prospect.nom}`}
           onClose={() => setShowHistorique(false)}
         />
       )}

@@ -892,9 +892,8 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
       {/* Modal Historique Échanges */}
       {showHistoriqueModal && candidat && (
         <HistoriqueEchangesModal
-          prospectId={candidat.id_prospect}
-          prospectName={`${candidat.prenom} ${candidat.nom}`}
-          nbEchanges={candidat.nb_echanges}
+          idProspect={candidat.id_prospect}
+          nomCandidat={`${candidat.prenom} ${candidat.nom}`}
           onClose={() => setShowHistoriqueModal(false)}
         />
       )}
