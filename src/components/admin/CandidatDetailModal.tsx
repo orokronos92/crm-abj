@@ -24,7 +24,8 @@ import {
   Download,
   Send,
   User,
-  GraduationCap
+  GraduationCap,
+  Pencil
 } from 'lucide-react'
 import { STATUT_DOSSIER_COLORS, STATUT_FINANCEMENT_COLORS } from '@/services/candidat.service'
 import { EnvoyerMessageCandidatModal } from './EnvoyerMessageCandidatModal'
@@ -35,6 +36,7 @@ import { ConvertirEleveModal } from './ConvertirEleveModal'
 import { RefuserCandidatModal } from './RefuserCandidatModal'
 import { DocumentsOnglet } from './DocumentsOnglet'
 import { HistoriqueEchangesModal } from './HistoriqueEchangesModal'
+import { EditCandidatModal } from './EditCandidatModal'
 
 interface SessionOption {
   idSession: number
@@ -138,6 +140,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
   const [etapeAValider, setEtapeAValider] = useState<EtapeType | null>(null)
   const [exemptEnCours, setExemptEnCours] = useState<EtapeType | null>(null)
   const [showHistoriqueModal, setShowHistoriqueModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   // États pour l'édition formation/session
   const [editFormationCode, setEditFormationCode] = useState<string>('')
@@ -377,12 +380,22 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
-            >
-              <X className="w-6 h-6 text-[rgb(var(--muted-foreground))]" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-[rgb(var(--secondary))] hover:bg-[rgba(var(--accent),0.1)] border border-[rgba(var(--border),0.5)] rounded-lg text-sm transition-colors"
+                title="Modifier les informations"
+              >
+                <Pencil className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
+                <span className="hidden sm:inline text-[rgb(var(--foreground))]">Modifier</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-[rgba(var(--accent),0.1)] transition-colors"
+              >
+                <X className="w-6 h-6 text-[rgb(var(--muted-foreground))]" />
+              </button>
+            </div>
           </div>
 
           {/* Onglets en forme de dossier */}
@@ -855,6 +868,26 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
           </div>
         </div>
       </div>
+
+      {/* Modal Modifier Candidat */}
+      {showEditModal && candidat && (
+        <EditCandidatModal
+          candidat={candidat}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={(updated) => {
+            setCandidat(prev => prev ? {
+              ...prev,
+              nom: updated.nom,
+              prenom: updated.prenom,
+              email: updated.email,
+              telephone: updated.telephone,
+              adresse: updated.adresse,
+              code_postal: updated.code_postal,
+              ville: updated.ville,
+            } : prev)
+          }}
+        />
+      )}
 
       {/* Modal Historique Échanges */}
       {showHistoriqueModal && candidat && (
