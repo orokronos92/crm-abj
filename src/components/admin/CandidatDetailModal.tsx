@@ -34,6 +34,7 @@ import { ValiderEtapeModal, type EtapeType } from './ValiderEtapeModal'
 import { ConvertirEleveModal } from './ConvertirEleveModal'
 import { RefuserCandidatModal } from './RefuserCandidatModal'
 import { DocumentsOnglet } from './DocumentsOnglet'
+import { HistoriqueEchangesModal } from './HistoriqueEchangesModal'
 
 interface SessionOption {
   idSession: number
@@ -136,6 +137,7 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
   const [showRefuserCandidatModal, setShowRefuserCandidatModal] = useState(false)
   const [etapeAValider, setEtapeAValider] = useState<EtapeType | null>(null)
   const [exemptEnCours, setExemptEnCours] = useState<EtapeType | null>(null)
+  const [showHistoriqueModal, setShowHistoriqueModal] = useState(false)
 
   // États pour l'édition formation/session
   const [editFormationCode, setEditFormationCode] = useState<string>('')
@@ -474,17 +476,21 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg">
+                <button
+                  onClick={() => setShowHistoriqueModal(true)}
+                  className="flex items-center gap-3 hover:bg-[rgba(var(--accent),0.05)] rounded-lg p-1 -m-1 transition-colors group"
+                  title="Voir les échanges avec Marjorie"
+                >
+                  <div className="p-2 bg-[rgba(var(--accent),0.1)] rounded-lg group-hover:bg-[rgba(var(--accent),0.2)] transition-colors">
                     <MessageSquare className="w-5 h-5 text-[rgb(var(--accent))]" />
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="text-xs text-[rgb(var(--muted-foreground))]">Échanges</p>
                     <p className="text-lg font-bold text-[rgb(var(--foreground))]">
                       {candidat.nb_echanges}
                     </p>
                   </div>
-                </div>
+                </button>
               </div>
 
               {/* Infos formation — section éditable */}
@@ -849,6 +855,16 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
           </div>
         </div>
       </div>
+
+      {/* Modal Historique Échanges */}
+      {showHistoriqueModal && candidat && (
+        <HistoriqueEchangesModal
+          prospectId={candidat.id_prospect}
+          prospectName={`${candidat.prenom} ${candidat.nom}`}
+          nbEchanges={candidat.nb_echanges}
+          onClose={() => setShowHistoriqueModal(false)}
+        />
+      )}
 
       {/* Modal Envoyer Message */}
       {showEnvoyerMessageModal && candidat && (
