@@ -23,7 +23,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         idEmail: true,
         dateReception: true,
         sens: true,
-        objet: true
+        objet: true,
+        contenu: true,
+        extrait: true,
       },
       orderBy: {
         dateReception: 'desc'
@@ -43,7 +45,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           })
         : 'Date inconnue',
       objet: email.objet || '(Sans objet)',
-      sens: email.sens === 'entrant' ? 'IN' : 'OUT'
+      sens: email.sens === 'entrant' ? 'IN' : 'OUT',
+      contenu: email.contenu || null,
+      extrait: email.extrait || null,
     }))
 
     return NextResponse.json(formattedEmails)
