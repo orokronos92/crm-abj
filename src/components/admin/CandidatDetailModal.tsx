@@ -14,6 +14,7 @@ import {
   Euro,
   Mail,
   Phone,
+  MapPin,
   MessageSquare,
   TrendingUp,
   CheckCircle,
@@ -51,6 +52,9 @@ interface CandidatDetail {
   prenom: string
   email: string
   telephone: string
+  adresse: string | null
+  code_postal: string | null
+  ville: string | null
   formation: string
   formation_code: string
   formation_tarif: number
@@ -430,6 +434,19 @@ export function CandidatDetailModal({ candidatId, formations, onClose, onCandida
                   <div>
                     <p className="text-xs text-[rgb(var(--muted-foreground))]">Téléphone</p>
                     <p className="text-base text-[rgb(var(--foreground))]">{candidat.telephone}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 sm:col-span-2">
+                  <MapPin className="w-5 h-5 text-[rgb(var(--accent))] flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-[rgb(var(--muted-foreground))]">Adresse</p>
+                    {candidat.adresse || candidat.ville ? (
+                      <p className="text-base text-[rgb(var(--foreground))]">
+                        {[candidat.adresse, candidat.code_postal, candidat.ville].filter(Boolean).join(' — ')}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-[rgb(var(--muted-foreground))] italic">Non renseignée</p>
+                    )}
                   </div>
                 </div>
               </div>

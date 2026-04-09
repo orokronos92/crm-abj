@@ -59,6 +59,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             prenom: true,
             emails: true,
             telephones: true,
+            adresse: true,
+            codePostal: true,
+            ville: true,
             nbEchanges: true,
             dateDernierContact: true
           }
@@ -100,6 +103,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       prenom: candidat.prospect?.prenom || '',
       email: candidat.prospect?.emails?.[0] || '',
       telephone: candidat.prospect?.telephones?.[0] || '',
+      adresse: candidat.prospect?.adresse || null,
+      code_postal: candidat.prospect?.codePostal || null,
+      ville: candidat.prospect?.ville || null,
       formation: formationBdd?.nom || candidat.formationRetenue || 'Non choisie',
       formation_code: formationBdd?.codeFormation || candidat.formationRetenue || '',
       formation_tarif: Number(formationBdd?.tarifStandard || 0),
